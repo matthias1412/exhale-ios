@@ -37,6 +37,7 @@ struct AppClock: Sendable {
 }
 
 @Observable
+@MainActor
 final class AppModel {
 
     /// Persisted. Written to disk by `persist()` rather than a `didSet` — the
@@ -55,6 +56,9 @@ final class AppModel {
     var draft: QuitPlan?
 
     let clock: AppClock
+    /// Behind a protocol so seeded runs and tests never touch StoreKit.
+    let subscriptions: any SubscriptionGate
+
     private let store: StateStore
     private let persistenceEnabled: Bool
 
@@ -62,12 +66,15 @@ final class AppModel {
         state: PersistedState = PersistedState(),
         clock: AppClock = AppClock(),
         store: StateStore = .applicationSupport,
-        persistenceEnabled: Bool = true
+        persistenceEnabled: Bool = true,
+        subscriptions: (any SubscriptionGate)? = nil
     ) {
         self.state = state
         self.clock = clock
         self.store = store
         self.persistenceEnabled = persistenceEnabled
+        self.subscriptions = subscriptions
+            ?? (clock.isFrozen ? MockSubscriptionGate() : RevenueCatSubscriptionGate())
     }
 
     /// Normal launch: load from disk.

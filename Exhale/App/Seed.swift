@@ -58,6 +58,7 @@ enum Seed {
         plan: QuitPlan? = nil,
         tab: MainTab = .today,
         cravingsWon: Int = 0,
+        subscriptions: (any SubscriptionGate)? = nil,
         configure: (AppModel) -> Void = { _ in }
     ) -> AppModel {
         var state = PersistedState()
@@ -69,7 +70,8 @@ enum Seed {
             state: state,
             clock: AppClock(frozen: referenceNow),
             store: .ephemeral,
-            persistenceEnabled: false
+            persistenceEnabled: false,
+            subscriptions: subscriptions ?? MockSubscriptionGate()
         )
         model.tab = tab
         configure(model)
@@ -106,6 +108,14 @@ enum Seed {
 
         case "paywall":
             return make(phase: .paywall, plan: plan(.cigarettes, day: 1))
+
+        case "paywall-loading":
+            // Prices not back from the store yet — placeholder, never a guess.
+            return make(phase: .paywall, plan: plan(.cigarettes, day: 1),
+                        subscriptions: MockSubscriptionGate(state: .loading))
+
+        case "onboard-quit-picker":
+            return onboarding(step: 3, product: .cigarettes)
 
         // Today — the bloom across its whole range.
         case "today-day1":

@@ -215,28 +215,6 @@ struct BreathingOrb: View {
 // one. Each is replaced by the real screen in build order:
 // Bill → Milestones → Settings → Onboarding → Paywall.
 
-struct PaywallScreen: View {
-    var body: some View { ScreenStub(name: "Paywall", detail: "RevenueCat, mocked") }
-}
-
-struct DebugMenu: View {
-    @Environment(AppModel.self) private var model
-    var body: some View {
-        ZStack {
-            Palette.background.opacity(0.97).ignoresSafeArea()
-            VStack(spacing: 14) {
-                Text("DEBUG").font(.spaceGrotesk(13, weight: .bold)).tracking(2.86)
-                    .foregroundStyle(Palette.accent)
-                Text("Time-travel presets land here.")
-                    .font(.spaceGrotesk(13)).foregroundStyle(Palette.textMuted)
-                Button("Close") { model.debugMenuOpen = false }
-                    .font(.spaceGrotesk(14, weight: .bold))
-                    .foregroundStyle(Palette.accent)
-            }
-        }
-    }
-}
-
 struct NotificationBanner: View {
     @Environment(AppModel.self) private var model
     let content: BannerContent

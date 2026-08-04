@@ -10,8 +10,9 @@ struct OnboardingFlow: View {
 
             switch model.onboardingStep {
             case 0: ProductPickerStep()
-            default: ScreenStub(name: "Onboarding",
-                                detail: "step \(model.onboardingStep + 1) of 4")
+            case 1: AmountStep()
+            case 2: PriceStep()
+            default: QuitMomentStep()
             }
 
             Spacer(minLength: 0)
