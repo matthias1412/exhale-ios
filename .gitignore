@@ -1,0 +1,34 @@
+# XcodeGen generates this in CI — never commit it. This is what makes
+# Mac-less development work.
+*.xcodeproj/
+*.xcworkspace/
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# SPM
+.build/
+.swiftpm/
+Packages/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# CI artefacts pulled down locally for inspection
+artifacts/
+
+# macOS / Windows cruft
+.DS_Store
+Thumbs.db
+desktop.ini

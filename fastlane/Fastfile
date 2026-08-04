@@ -1,0 +1,46 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build a signed release and ship it to TestFlight"
+  lane :beta do
+    setup_ci
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
+      issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
+      key_content: ENV.fetch("APP_STORE_CONNECT_KEY"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    # Certificates live encrypted on the `certificates` branch — see
+    # docs/signing.md. Read-only in CI so a runner can never rotate them.
+    match(
+      type: "appstore",
+      readonly: true,
+      app_identifier: "com.matthias.exhale",
+      git_branch: "certificates"
+    )
+
+    sh("xcodegen generate", log: false)
+
+    increment_build_number(
+      build_number: latest_testflight_build_number(api_key: api_key) + 1,
+      xcodeproj: "Exhale.xcodeproj"
+    )
+
+    build_app(
+      scheme: "Exhale",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      clean: true
+    )
+
+    pilot(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+  end
+end

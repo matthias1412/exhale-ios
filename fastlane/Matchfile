@@ -1,0 +1,5 @@
+git_branch("certificates")
+storage_mode("git")
+type("appstore")
+app_identifier(["com.matthias.exhale"])
+readonly(true)

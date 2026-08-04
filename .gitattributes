@@ -1,0 +1,10 @@
+* text=auto eol=lf
+
+# CI runs these on macOS — CRLF makes bash fail with "bad interpreter".
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+Gemfile text eol=lf
+fastlane/* text eol=lf
+
+*.png binary

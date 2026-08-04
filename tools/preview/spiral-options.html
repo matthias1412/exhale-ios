@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Exhale spiral — early-day treatments compared</title>
+<style>
+  body { margin:0; background:#081A1D; color:#E9F5F3;
+         font-family: system-ui, -apple-system, sans-serif; padding:20px 20px 60px; }
+  h1 { font-size:15px; font-weight:700; color:#E9F5F3; margin:0 0 4px; }
+  .lede { font-size:12px; line-height:1.6; color:rgba(233,245,243,.55);
+          max-width:760px; margin:0 0 22px; }
+  .vh { display:flex; align-items:baseline; gap:10px; margin:26px 0 8px; }
+  .tag { font:700 11px ui-monospace,Menlo,monospace; background:#7FD8CB; color:#06181B;
+         padding:2px 7px; border-radius:4px; }
+  .vname { font-size:13px; font-weight:600; color:#E9F5F3; }
+  .vdesc { font-size:11.5px; color:rgba(233,245,243,.5); }
+  .strip { display:flex; gap:8px; }
+  .cell { width:132px; flex:none; }
+  .cap { font-size:10px; color:rgba(233,245,243,.45); margin-bottom:3px;
+         font-variant-numeric:tabular-nums; }
+  .stage { position:relative; width:132px; height:132px; border-radius:6px;
+           outline:1px solid rgba(127,216,203,.1); }
+  .center { position:absolute; inset:0; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; pointer-events:none; }
+  .ov { font-size:6px; letter-spacing:.3em; color:rgba(233,245,243,.5); }
+  .val { font-weight:700; line-height:1; color:#EFFCF9; }
+  .hdr { display:flex; gap:8px; margin-bottom:2px; }
+  .hcell { width:132px; flex:none; font:600 10px ui-monospace,Menlo,monospace;
+           color:#7FD8CB; }
+  .note { font-size:11px; color:#E8A87F; margin-top:6px; max-width:760px; line-height:1.55; }
+</style>
+</head>
+<body>
+<h1>Exhale — spiral treatments, day 1 to day 1,825</h1>
+<p class="lede">Every row uses the same phyllotaxis, the same golden angle, the same year markers and
+the same newest-dot glow. The only thing that changes is <strong>how quickly the spiral grows out to
+fill the disc</strong>, and in the last row, how the colour is keyed. Rows are identical to each other
+from day 365 onward except where noted.</p>
+
+<div id="out"></div>
+
+<script>
+const GOLDEN = 2.399963, BOX = 302, TILE = 132, S = TILE/BOX;
+const DAYS = [1,3,7,14,30,60,90,180,365,730,1825];
+const HOLE = 44, MAXR = 145, CX = 151, CY = 151;
+const ANN = Math.PI*(MAXR*MAXR - HOLE*HOLE);
+
+function sizeFor(m){
+  return Math.max(3, Math.min(13,
+    Math.round(2*Math.sqrt(ANN/(Math.max(m,40)*Math.PI))*0.62*10)/10));
+}
+function specColour(t){
+  return "hsl("+Math.round(18+t*154)+" "+Math.round(85-t*25)+"% "+Math.round(54+t*8)+"%)";
+}
+function ageColour(age){                 // 0 = newest; fully cooled to ember at 1 year
+  const t = Math.min(1, age/364);
+  return "hsl("+Math.round(172-t*154)+" "+Math.round(60+t*25)+"% "+Math.round(62-t*8)+"%)";
+}
+
+// generic builder ------------------------------------------------------------
+// fillDay : day at which the spiral first reaches the rim
+// bloomIn : true  -> inner edge also travels outward->inward as the streak grows
+// colour  : 'spec' | 'age'
+function build(dayN, {fillDay, bloomIn, colour}){
+  const n = Math.min(dayN, 3650);
+  const nRef = Math.max(n, fillDay);
+  const size = sizeFor(nRef);
+  const p = Math.min(1, fillDay <= 1 ? 1 : (n-1)/(fillDay-1));
+  const rIn  = bloomIn ? 92 - (92-HOLE)*p : HOLE;
+  const rOut = bloomIn ? 92 + (MAXR-92)*p : MAXR;
+  const span = rOut - rIn - size/2;
+  const dots = [];
+  for (let i=0;i<n;i++){
+    const t = n>1 ? i/(n-1) : 1;
+    const frac = bloomIn ? (n>1 ? i/(n-1) : 0) : (i+0.5)/nRef;
+    const r = rIn + span*Math.sqrt(frac);
+    const a = i*GOLDEN - 1.6;
+    const yr = (i+1)%365===0;
+    dots.push({
+      x: CX + r*Math.cos(a), y: CY + r*Math.sin(a),
+      s: yr ? Math.min(13, size*1.6) : size,
+      bg: yr ? "#E8A87F" : (colour==='age' ? ageColour(n-1-i) : specColour(t)),
+      g: i===n-1 ? "0 0 16px 4px rgba(127,216,203,.5)"
+                 : (yr ? "0 0 8px 1px rgba(232,168,127,.7)" : "none")
+    });
+  }
+  // veil: spec value, except the blooming variant pulls it in so early dots survive
+  const solid = bloomIn ? 34 + 24*p : 58;
+  const fade  = bloomIn ? 48 + 34*p : 82;
+  return {dots, solid, fade};
+}
+
+const VARIANTS = [
+  {tag:'A', name:'The spec, as written',
+   desc:'Fills the disc from day 1. Baseline — this is what the handoff describes.',
+   opts:{fillDay:1, bloomIn:false, colour:'spec'}},
+  {tag:'B', name:'Bloom — fills at day 90, inner edge grows too',
+   desc:'Dots start as a small ring clear of the numeral and open outward. Identical to A from day 90.',
+   opts:{fillDay:90, bloomIn:true, colour:'spec'}},
+  {tag:'C', name:'Fills at day 365, inner edge fixed',
+   desc:'Constant 9px dots accumulate outward for a full year. Slowest, most literal growth.',
+   opts:{fillDay:365, bloomIn:false, colour:'spec'}},
+  {tag:'D', name:'Fills at day 90, inner edge fixed',
+   desc:'Like B but the spiral starts hard against the centre hole — watch it collide with the numeral.',
+   opts:{fillDay:90, bloomIn:false, colour:'spec'}},
+  {tag:'E', name:'Bloom + absolute-age colour',
+   desc:'Same geometry as B. Colour keyed to each dot’s real age (sea-glass today, ember at 1 year) instead of rescaling daily.',
+   opts:{fillDay:90, bloomIn:true, colour:'age'}}
+];
+
+const out = document.getElementById('out');
+const hdr = document.createElement('div');
+hdr.className='hdr';
+hdr.innerHTML = DAYS.map(d=>'<div class="hcell">day '+d.toLocaleString('en-US')+'</div>').join('');
+
+for (const v of VARIANTS){
+  const h = document.createElement('div'); h.className='vh';
+  h.innerHTML = '<span class="tag">'+v.tag+'</span><span class="vname">'+v.name+
+                '</span><span class="vdesc">'+v.desc+'</span>';
+  out.appendChild(h);
+  out.appendChild(hdr.cloneNode(true));
+  const strip = document.createElement('div'); strip.className='strip';
+  for (const d of DAYS){
+    const {dots, solid, fade} = build(d, v.opts);
+    const years = Math.floor(d/365);
+    const ov  = years>=1 ? (years===1?'YEAR':'YEARS') : 'DAY';
+    const val = years>=1 ? String(years) : String(d);
+    const fs  = (years>=1 ? 52 : (d>99?46:52)) * S;
+    const cell = document.createElement('div'); cell.className='cell';
+    cell.innerHTML =
+      '<div class="cap">day '+d.toLocaleString('en-US')+'</div><div class="stage">'+
+      dots.map(o=>'<div style="position:absolute;left:'+((o.x-o.s/2)*S).toFixed(1)+
+        'px;top:'+((o.y-o.s/2)*S).toFixed(1)+'px;width:'+(o.s*S).toFixed(2)+'px;height:'+
+        (o.s*S).toFixed(2)+'px;border-radius:50%;background:'+o.bg+
+        ';box-shadow:'+o.g+'"></div>').join('')+
+      '<div class="center" style="background:radial-gradient(circle,#081A1D 0%,#081A1D '+
+      (solid*S).toFixed(1)+'px,rgba(8,26,29,0) '+(fade*S).toFixed(1)+'px)">'+
+      '<div class="ov">'+ov+'</div><div class="val" style="font-size:'+fs.toFixed(1)+
+      'px">'+val+'</div></div></div>';
+    strip.appendChild(cell);
+  }
+  out.appendChild(strip);
+}
+</script>
+</body>
+</html>

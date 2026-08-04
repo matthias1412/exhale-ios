@@ -1,0 +1,60 @@
+name: Screens
+
+# Nothing runs on push. macOS runners bill at 10x and the screenshot job is the
+# expensive one — last project it was 71% of the spend. Dispatch only.
+on:
+  workflow_dispatch:
+    inputs:
+      devices:
+        description: "one = plain flagship only (cheap). all = Pro Max + smallest + flagship."
+        type: choice
+        options: ["one", "all"]
+        default: "one"
+      seeds:
+        description: "smoke = 7 key states. all = every state in SeedNames.swift."
+        type: choice
+        options: ["smoke", "all"]
+        default: "smoke"
+
+jobs:
+  screens:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -scheme Exhale \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty || xcodebuild build \
+              -scheme Exhale -configuration Debug \
+              -destination 'generic/platform=iOS Simulator' \
+              -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+
+      - name: Capture
+        env:
+          DEVICE_SET: ${{ inputs.devices }}
+          SEED_SET: ${{ inputs.seeds }}
+        run: bash .github/scripts/capture.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screens-${{ inputs.devices }}-${{ inputs.seeds }}
+          path: artifacts/screens
+          if-no-files-found: error
+          retention-days: 14
