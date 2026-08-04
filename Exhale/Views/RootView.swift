@@ -50,7 +50,21 @@ struct RootView: View {
         }
         .foregroundStyle(Palette.textPrimary)
         // One save point for the whole app, so no mutation site can forget.
-        .onChange(of: model.state) { _, _ in model.persist() }
+        // The notification set is rebuilt from scratch here too: every fire
+        // date derives from the quit date, so editing the plan has to move all
+        // of them together.
+        .onChange(of: model.state) { _, newState in
+            model.persist()
+            guard !model.clock.isFrozen else { return }   // never during captures
+            Task { await NotificationScheduler.shared.reschedule(state: newState) }
+        }
+        .task {
+            // Asking on first launch would be a dialog in every screenshot, and
+            // asking before the user has a plan is asking too early.
+            guard !model.clock.isFrozen, model.state.phase == .app else { return }
+            await NotificationScheduler.shared.requestAuthorisation()
+            await NotificationScheduler.shared.reschedule(state: model.state)
+        }
     }
 }
 

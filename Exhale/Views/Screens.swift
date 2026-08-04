@@ -219,31 +219,6 @@ struct PaywallScreen: View {
     var body: some View { ScreenStub(name: "Paywall", detail: "RevenueCat, mocked") }
 }
 
-struct MilestonesScreen: View {
-    var body: some View { ScreenStub(name: "Milestones", detail: "") }
-}
-
-struct SettingsScreen: View {
-    @Environment(AppModel.self) private var model
-    var body: some View {
-        ZStack {
-            Palette.background.ignoresSafeArea()
-            ScreenStub(name: "Settings", detail: "")
-            VStack {
-                HStack {
-                    Button("← Back") { model.settingsOpen = false }
-                        .font(.spaceGrotesk(14))
-                        .foregroundStyle(Palette.textMuted)
-                    Spacer()
-                }
-                .padding(.horizontal, 26)
-                .padding(.top, 8)
-                Spacer()
-            }
-        }
-    }
-}
-
 struct DebugMenu: View {
     @Environment(AppModel.self) private var model
     var body: some View {
