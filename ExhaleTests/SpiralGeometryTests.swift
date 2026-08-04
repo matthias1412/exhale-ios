@@ -62,13 +62,31 @@ final class SpiralGeometryTests: XCTestCase {
         }
     }
 
-    func testDotsNeverEscapeTheDisc() {
+    /// Two different limits, because year markers are deliberately 1.6x the
+    /// normal dot and so reach slightly past the nominal rim.
+    ///
+    /// - Ordinary dots must land inside `maxRadius` exactly.
+    /// - Everything, markers included, must stay inside the canvas or it gets
+    ///   clipped. (Markers peak at 147pt against a 151pt half-width.)
+    func testDotsNeverEscapeTheCanvas() {
+        let canvasLimit = Double(SpiralGeometry.box) / 2
+
         for day in [1, 30, 90, 365, 730, 1825, 3650] {
             for dot in SpiralGeometry.dots(forDay: day) {
                 let dx = dot.position.x - SpiralGeometry.centre.x
                 let dy = dot.position.y - SpiralGeometry.centre.y
-                let radius = (dx * dx + dy * dy).squareRoot() + dot.diameter / 2
-                XCTAssertLessThanOrEqual(radius, SpiralGeometry.maxRadius + 1, "day \(day)")
+                let edge = (dx * dx + dy * dy).squareRoot() + dot.diameter / 2
+
+                XCTAssertLessThanOrEqual(
+                    edge, canvasLimit,
+                    "day \(day): a dot is clipped by the canvas edge"
+                )
+                if !dot.isYearMarker {
+                    XCTAssertLessThanOrEqual(
+                        edge, SpiralGeometry.maxRadius + 0.01,
+                        "day \(day): an ordinary dot escaped the nominal rim"
+                    )
+                }
             }
         }
     }
