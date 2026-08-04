@@ -67,7 +67,8 @@ struct StatsRow: View {
             : ("\(model.state.cravingsWon)", "cravings beaten")
         return [
             (progress.moneyKept.moneyString(plan.currencyCode), "kept in your pocket"),
-            (progress.unitsAvoided.formatted(.number), "\(plan.config.unitNoun) avoided"),
+            (progress.unitsAvoided.formatted(.number),
+             "\(progress.unitsAvoided == 1 ? plan.config.unitNounSingular : plan.config.unitNoun) avoided"),
             third
         ]
     }
@@ -213,13 +214,6 @@ struct BreathingOrb: View {
 // Placeholders so routing and the screenshot harness are verifiable from day
 // one. Each is replaced by the real screen in build order:
 // Bill → Milestones → Settings → Onboarding → Paywall.
-
-struct OnboardingFlow: View {
-    @Environment(AppModel.self) private var model
-    var body: some View {
-        ScreenStub(name: "Onboarding", detail: "step \(model.onboardingStep + 1) of 4")
-    }
-}
 
 struct PaywallScreen: View {
     var body: some View { ScreenStub(name: "Paywall", detail: "RevenueCat, mocked") }

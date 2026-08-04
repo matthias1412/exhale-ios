@@ -85,6 +85,10 @@ enum Seed {
         case "onboard-product":
             return make(phase: .onboarding) { $0.onboardingStep = 0 }
 
+        case "onboard-product-selected":
+            // Selected state: accent border, filled radio, tinted row.
+            return onboarding(step: 0, product: .pouches)
+
         case "onboard-amount-cigarettes":
             return onboarding(step: 1, product: .cigarettes)
         case "onboard-amount-vape":

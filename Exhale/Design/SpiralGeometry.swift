@@ -46,13 +46,16 @@ enum SpiralGeometry {
         min(max(day, 0), maxDots)
     }
 
+    /// Largest a dot ever gets, so the veil can be kept clear of dot edges.
+    static let maxDotDiameter: Double = 13
+
     /// Dots shrink as the streak grows so the disc densifies instead of
     /// overflowing. Clamped to 3…13pt.
     static func dotDiameter(count: Int) -> Double {
         let annulus = Double.pi * (maxRadius * maxRadius - holeRadius * holeRadius)
         let n = Double(max(count, 40))
         let raw = 2 * (annulus / (n * Double.pi)).squareRoot() * 0.62
-        return min(13, max(3, (raw * 10).rounded() / 10))
+        return min(maxDotDiameter, max(3, (raw * 10).rounded() / 10))
     }
 
     /// 0 on day 1, 1 from day 90 onward.
@@ -62,19 +65,31 @@ enum SpiralGeometry {
     }
 
     /// Radial extent of the dot band for a given day.
+    ///
+    /// The band bottoms out at 64, not at `holeRadius`. Measured off a real
+    /// day-90 capture, dots placed from 44 sat under the centre veil and
+    /// rendered as brown mud — `#603E21` at 38% brightness — because the veil
+    /// was solid to 58 and faded to 82. That swallowed the whole ember end of
+    /// the ramp, which is the emotionally loaded part: the innermost dots are
+    /// the user's first and hardest days.
     static func band(day: Int) -> (inner: Double, outer: Double) {
         let p = bloom(day: day)
         return (
-            inner: 92 - (92 - holeRadius) * p,
+            inner: 92 - (92 - 64) * p,
             outer: 92 + (maxRadius - 92) * p
         )
     }
 
     /// The radial fade the day numeral sits on, so inner dots don't collide
-    /// with the text. Shrinks with the bloom.
+    /// with the text.
+    ///
+    /// Derived from the band rather than tuned independently, so that **no dot
+    /// can ever sit under the veil** — the fade reaches zero opacity a full dot
+    /// radius before the innermost dot's edge. Enforced by
+    /// `testNoDotIsEverTouchedByTheVeil`.
     static func veil(day: Int) -> (solid: Double, fade: Double) {
-        let p = bloom(day: day)
-        return (solid: 34 + 24 * p, fade: 48 + 34 * p)
+        let fade = band(day: day).inner - maxDotDiameter / 2
+        return (solid: fade * 0.75, fade: fade)
     }
 
     static func dots(forDay day: Int) -> [Dot] {

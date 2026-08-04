@@ -67,8 +67,13 @@ struct ProductConfig: Sendable {
 
     /// "cigarettes" / "pods" / "pouches"
     let unitNoun: String
+    /// "cigarette" / "pod" / "pouch" — English plurals are irregular enough
+    /// ("pouches") that trimming an "s" is not safe.
+    let unitNounSingular: String
     /// "packs" / "pods" / "tins"
     let containerNoun: String
+    /// "pack" / "pod" / "tin"
+    let containerNounSingular: String
 
     /// Completes "≈ €289 a month …" on the price step.
     let burnVerb: String
@@ -82,6 +87,16 @@ struct ProductConfig: Sendable {
 
     /// "PACKS NOT BOUGHT"
     var tallyLabel: String { "\(containerNoun.uppercased()) NOT BOUGHT" }
+
+    /// "1 cigarette" vs "31 cigarettes". The stats row and The Bill both read
+    /// wrong on day one without this.
+    func units(_ count: Int) -> String {
+        "\(count.formatted(.number)) \(count == 1 ? unitNounSingular : unitNoun)"
+    }
+
+    func containers(_ count: Int) -> String {
+        "\(count.formatted(.number)) \(count == 1 ? containerNounSingular : containerNoun)"
+    }
 
     /// "CIGARETTES A DAY"
     var amountUnitLabel: String {
@@ -100,7 +115,9 @@ struct ProductConfig: Sendable {
             maxAmount: 60,
             unitsPerContainer: 20,
             unitNoun: "cigarettes",
+            unitNounSingular: "cigarette",
             containerNoun: "packs",
+            containerNounSingular: "pack",
             burnVerb: "going up in smoke",
             tallyGlyph: TallyGlyph(width: 15, height: 21, cornerRadius: 2),
             priceRelativeToPack: 1.0
@@ -118,7 +135,9 @@ struct ProductConfig: Sendable {
             maxAmount: 28,
             unitsPerContainer: 1,
             unitNoun: "pods",
+            unitNounSingular: "pod",
             containerNoun: "pods",
+            containerNounSingular: "pod",
             burnVerb: "vanishing into vapour",
             tallyGlyph: TallyGlyph(width: 9, height: 22, cornerRadius: 5),
             // €6.00 against a €9.50 reference pack
@@ -137,7 +156,9 @@ struct ProductConfig: Sendable {
             maxAmount: 40,
             unitsPerContainer: 20,
             unitNoun: "pouches",
+            unitNounSingular: "pouch",
             containerNoun: "tins",
+            containerNounSingular: "tin",
             burnVerb: "disappearing under your lip",
             tallyGlyph: TallyGlyph(width: 18, height: 18, cornerRadius: nil),
             // €5.50 against a €9.50 reference pack

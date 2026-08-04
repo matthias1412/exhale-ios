@@ -36,30 +36,37 @@ final class SpiralGeometryTests: XCTestCase {
         XCTAssertEqual(SpiralGeometry.bloom(day: 1), 0, accuracy: 0.0001)
 
         let band = SpiralGeometry.band(day: 90)
-        XCTAssertEqual(band.inner, SpiralGeometry.holeRadius, accuracy: 0.0001)
+        XCTAssertEqual(band.inner, 64, accuracy: 0.0001)
         XCTAssertEqual(band.outer, SpiralGeometry.maxRadius, accuracy: 0.0001)
     }
 
-    /// The bug the bloom exists to fix: on day 1 the spec put the only dot out
-    /// at the rim. It should sit clear of the numeral instead.
-    func testEarlyDotsAreVisibleAndClearOfTheCentreLabel() {
-        for day in 1...14 {
+    /// The defect this guards against was measured off a real capture: dots
+    /// placed under the centre veil rendered as brown mud (`#603E21`, 38%
+    /// brightness), swallowing the entire ember end of the ramp.
+    ///
+    /// Every dot, at every streak length, must be clear of the veil entirely —
+    /// not merely clear of its solid core.
+    func testNoDotIsEverTouchedByTheVeil() {
+        for day in [1, 2, 7, 14, 30, 60, 89, 90, 91, 365, 730, 1825, 3650] {
             let veil = SpiralGeometry.veil(day: day)
             for dot in SpiralGeometry.dots(forDay: day) {
                 let dx = dot.position.x - SpiralGeometry.centre.x
                 let dy = dot.position.y - SpiralGeometry.centre.y
-                let radius = (dx * dx + dy * dy).squareRoot()
+                let innerEdge = (dx * dx + dy * dy).squareRoot() - dot.diameter / 2
 
-                XCTAssertGreaterThan(
-                    radius, veil.solid,
-                    "day \(day): a dot sits inside the solid centre veil and is invisible"
-                )
-                XCTAssertLessThanOrEqual(
-                    radius, SpiralGeometry.maxRadius,
-                    "day \(day): a dot escaped the disc"
+                XCTAssertGreaterThanOrEqual(
+                    innerEdge, veil.fade - 0.01,
+                    "day \(day): a dot overlaps the veil and will render dimmed"
                 )
             }
         }
+    }
+
+    /// The numeral needs room. "999" at 52pt is roughly 85pt wide, so the solid
+    /// core must clear ~43pt at full bloom.
+    func testVeilStillCoversTheNumeral() {
+        XCTAssertGreaterThanOrEqual(SpiralGeometry.veil(day: 90).solid, 42)
+        XCTAssertGreaterThanOrEqual(SpiralGeometry.veil(day: 3650).solid, 42)
     }
 
     /// Two different limits, because year markers are deliberately 1.6x the
