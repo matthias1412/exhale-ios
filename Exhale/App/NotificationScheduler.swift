@@ -136,7 +136,7 @@ final class NotificationScheduler {
         if let plan = state.plan,
            let next = Milestones.upcoming(
                for: plan.product,
-               hoursElapsed: Progress(plan: plan, now: now).hoursElapsed,
+               hoursElapsed: QuitProgress(plan: plan, now: now).hoursElapsed,
                limit: 1
            ).first {
             content.title = "\(next.when) — \(next.title)"

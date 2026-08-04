@@ -21,7 +21,7 @@ import SwiftUI
 /// derived from what the user typed. That's a design position, and it also
 /// keeps the paywall on the right side of App Store review.
 struct PaywallAnchor: View {
-    let progress: Progress
+    let progress: QuitProgress
     let plan: QuitPlan
     let offer: SubscriptionOffer?
     let now: Date

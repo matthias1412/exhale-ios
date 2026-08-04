@@ -10,8 +10,8 @@ final class PaywallTests: XCTestCase {
                  quitDate: Date(timeIntervalSince1970: 1_700_000_000))
     }
 
-    private func progress(_ plan: QuitPlan) -> Progress {
-        Progress(plan: plan, now: Date(timeIntervalSince1970: 1_700_000_000))
+    private func progress(_ plan: QuitPlan) -> QuitProgress {
+        QuitProgress(plan: plan, now: Date(timeIntervalSince1970: 1_700_000_000))
     }
 
     /// The annual figure is the persuasive one, so it had better be right.

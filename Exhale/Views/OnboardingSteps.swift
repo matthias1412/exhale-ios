@@ -67,7 +67,7 @@ struct PriceStep: View {
         if let draft = model.draft {
             let config = draft.config
             let step = Currencies.priceStep(for: draft.currencyCode)
-            let progress = Progress(plan: draft, now: model.clock.now)
+            let progress = QuitProgress(plan: draft, now: model.clock.now)
 
             VStack(alignment: .leading, spacing: 14) {
                 Text(config.priceQuestion)
@@ -302,7 +302,7 @@ struct PillButton: View {
 /// Every number here is derived from what the user just typed, in the currency
 /// they chose. Nothing is invented, and nothing is converted.
 struct BurnReadout: View {
-    let progress: Progress
+    let progress: QuitProgress
     let plan: QuitPlan
     let verb: String
 

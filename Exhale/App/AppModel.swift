@@ -92,8 +92,8 @@ final class AppModel {
 
     var plan: QuitPlan? { state.plan }
 
-    var progress: Progress? {
-        state.plan.map { Progress(plan: $0, now: clock.now) }
+    var progress: QuitProgress? {
+        state.plan.map { QuitProgress(plan: $0, now: clock.now) }
     }
 
     /// "Day 90 of your quit, 1,350 cigarettes avoided" — what VoiceOver reads

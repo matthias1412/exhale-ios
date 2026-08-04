@@ -40,7 +40,7 @@ struct TodayScreen: View {
 
 struct StatsRow: View {
     @Environment(AppModel.self) private var model
-    let progress: Progress
+    let progress: QuitProgress
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {

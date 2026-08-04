@@ -37,7 +37,7 @@ struct QuitPlan: Codable, Equatable, Sendable {
 ///    the streak reads the way people actually talk about it.
 ///  - **Everything else** runs from the exact quit instant, because the money
 ///    should tick smoothly and the body doesn't heal on calendar boundaries.
-struct Progress: Equatable, Sendable {
+struct QuitProgress: Equatable, Sendable {
 
     let dayNumber: Int
     let elapsed: TimeInterval

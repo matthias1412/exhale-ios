@@ -25,7 +25,7 @@ struct BillScreen: View {
         .scrollIndicators(.hidden)
     }
 
-    private func receipt(plan: QuitPlan, progress: Progress) -> some View {
+    private func receipt(plan: QuitPlan, progress: QuitProgress) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             moneyBlock(plan: plan, progress: progress)
@@ -64,7 +64,7 @@ struct BillScreen: View {
         }
     }
 
-    private func moneyBlock(plan: QuitPlan, progress: Progress) -> some View {
+    private func moneyBlock(plan: QuitPlan, progress: QuitProgress) -> some View {
         let money = progress.moneyKept.moneyString(plan.currencyCode)
         return VStack(alignment: .leading, spacing: 0) {
             Text("KEPT IN YOUR POCKET")
@@ -100,13 +100,13 @@ struct BillScreen: View {
     }
 
     private func sinceDate(_ plan: QuitPlan) -> String {
-        let progress = Progress(plan: plan, now: model.clock.now)
+        let progress = QuitProgress(plan: plan, now: model.clock.now)
         return progress.dayNumber > 300
             ? plan.quitDate.formatted(.dateTime.day().month(.abbreviated).year())
             : plan.quitDate.formatted(.dateTime.day().month(.abbreviated))
     }
 
-    private func rows(plan: QuitPlan, progress: Progress) -> some View {
+    private func rows(plan: QuitPlan, progress: QuitProgress) -> some View {
         VStack(spacing: 0) {
             ForEach(billRows(plan: plan, progress: progress), id: \.label) { row in
                 LeaderRow(label: row.label, value: row.value)
@@ -115,7 +115,7 @@ struct BillScreen: View {
         .padding(.top, 20)
     }
 
-    private func billRows(plan: QuitPlan, progress: Progress) -> [(label: String, value: String)] {
+    private func billRows(plan: QuitPlan, progress: QuitProgress) -> [(label: String, value: String)] {
         let config = plan.config
         var rows: [(String, String)] = [
             (config.unitNoun.capitalisedFirst + " avoided",
