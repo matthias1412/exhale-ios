@@ -57,6 +57,31 @@ echo "Capturing ${#SEEDS[@]} seeds on ${#DEVICES[@]} device(s)"
 
 mkdir -p "$OUT_ROOT"
 
+# macOS has no coreutils `timeout`, and simulator boot hangs indefinitely often
+# enough to matter: one run sat in `bootstatus` for 23 minutes at 10x billing
+# before being killed. Nothing here is allowed to block forever.
+with_timeout() {
+  local secs="$1"; shift
+  "$@" &
+  local pid=$! waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$secs" ]; then
+      echo "::warning::timed out after ${secs}s: $*"
+      kill -9 "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      return 124
+    fi
+    sleep 2
+    waited=$((waited + 2))
+  done
+  wait "$pid"
+}
+
+# Start from a known state — a leftover booted simulator is a common cause of
+# the hang.
+echo "Shutting down any already-booted simulators"
+with_timeout 90 xcrun simctl shutdown all || true
+
 for DEVICE in "${DEVICES[@]}"; do
   echo "::group::$DEVICE"
   SAFE_NAME="${DEVICE// /-}"
@@ -71,8 +96,21 @@ for DEVICE in "${DEVICES[@]}"; do
     continue
   fi
 
-  xcrun simctl boot "$UDID" || true
-  xcrun simctl bootstatus "$UDID" -b
+  echo "Booting $DEVICE ($UDID)"
+  if ! with_timeout 240 xcrun simctl boot "$UDID"; then
+    echo "  boot returned non-zero or timed out; checking status anyway"
+  fi
+  if ! with_timeout 240 xcrun simctl bootstatus "$UDID" -b; then
+    echo "::warning::$DEVICE did not report booted in time — retrying once"
+    with_timeout 90 xcrun simctl shutdown "$UDID" || true
+    with_timeout 240 xcrun simctl boot "$UDID" || true
+    if ! with_timeout 240 xcrun simctl bootstatus "$UDID" -b; then
+      echo "::error::$DEVICE would not boot; skipping it"
+      echo "::endgroup::"
+      continue
+    fi
+  fi
+  echo "  booted"
 
   # Identical status bar every run, so captures are diffable and usable as
   # store assets.
@@ -82,19 +120,27 @@ for DEVICE in "${DEVICES[@]}"; do
     --cellularMode active --cellularBars 4 \
     --batteryState charged --batteryLevel 100
 
-  xcrun simctl install "$UDID" "$APP_PATH"
+  with_timeout 180 xcrun simctl install "$UDID" "$APP_PATH" || {
+    echo "::error::install failed on $DEVICE"; echo "::endgroup::"; continue
+  }
 
   for SEED in "${SEEDS[@]}"; do
-    xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
-    xcrun simctl launch "$UDID" "$BUNDLE_ID" -seed "$SEED" >/dev/null
+    with_timeout 30 xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+    if ! with_timeout 90 xcrun simctl launch "$UDID" "$BUNDLE_ID" -seed "$SEED" >/dev/null; then
+      echo "::error::launch failed for seed '$SEED'"
+      continue
+    fi
     # Long enough for the spiral's 1.1s reveal to settle.
     sleep 3
-    xcrun simctl io "$UDID" screenshot --type=png "$OUT_DIR/$SEED.png" >/dev/null
-    echo "  captured $SEED"
+    if with_timeout 60 xcrun simctl io "$UDID" screenshot --type=png "$OUT_DIR/$SEED.png" >/dev/null; then
+      echo "  captured $SEED"
+    else
+      echo "::error::screenshot failed for seed '$SEED'"
+    fi
   done
 
-  xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
-  xcrun simctl shutdown "$UDID" || true
+  with_timeout 30 xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+  with_timeout 90 xcrun simctl shutdown "$UDID" || true
   echo "::endgroup::"
 done
 

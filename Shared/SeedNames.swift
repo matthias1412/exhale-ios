@@ -58,6 +58,7 @@ enum SeedNames {
         "paywall",
         "today-day90",
         "bill-cigarettes",
+        "bill-tally-x10",
         "milestones-early",
         "sos-breathe-in",
         "settings"
