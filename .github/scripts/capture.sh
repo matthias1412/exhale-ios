@@ -8,7 +8,7 @@
 set -euo pipefail
 
 BUNDLE_ID="com.matthias.exhale"
-APP_PATH="$(find build/Build/Products -name 'Exhale.app' -maxdepth 3 | head -1)"
+APP_PATH="$(find build/Build/Products -maxdepth 3 -name 'Exhale.app' | head -1)"
 OUT_ROOT="artifacts/screens"
 
 if [[ -z "$APP_PATH" ]]; then
@@ -22,29 +22,36 @@ echo "Using app at $APP_PATH"
 # than trusting a hardcoded list. Three shapes that actually differ: the largest
 # Pro Max, the smallest current phone, and the plain flagship — short screen
 # *and* a Dynamic Island, which is where overlays collide.
+DEVICES=()
 if [[ "${DEVICE_SET:-one}" == "all" ]]; then
-  mapfile -t DEVICES < <(printf '%s\n' "${SIM_ALL:?select-toolchain.sh did not run}")
+  while IFS= read -r name; do
+    [ -n "${name// /}" ] && DEVICES+=("$name")
+  done <<< "${SIM_ALL:?select-toolchain.sh did not run}"
 else
   DEVICES=("${SIM_ONE:?select-toolchain.sh did not run}")
 fi
-# Drop blank entries the multi-line env var may have left behind.
-FILTERED=()
-for d in "${DEVICES[@]}"; do
-  [[ -n "${d// /}" ]] && FILTERED+=("$d")
-done
-DEVICES=("${FILTERED[@]}")
 
 # --- seeds -----------------------------------------------------------------
 extract_seeds() {
   grep -oE '"[a-z0-9][a-z0-9-]*"' Shared/SeedNames.swift | tr -d '"' | sort -u
 }
+SEEDS=()
 if [[ "${SEED_SET:-smoke}" == "all" ]]; then
-  mapfile -t SEEDS < <(extract_seeds)
+  while IFS= read -r seed; do
+    [ -n "$seed" ] && SEEDS+=("$seed")
+  done < <(extract_seeds)
 else
-  mapfile -t SEEDS < <(
+  while IFS= read -r seed; do
+    [ -n "$seed" ] && SEEDS+=("$seed")
+  done < <(
     sed -n '/static let smoke/,/\]/p' Shared/SeedNames.swift \
       | grep -oE '"[a-z0-9][a-z0-9-]*"' | tr -d '"'
   )
+fi
+
+if [[ ${#SEEDS[@]} -eq 0 ]]; then
+  echo "::error::extracted no seed names from Shared/SeedNames.swift"
+  exit 1
 fi
 echo "Capturing ${#SEEDS[@]} seeds on ${#DEVICES[@]} device(s)"
 

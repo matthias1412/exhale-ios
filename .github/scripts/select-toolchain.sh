@@ -32,7 +32,12 @@ xcrun simctl list devices available | grep -E '^[[:space:]]+iPhone' || true
 echo "::endgroup::"
 
 # All available iPhone device names, deduped, newest model numbers last.
-mapfile -t IPHONES < <(
+# NOTE: macOS ships bash 3.2 as /bin/bash — no `mapfile`, no negative array
+# indices. Everything here must stay 3.2-compatible.
+IPHONES=()
+while IFS= read -r name; do
+  [ -n "$name" ] && IPHONES+=("$name")
+done < <(
   xcrun simctl list devices available \
     | grep -oE '^[[:space:]]+iPhone [^(]+' \
     | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
