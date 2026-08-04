@@ -54,6 +54,10 @@ final class AppModel {
     var onboardingStep = 0
     /// Draft plan being assembled during onboarding.
     var draft: QuitPlan?
+    /// Which date picker the quit-moment step has open. Lives here rather than
+    /// in @State so the screenshot harness can seed it — an overlay step that
+    /// can't be captured is an overlay step that hides bugs.
+    var quitPickerMode: QuitPickerMode = .none
 
     let clock: AppClock
     /// Behind a protocol so seeded runs and tests never touch StoreKit.
@@ -103,6 +107,10 @@ final class AppModel {
         let units = p.unitsAvoided.formatted(.number)
         return "Day \(p.dayNumber) of your quit, \(units) \(plan.config.unitNoun) avoided"
     }
+}
+
+enum QuitPickerMode: String, Sendable {
+    case none, earlierToday, pickDate
 }
 
 struct BannerContent: Equatable, Sendable {

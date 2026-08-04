@@ -125,8 +125,17 @@ enum Seed {
             // The annual loss figure, which is the number that lands.
             return onboarding(step: 2, product: .pouches)
 
-        case "onboard-quit-picker":
-            return onboarding(step: 3, product: .cigarettes)
+        case "onboard-quit-time":
+            // Step 4 with the time wheel open — an overlay step that was
+            // previously unreachable from a seed and therefore never captured.
+            return onboarding(step: 3, product: .cigarettes) {
+                $0.quitPickerMode = .earlierToday
+            }
+
+        case "onboard-quit-date":
+            return onboarding(step: 3, product: .cigarettes) {
+                $0.quitPickerMode = .pickDate
+            }
 
         // Today — the bloom across its whole range.
         case "today-day1":
@@ -190,10 +199,15 @@ enum Seed {
         }
     }
 
-    private static func onboarding(step: Int, product: NicotineProduct) -> AppModel {
+    private static func onboarding(
+        step: Int,
+        product: NicotineProduct,
+        configure: @escaping (AppModel) -> Void = { _ in }
+    ) -> AppModel {
         make(phase: .onboarding) { model in
             model.onboardingStep = step
             model.draft = plan(product, day: 1)
+            configure(model)
         }
     }
 

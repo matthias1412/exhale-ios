@@ -150,10 +150,9 @@ struct CurrencyChips: View {
 /// days in should not be told to start again at one.
 struct QuitMomentStep: View {
     @Environment(AppModel.self) private var model
-    @State private var mode: Mode = .none
     @State private var chosen = Date()
 
-    enum Mode { case none, earlierToday, pickDate }
+    private var mode: QuitPickerMode { model.quitPickerMode }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -172,14 +171,14 @@ struct QuitMomentStep: View {
 
                 PillButton("Earlier today", style: .outline) {
                     chosen = model.clock.now
-                    mode = .earlierToday
+                    model.quitPickerMode = .earlierToday
                 }
 
                 PillButton("I quit before today", style: .quiet) {
                     chosen = Calendar.current.date(
                         byAdding: .day, value: -7, to: model.clock.now
                     ) ?? model.clock.now
-                    mode = .pickDate
+                    model.quitPickerMode = .pickDate
                 }
             }
             .padding(.top, 30)
