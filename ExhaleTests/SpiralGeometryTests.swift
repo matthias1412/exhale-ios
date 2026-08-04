@@ -121,6 +121,7 @@ final class SpiralGeometryTests: XCTestCase {
     }
 }
 
+@MainActor
 final class SeedTests: XCTestCase {
     /// Every advertised seed must actually resolve — otherwise the screenshot
     /// job silently captures the wrong screen.

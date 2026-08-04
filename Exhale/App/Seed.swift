@@ -7,6 +7,7 @@ import Foundation
 /// Seeded runs are deterministic: the clock is frozen at `referenceNow`, so a
 /// capture taken today and one taken in six months are byte-identical and the
 /// money figure never drifts between runs.
+@MainActor
 enum Seed {
 
     /// 15 June 2026, 09:41 — the traditional hour, matching the status bar
