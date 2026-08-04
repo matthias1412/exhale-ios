@@ -39,10 +39,10 @@ struct AppClock: Sendable {
 @Observable
 final class AppModel {
 
-    // Persisted
-    var state: PersistedState {
-        didSet { if persistenceEnabled, state != oldValue { store.save(state) } }
-    }
+    /// Persisted. Written to disk by `persist()` rather than a `didSet` — the
+    /// `@Observable` macro rewrites stored properties into computed accessors,
+    /// and property observers on them are not something to rely on.
+    var state: PersistedState
 
     // Ephemeral — never written to disk
     var tab: MainTab = .today
@@ -74,6 +74,13 @@ final class AppModel {
     static func loaded() -> AppModel {
         let store = StateStore.applicationSupport
         return AppModel(state: store.load() ?? PersistedState(), store: store)
+    }
+
+    /// Called from a single `.onChange(of: model.state)` at the root, so no
+    /// mutation site has to remember to save. Seeded runs never write.
+    func persist() {
+        guard persistenceEnabled else { return }
+        store.save(state)
     }
 
     var plan: QuitPlan? { state.plan }

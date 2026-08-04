@@ -49,6 +49,8 @@ struct RootView: View {
             }
         }
         .foregroundStyle(Palette.textPrimary)
+        // One save point for the whole app, so no mutation site can forget.
+        .onChange(of: model.state) { _, _ in model.persist() }
     }
 }
 

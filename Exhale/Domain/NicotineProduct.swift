@@ -8,7 +8,16 @@ enum NicotineProduct: String, Codable, CaseIterable, Identifiable, Sendable {
     case pouches
 
     var id: String { rawValue }
-    var config: ProductConfig { ProductConfig.all[self]! }
+
+    /// Switched rather than looked up in a dictionary, so there is no force
+    /// unwrap and the compiler proves every case is covered.
+    var config: ProductConfig {
+        switch self {
+        case .cigarettes: ProductConfig.cigarettes
+        case .vape: ProductConfig.vape
+        case .pouches: ProductConfig.pouches
+        }
+    }
 }
 
 /// How often the user thinks about their consumption. Vape is the odd one out:
@@ -79,8 +88,7 @@ struct ProductConfig: Sendable {
         "\(unitNoun.uppercased()) A \(period == .day ? "DAY" : "WEEK")"
     }
 
-    static let all: [NicotineProduct: ProductConfig] = [
-        .cigarettes: ProductConfig(
+    static let cigarettes = ProductConfig(
             product: .cigarettes,
             displayName: "Cigarettes",
             pickerHint: "packs, rollies",
@@ -96,8 +104,9 @@ struct ProductConfig: Sendable {
             burnVerb: "going up in smoke",
             tallyGlyph: TallyGlyph(width: 15, height: 21, cornerRadius: 2),
             priceRelativeToPack: 1.0
-        ),
-        .vape: ProductConfig(
+    )
+
+    static let vape = ProductConfig(
             product: .vape,
             displayName: "Vape",
             pickerHint: "pods, disposables",
@@ -114,8 +123,9 @@ struct ProductConfig: Sendable {
             tallyGlyph: TallyGlyph(width: 9, height: 22, cornerRadius: 5),
             // €6.00 against a €9.50 reference pack
             priceRelativeToPack: 6.0 / 9.5
-        ),
-        .pouches: ProductConfig(
+    )
+
+    static let pouches = ProductConfig(
             product: .pouches,
             displayName: "Nicotine pouches",
             pickerHint: "snus, pouches",
@@ -132,6 +142,5 @@ struct ProductConfig: Sendable {
             tallyGlyph: TallyGlyph(width: 18, height: 18, cornerRadius: nil),
             // €5.50 against a €9.50 reference pack
             priceRelativeToPack: 5.5 / 9.5
-        )
-    ]
+    )
 }

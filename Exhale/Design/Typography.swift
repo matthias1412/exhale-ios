@@ -22,8 +22,14 @@ extension Font {
         weight: Font.Weight = .regular,
         relativeTo style: Font.TextStyle = .body
     ) -> Font {
-        .custom(weight >= .semibold ? "Archivo-SemiBold" : "Archivo-Regular",
-                size: size, relativeTo: style)
+        // Font.Weight isn't Comparable, so match rather than compare.
+        let face: String
+        switch weight {
+        case .semibold, .bold, .heavy, .black: face = "Archivo-SemiBold"
+        case .medium: face = "Archivo-Medium"
+        default: face = "Archivo-Regular"
+        }
+        return .custom(face, size: size, relativeTo: style)
     }
 
     /// The money figure and row values on The Bill.

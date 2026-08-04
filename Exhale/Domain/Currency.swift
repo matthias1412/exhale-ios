@@ -36,7 +36,7 @@ enum Currencies {
 
     /// Typical shelf price of a 20-cigarette pack, used only as the initial
     /// stepper value. Editable by the user on the very next tap.
-    private static let referencePackPrice: [String: Double] = [
+    private static let referencePackPrices: [String: Double] = [
         "EUR": 9.50, "USD": 9.00, "GBP": 16.00, "CHF": 9.50,
         "DKK": 65, "NOK": 150, "SEK": 90, "ISK": 1800,
         "PLN": 20, "CZK": 160, "CAD": 18, "AUD": 45,
@@ -46,7 +46,7 @@ enum Currencies {
     /// Falls back to 10 units for currencies we have no reference for. That is
     /// a starting position, not a claim about local prices.
     static func referencePackPrice(for code: String) -> Double {
-        referencePackPrice[code.uppercased()] ?? 10
+        referencePackPrices[code.uppercased()] ?? 10
     }
 
     static func defaultPrice(for product: NicotineProduct, currency: String) -> Decimal {
