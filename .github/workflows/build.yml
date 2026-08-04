@@ -21,21 +21,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+      # Discovers Xcode and simulator names rather than hardcoding them —
+      # runner images rename devices between releases.
+      - name: Select toolchain
+        run: bash .github/scripts/select-toolchain.sh
 
       - name: Generate project
         run: |
           brew install xcodegen
           xcodegen generate
 
+      # Generic destination: compiles for the simulator without needing any
+      # particular device to exist.
       - name: Build
         run: |
           set -o pipefail
           xcodebuild build \
             -scheme Exhale \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
@@ -46,7 +50,7 @@ jobs:
           xcodebuild test \
             -scheme Exhale \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination "platform=iOS Simulator,name=$SIM_ONE" \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 

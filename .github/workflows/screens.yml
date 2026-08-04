@@ -24,8 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+      - name: Select toolchain
+        run: bash .github/scripts/select-toolchain.sh
 
       - name: Generate project
         run: |
@@ -40,11 +40,7 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcpretty || xcodebuild build \
-              -scheme Exhale -configuration Debug \
-              -destination 'generic/platform=iOS Simulator' \
-              -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Capture
         env:

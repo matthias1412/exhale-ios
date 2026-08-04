@@ -18,14 +18,21 @@ fi
 echo "Using app at $APP_PATH"
 
 # --- devices ---------------------------------------------------------------
-# Three shapes that actually differ: the largest Pro Max, the smallest current
-# phone, and the plain flagship — short screen *and* a Dynamic Island, which is
-# where overlays collide.
+# Names come from select-toolchain.sh, which reads them off the runner rather
+# than trusting a hardcoded list. Three shapes that actually differ: the largest
+# Pro Max, the smallest current phone, and the plain flagship — short screen
+# *and* a Dynamic Island, which is where overlays collide.
 if [[ "${DEVICE_SET:-one}" == "all" ]]; then
-  DEVICES=("iPhone 17 Pro Max" "iPhone 16e" "iPhone 17")
+  mapfile -t DEVICES < <(printf '%s\n' "${SIM_ALL:?select-toolchain.sh did not run}")
 else
-  DEVICES=("iPhone 17")
+  DEVICES=("${SIM_ONE:?select-toolchain.sh did not run}")
 fi
+# Drop blank entries the multi-line env var may have left behind.
+FILTERED=()
+for d in "${DEVICES[@]}"; do
+  [[ -n "${d// /}" ]] && FILTERED+=("$d")
+done
+DEVICES=("${FILTERED[@]}")
 
 # --- seeds -----------------------------------------------------------------
 extract_seeds() {
