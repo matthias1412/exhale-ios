@@ -115,6 +115,16 @@ enum Seed {
             return make(phase: .paywall, plan: plan(.cigarettes, day: 1),
                         subscriptions: MockSubscriptionGate(state: .loading))
 
+        case "paywall-foreign-currency":
+            // Store charges in EUR, habit priced in GBP. The payback comparison
+            // must vanish rather than divide across currencies.
+            return make(phase: .paywall,
+                        plan: plan(.cigarettes, day: 1, currency: "GBP"))
+
+        case "onboard-price-yearly":
+            // The annual loss figure, which is the number that lands.
+            return onboarding(step: 2, product: .pouches)
+
         case "onboard-quit-picker":
             return onboarding(step: 3, product: .cigarettes)
 

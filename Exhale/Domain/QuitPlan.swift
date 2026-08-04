@@ -44,6 +44,10 @@ struct Progress: Equatable, Sendable {
     let hoursElapsed: Double
     let moneyKept: Decimal
     let monthlyBurn: Decimal
+    /// The number that actually lands. People discount a daily cost to nothing
+    /// and shrug at a monthly one; the annual figure is the one that reads as
+    /// a holiday they didn't take.
+    let yearlyBurn: Decimal
     let dailyCost: Decimal
     let unitsAvoided: Int
     let containersAvoided: Int
@@ -72,6 +76,7 @@ struct Progress: Equatable, Sendable {
         let elapsedDays = elapsed / 86_400
         self.moneyKept = dailyCost * Decimal(elapsedDays)
         self.monthlyBurn = dailyCost * Decimal(30.4)
+        self.yearlyBurn = dailyCost * 365
 
         // Nudge off the floating-point cliff before flooring. 5 pods/week over
         // exactly 7 days is 4.999999… in binary, which would show "4 pods

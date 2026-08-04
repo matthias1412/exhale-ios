@@ -22,8 +22,15 @@ struct PaywallScreen: View {
                 .padding(.top, 22)
 
             if let plan = model.plan, let progress = model.progress {
-                planSummary(plan: plan, progress: progress)
-                offers(progress: progress, plan: plan)
+                PaywallAnchor(
+                    progress: progress,
+                    plan: plan,
+                    offer: yearlyOffer,
+                    now: model.clock.now
+                )
+                .padding(.top, 20)
+
+                offers(plan: plan)
             }
 
             Spacer(minLength: 0)
@@ -34,40 +41,8 @@ struct PaywallScreen: View {
         .task { await model.subscriptions.load() }
     }
 
-    private func planSummary(plan: QuitPlan, progress: Progress) -> some View {
-        VStack(spacing: 10) {
-            summaryRow("Quitting", plan.config.displayName, Palette.textPrimary)
-            summaryRow(
-                "Your habit",
-                "\(plan.amount) \(plan.config.unitNoun) \(plan.config.period == .day ? "a day" : "a week")",
-                Palette.textPrimary
-            )
-            summaryRow(
-                "It costs you",
-                "\(progress.monthlyBurn.moneyString(plan.currencyCode)) / month",
-                Palette.emberSoft
-            )
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Palette.cardBorder, lineWidth: 1)
-        )
-        .padding(.top, 18)
-    }
-
-    private func summaryRow(_ label: String, _ value: String, _ colour: Color) -> some View {
-        HStack {
-            Text(label).font(.spaceGrotesk(14)).foregroundStyle(Palette.textMuted)
-            Spacer()
-            Text(value).font(.spaceGrotesk(14, weight: .bold)).foregroundStyle(colour)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
     @ViewBuilder
-    private func offers(progress: Progress, plan: QuitPlan) -> some View {
+    private func offers(plan: QuitPlan) -> some View {
         switch model.subscriptions.state {
         case .loading:
             // A placeholder, never a guessed price.
@@ -82,18 +57,6 @@ struct PaywallScreen: View {
             .accessibilityLabel("Loading prices")
 
         case .ready(let list):
-            if let yearly = list.first(where: { $0.term == .yearly }) {
-                Text("At that rate, Exhale pays for itself in ")
-                    .font(.spaceGrotesk(13.5))
-                    .foregroundStyle(Palette.textMuted)
-                + Text("\(progress.paybackDays(yearlyPrice: yearly.amount)) days")
-                    .font(.spaceGrotesk(13.5, weight: .bold))
-                    .foregroundStyle(Palette.accent)
-                + Text(" of not buying.")
-                    .font(.spaceGrotesk(13.5))
-                    .foregroundStyle(Palette.textMuted)
-            }
-
             VStack(spacing: 10) {
                 ForEach(list) { offer in
                     OfferRow(offer: offer, isSelected: selected == offer.term) {
@@ -138,6 +101,11 @@ struct PaywallScreen: View {
             .font(.spaceGrotesk(12))
             .foregroundStyle(Palette.textFaint.opacity(0.7))
         }
+    }
+
+    private var yearlyOffer: SubscriptionOffer? {
+        guard case .ready(let list) = model.subscriptions.state else { return nil }
+        return list.first { $0.term == .yearly }
     }
 
     private var primaryTitle: String {

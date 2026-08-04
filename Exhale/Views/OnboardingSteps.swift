@@ -103,11 +103,8 @@ struct PriceStep: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 30)
 
-                Text("≈ \(progress.monthlyBurn.moneyString(draft.currencyCode)) a month \(config.burnVerb)")
-                    .font(.spaceGrotesk(14))
-                    .foregroundStyle(Palette.emberSoft)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 16)
+                BurnReadout(progress: progress, plan: draft, verb: config.burnVerb)
+                    .padding(.top, 20)
             }
             .padding(.top, 34)
         }
@@ -291,5 +288,47 @@ struct PillButton: View {
         case .outline: Capsule().stroke(Palette.stepperBorder, lineWidth: 1.5)
         case .quiet: Capsule().stroke(Palette.textPrimary.opacity(0.12), lineWidth: 1)
         }
+    }
+}
+
+
+/// What the habit costs, framed as a loss rather than a potential saving.
+///
+/// The annual figure carries the weight: a daily cost gets discounted to
+/// nothing and a monthly one gets shrugged at, but the year total reads as a
+/// holiday that didn't happen. Losses also loom larger than equivalent gains,
+/// so the copy says what nicotine *takes*, not what the user could save.
+///
+/// Every number here is derived from what the user just typed, in the currency
+/// they chose. Nothing is invented, and nothing is converted.
+struct BurnReadout: View {
+    let progress: Progress
+    let plan: QuitPlan
+    let verb: String
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text("≈ \(progress.monthlyBurn.moneyString(plan.currencyCode)) a month \(verb)")
+                .font(.spaceGrotesk(13))
+                .foregroundStyle(Palette.textMuted)
+                .multilineTextAlignment(.center)
+
+            Text(progress.yearlyBurn.moneyString(plan.currencyCode))
+                .font(.spaceGrotesk(36, weight: .bold, relativeTo: .title))
+                .monospacedDigit()
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+                .foregroundStyle(Palette.emberSoft)
+
+            Text("a year, gone")
+                .font(.spaceGrotesk(13))
+                .foregroundStyle(Palette.textMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "About \(progress.monthlyBurn.moneyString(plan.currencyCode)) a month, "
+            + "\(progress.yearlyBurn.moneyString(plan.currencyCode)) a year"
+        )
     }
 }

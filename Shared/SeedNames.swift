@@ -24,8 +24,10 @@ enum SeedNames {
         "onboard-price-vape",
         "onboard-quit-moment",
         "onboard-quit-picker",
+        "onboard-price-yearly",
         "paywall",
-        "paywall-loading"
+        "paywall-loading",
+        "paywall-foreign-currency"
     ]
 
     static let core: [String] = [

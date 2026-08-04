@@ -17,6 +17,11 @@ struct SubscriptionOffer: Identifiable, Equatable, Sendable {
     let localisedPricePerMonth: String?
     /// Raw amount, used only for the "pays for itself in N days" anchor.
     let amount: Decimal
+    /// The currency the *store* charged in — which is not necessarily the
+    /// currency the user priced their habit in. Comparing the two without
+    /// checking this shows a garbage number to anyone whose App Store region
+    /// differs from where they buy cigarettes.
+    let currencyCode: String
     let hasFreeTrial: Bool
     let trialDays: Int
 }
@@ -58,10 +63,12 @@ final class MockSubscriptionGate: SubscriptionGate {
     static let sampleOffers: [SubscriptionOffer] = [
         SubscriptionOffer(id: "exhale.yearly", term: .yearly,
                           localisedPrice: "€29.99", localisedPricePerMonth: "€2.49",
-                          amount: 29.99, hasFreeTrial: true, trialDays: 7),
+                          amount: 29.99, currencyCode: "EUR",
+                          hasFreeTrial: true, trialDays: 7),
         SubscriptionOffer(id: "exhale.monthly", term: .monthly,
                           localisedPrice: "€4.99", localisedPricePerMonth: nil,
-                          amount: 4.99, hasFreeTrial: false, trialDays: 0)
+                          amount: 4.99, currencyCode: "EUR",
+                          hasFreeTrial: false, trialDays: 0)
     ]
 
     func load() async {}
