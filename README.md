@@ -71,12 +71,22 @@ anything to verify.
 - [x] Project, CI, screenshot harness
 - [x] Spiral geometry + logo mark, unit-tested
 - [x] Domain model + economics, unit-tested
-- [x] Today screen
-- [ ] The Bill · Milestones · Settings · Onboarding · Paywall (stubs today)
-- [ ] Local notifications
-- [ ] RevenueCat behind `SubscriptionGate`
-- [ ] Fonts bundled — see [docs/decisions.md](docs/decisions.md)
+- [x] Fonts bundled and verified — a wrong name now fails the build
+- [x] Today
+- [x] The Bill
+- [x] Milestones
+- [x] Settings
+- [x] Local notification scheduling
+- [x] Craving SOS
+- [x] Onboarding step 1 (product picker)
+- [ ] Onboarding steps 2–4 (amount, price, quit moment)
+- [ ] Paywall + RevenueCat behind `SubscriptionGate`
+- [ ] Debug menu (time-travel presets)
 - [ ] App icon
+- [ ] Marketing screenshots at 1284 × 2778
+
+28 unit tests green. All 27 states captured and reviewed — see the Screens
+workflow artifact.
 
 Deliberate deviations from the design handoff, with reasons, are in
 [docs/decisions.md](docs/decisions.md).
