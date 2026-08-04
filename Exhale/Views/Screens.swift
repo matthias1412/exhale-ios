@@ -219,16 +219,6 @@ struct PaywallScreen: View {
     var body: some View { ScreenStub(name: "Paywall", detail: "RevenueCat, mocked") }
 }
 
-struct BillScreen: View {
-    @Environment(AppModel.self) private var model
-    var body: some View {
-        ScreenStub(
-            name: "The Bill",
-            detail: model.progress.map { "\($0.containersAvoided) containers" } ?? ""
-        )
-    }
-}
-
 struct MilestonesScreen: View {
     var body: some View { ScreenStub(name: "Milestones", detail: "") }
 }

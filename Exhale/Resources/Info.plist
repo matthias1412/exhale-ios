@@ -34,10 +34,15 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<!--
-	  UIAppFonts is deliberately absent until the font files are added to
-	  Exhale/Resources/Fonts. Listing missing files only produces runtime
-	  warnings and a silent fallback to the system face. See docs/fonts.md.
-	-->
+	<key>UIAppFonts</key>
+	<array>
+		<string>SpaceGrotesk-Regular.ttf</string>
+		<string>SpaceGrotesk-Medium.ttf</string>
+		<string>SpaceGrotesk-Bold.ttf</string>
+		<string>Archivo-Regular.ttf</string>
+		<string>Archivo-Medium.ttf</string>
+		<string>Archivo-SemiBold.ttf</string>
+		<string>ArchivoBlack-Regular.ttf</string>
+	</array>
 </dict>
 </plist>
