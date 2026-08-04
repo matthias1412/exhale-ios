@@ -79,14 +79,18 @@ anything to verify.
 - [x] Local notification scheduling
 - [x] Craving SOS
 - [x] Onboarding step 1 (product picker)
-- [ ] Onboarding steps 2–4 (amount, price, quit moment)
-- [ ] Paywall + RevenueCat behind `SubscriptionGate`
-- [ ] Debug menu (time-travel presets)
-- [ ] App icon
+- [x] Onboarding steps 2–4 (amount, price, quit moment with backdating)
+- [x] Paywall behind `SubscriptionGate`
+- [x] Debug menu (time-travel presets)
+- [x] App icon
+- [ ] RevenueCat products — needs the dashboard set up, see
+      [docs/testflight-setup.md](docs/testflight-setup.md)
+- [ ] TestFlight — needs your Apple Developer account, same doc
 - [ ] Marketing screenshots at 1284 × 2778
+- [ ] App Store listing
 
-28 unit tests green. All 27 states captured and reviewed — see the Screens
-workflow artifact.
+34 unit tests green. All 32 states captured on three iPhones — largest Pro Max,
+smallest current, and the plain flagship — and reviewed.
 
 Deliberate deviations from the design handoff, with reasons, are in
 [docs/decisions.md](docs/decisions.md).
