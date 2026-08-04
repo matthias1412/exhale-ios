@@ -98,7 +98,13 @@ enum SpiralGeometry {
 
         let size = dotDiameter(count: n)
         let (inner, outer) = band(day: day)
-        let span = outer - inner - size / 2
+
+        // The `size / 2` inset keeps the outermost dot's edge inside `outer`.
+        // In the first fortnight the band is narrower than half a dot, which
+        // made the inset negative and dragged every dot *inward* past
+        // `inner` — under the veil, dimmed. Clamped, the early days simply
+        // sit on a single ring, which is what they should look like anyway.
+        let span = max(0, outer - inner - size / 2)
 
         return (0..<n).map { i in
             let ramp = n > 1 ? Double(i) / Double(n - 1) : 1
