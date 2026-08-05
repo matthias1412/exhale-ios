@@ -31,7 +31,9 @@ platform :ios do
       git_branch: "main"
     )
 
-    sh("xcodegen generate", log: false)
+    # No xcodegen here: fastlane's `sh` runs from fastlane/, where there is no
+    # project.yml, and the workflow has already generated the project two steps
+    # earlier anyway.
 
     # No builds exist yet on the first upload, and without an explicit initial
     # value this raises instead of returning zero.
