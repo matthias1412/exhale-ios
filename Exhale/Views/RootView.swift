@@ -92,7 +92,11 @@ struct RootView: View {
             // Asking before the user has a plan is asking too early, and a
             // permission dialog would land in every screenshot.
             guard !model.clock.isFrozen, model.state.phase == .app else { return }
-            await NotificationScheduler.shared.requestAuthorisation()
+            // Deliberately does NOT request permission here. Firing the system
+            // dialog seconds after the paywall is asking cold, right after
+            // asking for money — and a denial is effectively permanent. It is
+            // asked for on the Milestones tab instead, where the reason for it
+            // is on screen.
             await NotificationScheduler.shared.reschedule(state: model.state)
             model.claimPendingCelebration()
         }

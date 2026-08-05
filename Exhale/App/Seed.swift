@@ -198,6 +198,12 @@ enum Seed {
         // Milestones
         case "milestones-early":
             return make(phase: .app, plan: plan(.cigarettes, day: 2), tab: .milestones)
+        case "onboard-price-empty":
+            // Continue must stay disabled until a price is entered.
+            return onboarding(step: 3, product: .cigarettes) { model in
+                model.draft?.unitPrice = 0
+            }
+
         case "milestones-late":
             return make(phase: .app, plan: plan(.cigarettes, day: 400), tab: .milestones)
 

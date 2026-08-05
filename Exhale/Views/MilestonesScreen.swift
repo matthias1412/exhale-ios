@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 /// The healing timeline. Passed milestones are filled, the next one carries a
 /// progress bar and its scheduled notification date, the rest sit faint.
@@ -10,6 +11,8 @@ struct MilestonesScreen: View {
             if let plan = model.plan, let progress = model.progress {
                 VStack(alignment: .leading, spacing: 0) {
                     header
+
+                    NotificationPrimer()
 
                     ForEach(
                         Milestones.states(for: plan.product, hoursElapsed: progress.hoursElapsed),

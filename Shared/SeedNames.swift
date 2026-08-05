@@ -26,6 +26,7 @@ enum SeedNames {
         "onboard-quit-time",
         "onboard-quit-date",
         "onboard-price-yearly",
+        "onboard-price-empty",
         "paywall",
         "paywall-loading",
         "paywall-foreign-currency"

@@ -36,6 +36,9 @@ final class NotificationScheduler {
         }
     }
 
+    func authorisationStatus() async -> UNAuthorizationStatus {
+        await centre.notificationSettings().authorizationStatus
+    }
 
     /// Rebuilds the entire schedule from the current plan and preferences.
     func reschedule(state: PersistedState, now: Date = Date()) async {
@@ -63,8 +66,11 @@ final class NotificationScheduler {
             guard fireDate > now else { continue }
 
             let content = UNMutableNotificationContent()
-            content.title = "\(milestone.when) — \(milestone.title)"
-            content.body = milestone.body
+            // The in-app timeline needs the relative time right-aligned; a
+            // lock screen does not. "72 h — Nicotine-free body" reads like a
+            // sensor reading. The title alone is warmer and the body says when.
+            content.title = milestone.title
+            content.body = "\(milestone.when) in. \(milestone.body)"
             content.sound = .default
 
             await add(
@@ -106,7 +112,8 @@ final class NotificationScheduler {
             let thisWeek = max(0, progress.moneyKept - weekEarlier.moneyKept)
 
             let content = UNMutableNotificationContent()
-            content.title = "Another week you kept it"
+            // "kept it" — kept what? Ambiguous on a lock screen.
+            content.title = "Another week clear"
             content.body = "\(thisWeek.moneyString(plan.currencyCode)) stayed in your "
                 + "pocket this week. \(progress.moneyKept.moneyString(plan.currencyCode)) "
                 + "since you stopped."
@@ -149,7 +156,7 @@ final class NotificationScheduler {
             content.title = "Day \(progress.dayNumber)"
             content.body = progress.dayNumber <= 2
                 ? "The first days are the loudest. It gets quieter."
-                : "You've already done this \(progress.dayNumber - 1) times. Today is just the next one."
+                : "You've got through \(progress.dayNumber - 1) days already. Today is just the next one."
             content.sound = .default
 
             await add(
@@ -191,8 +198,8 @@ final class NotificationScheduler {
                hoursElapsed: QuitProgress(plan: plan, now: now).hoursElapsed,
                limit: 1
            ).first {
-            content.title = "\(next.when) — \(next.title)"
-            content.body = next.body
+            content.title = next.title
+            content.body = "\(next.when) in. \(next.body)"
         } else {
             content.title = "Exhale"
             content.body = "You have outlived every milestone we track. Extraordinary."
