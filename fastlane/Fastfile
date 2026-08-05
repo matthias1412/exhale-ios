@@ -18,7 +18,7 @@ platform :ios do
     match(
       type: "appstore",
       readonly: true,
-      app_identifier: "com.matthias.exhale",
+      app_identifier: "com.matthias1412.exhale",
       git_branch: "certificates"
     )
 

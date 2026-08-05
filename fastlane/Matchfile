@@ -1,5 +1,5 @@
 git_branch("certificates")
 storage_mode("git")
 type("appstore")
-app_identifier(["com.matthias.exhale"])
+app_identifier(["com.matthias1412.exhale"])
 readonly(true)

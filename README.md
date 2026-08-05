@@ -28,7 +28,7 @@ Every screen *and state* is reachable directly via a launch argument, so nothing
 has to be tapped through:
 
 ```bash
-xcrun simctl launch booted com.matthias.exhale -seed today-day90
+xcrun simctl launch booted com.matthias1412.exhale -seed today-day90
 ```
 
 Seeds live in [`Shared/SeedNames.swift`](Shared/SeedNames.swift) — a single

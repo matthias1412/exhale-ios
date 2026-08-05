@@ -88,7 +88,7 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
     private(set) var isSubscribed = false
 
     private let entitlement = "premium"
-    private let logger = Logger(subsystem: "com.matthias.exhale", category: "subscriptions")
+    private let logger = Logger(subsystem: "com.matthias1412.exhale", category: "subscriptions")
 
     func load() async {
         // Implemented once the RevenueCat products exist in the dashboard —

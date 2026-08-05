@@ -7,7 +7,7 @@
 # why that file must contain no unrelated string literals.)
 set -euo pipefail
 
-BUNDLE_ID="com.matthias.exhale"
+BUNDLE_ID="com.matthias1412.exhale"
 APP_PATH="$(find build/Build/Products -maxdepth 3 -name 'Exhale.app' | head -1)"
 OUT_ROOT="artifacts/screens"
 

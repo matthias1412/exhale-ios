@@ -12,7 +12,7 @@ reading from a file, so the value never appears on screen or in shell history.
 ## 1. Register the app (App Store Connect, ~3 min)
 
 1. <https://developer.apple.com/account/resources/identifiers> → **+** →
-   App IDs → App. Bundle ID: `com.matthias.exhale`, description "Exhale".
+   App IDs → App. Bundle ID: `com.matthias1412.exhale`, description "Exhale".
    Capabilities: nothing extra — the app needs no entitlements beyond the
    default. Push is *not* required; notifications are local only.
 2. <https://appstoreconnect.apple.com/apps> → **+** → New App.
@@ -97,7 +97,7 @@ The app currently runs on `MockSubscriptionGate`, and the paywall honestly
 reports "Subscriptions are not configured yet" rather than showing invented
 prices. To make it real:
 
-1. In RevenueCat, add a new app for bundle `com.matthias.exhale`.
+1. In RevenueCat, add a new app for bundle `com.matthias1412.exhale`.
 2. Create two products matching App Store Connect:
    - `exhale.yearly` — 1 year, with a 7-day free trial
    - `exhale.monthly` — 1 month

@@ -10,7 +10,7 @@ import OSLog
 struct StateStore: Sendable {
 
     private let url: URL?
-    private static let logger = Logger(subsystem: "com.matthias.exhale", category: "store")
+    private static let logger = Logger(subsystem: "com.matthias1412.exhale", category: "store")
 
     init(url: URL?) { self.url = url }
 

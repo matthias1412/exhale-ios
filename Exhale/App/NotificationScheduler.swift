@@ -14,7 +14,7 @@ final class NotificationScheduler {
     static let shared = NotificationScheduler()
 
     private let centre = UNUserNotificationCenter.current()
-    private let logger = Logger(subsystem: "com.matthias.exhale", category: "notifications")
+    private let logger = Logger(subsystem: "com.matthias1412.exhale", category: "notifications")
 
     private enum Identifier {
         static let milestonePrefix = "milestone."
