@@ -51,7 +51,7 @@ enum SeedNames {
         "milestones-notifications-denied",
         "slip-backdated",
         "milestones-late",
-        "settings"
+        "settings",
 
         "sos-breathe-in",
         "sos-hold",
