@@ -22,6 +22,13 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 40
 
+    # Job level, not step level: project.yml substitutes DEVELOPMENT_TEAM at
+    # xcodegen time, which happens several steps before signing. Setting it
+    # only on the TestFlight step generated a project with an empty team and
+    # failed the archive with "requires a development team".
+    env:
+      DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -66,6 +73,5 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY: ${{ secrets.APP_STORE_CONNECT_KEY }}
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
           SETUP_SIGNING: ${{ inputs.setup_signing }}
         run: bundle exec fastlane beta
