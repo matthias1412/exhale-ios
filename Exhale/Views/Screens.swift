@@ -13,6 +13,7 @@ struct TodayScreen: View {
                 ZStack {
                     SpiralView(
                         day: progress.dayNumber,
+                        milestoneDays: model.milestoneDays,
                         accessibilitySummary: model.spiralAccessibilitySummary
                     )
                     SpiralCentreLabel(day: progress.dayNumber)

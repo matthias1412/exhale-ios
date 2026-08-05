@@ -6,6 +6,9 @@ import SwiftUI
 /// and it has to stay smooth while the money counter ticks beside it.
 struct SpiralView: View {
     let day: Int
+    /// Days on which a milestone was reached, so those dots are marked for
+    /// good rather than the moment vanishing with the celebration.
+    var milestoneDays: Set<Int> = []
     /// Spoken instead of the dots, which are meaningless one at a time.
     let accessibilitySummary: String
 
@@ -59,10 +62,19 @@ struct SpiralView: View {
     }
 
     /// Oldest dot first, rippling outward to today.
+    ///
+    /// Day one is the special case: with a single dot there is nothing to
+    /// stagger, and the old guard returned "already finished", so the most
+    /// important screen in the app — the one someone sees the moment they
+    /// commit — was the only one that didn't animate. A lone dot gets the whole
+    /// window to arrive instead.
     private func dotProgress(index: Int, of count: Int, overall: Double) -> Double {
-        guard count > 1, overall < 1 else { return 1 }
-        let start = (Double(index) / Double(count - 1)) * (1 - dotFadeWindow)
-        let local = min(1, max(0, (overall - start) / dotFadeWindow))
+        guard overall < 1 else { return 1 }
+        let window = count > 1 ? dotFadeWindow : 1
+        let start = count > 1
+            ? (Double(index) / Double(count - 1)) * (1 - dotFadeWindow)
+            : 0
+        let local = min(1, max(0, (overall - start) / window))
         // ease-out so dots settle rather than snap
         return 1 - pow(1 - local, 3)
     }
@@ -70,7 +82,7 @@ struct SpiralView: View {
     // MARK: - Drawing
 
     private func draw(in context: inout GraphicsContext, scale: CGFloat, progress overall: Double) {
-        let dots = SpiralGeometry.dots(forDay: day)
+        let dots = SpiralGeometry.dots(forDay: day, milestoneDays: milestoneDays)
         guard !dots.isEmpty else { return }
 
         var glowing: [(SpiralGeometry.Dot, Double)] = []
@@ -78,7 +90,7 @@ struct SpiralView: View {
         for (i, dot) in dots.enumerated() {
             let p = dotProgress(index: i, of: dots.count, overall: overall)
             guard p > 0 else { continue }
-            if dot.isNewest || dot.isYearMarker {
+            if dot.isNewest || dot.isYearMarker || dot.isMilestone {
                 glowing.append((dot, p))
                 continue
             }
@@ -88,9 +100,14 @@ struct SpiralView: View {
         // Glowing dots go in their own layer so the shadow filter is applied
         // a handful of times, not eighteen hundred.
         for (dot, p) in glowing {
-            let colour: Color = dot.isNewest ? Palette.accent : Palette.yearMarker
-            let radius: CGFloat = dot.isNewest ? 16 : 8
-            let glowOpacity = (dot.isNewest ? 0.5 : 0.7) * p
+            // A milestone dot glows in its own colour but more quietly than
+            // today's dot or a year marker — it is a record, not an alert.
+            let colour: Color = dot.isNewest ? Palette.accent
+                              : (dot.isYearMarker ? Palette.yearMarker
+                                                  : Palette.spiralDot(ramp: dot.ramp))
+            let radius: CGFloat = dot.isNewest ? 16 : (dot.isYearMarker ? 8 : 6)
+            let baseGlow = dot.isNewest ? 0.5 : (dot.isYearMarker ? 0.7 : 0.45)
+            let glowOpacity = baseGlow * p
             context.drawLayer { layer in
                 layer.addFilter(
                     .shadow(color: colour.opacity(glowOpacity), radius: radius * scale)

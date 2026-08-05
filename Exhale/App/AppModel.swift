@@ -164,6 +164,14 @@ final class AppModel {
         state.lastCelebratedHours = latest.hours
     }
 
+    /// Days carrying a milestone, for marking them in the spiral.
+    var milestoneDays: Set<Int> {
+        guard let plan = state.plan else { return [] }
+        return SpiralGeometry.milestoneDays(
+            hours: Milestones.forProduct(plan.product).map(\.hours)
+        )
+    }
+
     var spiralAccessibilitySummary: String {
         guard let plan = state.plan, let p = progress else { return "Your quit spiral" }
         let units = p.unitsAvoided.formatted(.number)

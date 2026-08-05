@@ -40,6 +40,10 @@ enum SpiralGeometry {
         let ramp: Double
         let isYearMarker: Bool
         let isNewest: Bool
+        /// This dot is the day a healing milestone was reached. The celebration
+        /// hands off to it: the burst ends, and this is where that moment
+        /// permanently lives.
+        let isMilestone: Bool
     }
 
     static func dotCount(forDay day: Int) -> Int {
@@ -92,7 +96,13 @@ enum SpiralGeometry {
         return (solid: fade * 0.75, fade: fade)
     }
 
-    static func dots(forDay day: Int) -> [Dot] {
+    /// Day numbers on which a milestone falls, so the spiral can mark them.
+    /// Several early milestones share day 1, hence a set.
+    static func milestoneDays(hours: [Double]) -> Set<Int> {
+        Set(hours.map { Int(($0 / 24).rounded(.down)) + 1 })
+    }
+
+    static func dots(forDay day: Int, milestoneDays: Set<Int> = []) -> [Dot] {
         let n = dotCount(forDay: day)
         guard n > 0 else { return [] }
 
@@ -112,15 +122,23 @@ enum SpiralGeometry {
             let angle = Double(i) * goldenAngle - 1.6
             let isYear = (i + 1) % 365 == 0
 
+            // Dot i is day i+1.
+            let isMilestone = milestoneDays.contains(i + 1)
+            // Marked dots are enlarged, but a year marker outranks a milestone
+            // — there are only five of them in a decade.
+            let diameter = isYear ? min(13, size * 1.6)
+                         : (isMilestone ? min(13, size * 1.35) : size)
+
             return Dot(
                 position: CGPoint(
                     x: centre.x + radius * cos(angle),
                     y: centre.y + radius * sin(angle)
                 ),
-                diameter: isYear ? min(13, size * 1.6) : size,
+                diameter: diameter,
                 ramp: ramp,
                 isYearMarker: isYear,
-                isNewest: i == n - 1
+                isNewest: i == n - 1,
+                isMilestone: isMilestone
             )
         }
     }

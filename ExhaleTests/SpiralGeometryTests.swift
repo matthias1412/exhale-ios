@@ -156,3 +156,55 @@ final class SeedTests: XCTestCase {
         XCTAssertEqual(phases, ["Breathe in", "Hold it", "Let it go"])
     }
 }
+
+/// Milestone days are marked in the spiral so a celebration has somewhere
+/// permanent to hand off to.
+final class MilestoneDotTests: XCTestCase {
+
+    private var cigaretteDays: Set<Int> {
+        SpiralGeometry.milestoneDays(
+            hours: Milestones.forProduct(.cigarettes).map(\.hours)
+        )
+    }
+
+    /// 0.34h and 12h both fall on day 1; 48h is day 3, 72h is day 4.
+    func testMilestoneHoursMapToTheRightDays() {
+        let days = cigaretteDays
+        XCTAssertTrue(days.contains(1))
+        XCTAssertTrue(days.contains(3))
+        XCTAssertTrue(days.contains(4))
+        XCTAssertTrue(days.contains(8))       // 168h
+        XCTAssertFalse(days.contains(2), "nothing lands on day 2")
+    }
+
+    func testMarkedDotsAreLargerButNeverExceedTheClamp() {
+        let dots = SpiralGeometry.dots(forDay: 90, milestoneDays: cigaretteDays)
+        let plain = dots.first { !$0.isMilestone && !$0.isYearMarker && !$0.isNewest }
+        let marked = dots.first { $0.isMilestone }
+        XCTAssertNotNil(marked)
+        XCTAssertGreaterThan(marked!.diameter, plain!.diameter)
+        for dot in dots {
+            XCTAssertLessThanOrEqual(dot.diameter, SpiralGeometry.maxDotDiameter)
+        }
+    }
+
+    /// A year marker outranks a milestone — there are only five in a decade.
+    func testYearMarkerWinsWhenBothLandOnTheSameDay() {
+        let dots = SpiralGeometry.dots(forDay: 365, milestoneDays: [365])
+        let last = dots[364]
+        XCTAssertTrue(last.isYearMarker)
+        XCTAssertEqual(last.diameter,
+                       min(13, SpiralGeometry.dotDiameter(count: 365) * 1.6),
+                       accuracy: 0.001)
+    }
+
+    /// Marking must not move anything.
+    func testMarkingDoesNotChangePositions() {
+        let plain = SpiralGeometry.dots(forDay: 200)
+        let marked = SpiralGeometry.dots(forDay: 200, milestoneDays: cigaretteDays)
+        for (a, b) in zip(plain, marked) {
+            XCTAssertEqual(a.position.x, b.position.x, accuracy: 0.0001)
+            XCTAssertEqual(a.position.y, b.position.y, accuracy: 0.0001)
+        }
+    }
+}
