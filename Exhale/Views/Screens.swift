@@ -38,9 +38,14 @@ struct TodayScreen: View {
                     .padding(.bottom, 12)
                 }
 
-                StatsRow(progress: progress)
+                // The money has to move on its own — see LiveProgress.
+                if let plan = model.plan {
+                    LiveProgress(plan: plan, clock: model.clock) { live in
+                        StatsRow(progress: live)
+                    }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 16)
+                }
 
                 CravingButton()
                     .padding(.horizontal, 24)

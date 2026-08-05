@@ -188,3 +188,68 @@ final class RelapseTests: XCTestCase {
         XCTAssertEqual(s.slips.count, 1, "the slip is still on record, just not this run's")
     }
 }
+
+/// Regressions for defects found by reading the code back rather than by any
+/// test failing. Each of these shipped silently.
+final class RegressionTests: XCTestCase {
+
+    private var now: Date { Date(timeIntervalSince1970: 1_700_000_000) }
+
+    private func state(daysAgo: Double) -> PersistedState {
+        var s = PersistedState()
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+                          currencyCode: "EUR",
+                          quitDate: now.addingTimeInterval(-daysAgo * 86_400))
+        return s
+    }
+
+    /// Money is the second pillar of the product and it must move. A frozen
+    /// clock gives the same answer twice; a real one must not.
+    func testMoneyKeptAdvancesWithTime() {
+        let plan = state(daysAgo: 10).plan!
+        let a = QuitProgress(plan: plan, now: now).moneyKept
+        let b = QuitProgress(plan: plan, now: now.addingTimeInterval(60)).moneyKept
+        XCTAssertGreaterThan(b, a, "the counter must advance as time passes")
+    }
+
+    /// After a relapse the new run must be able to celebrate its early
+    /// milestones. Inheriting the previous run's watermark suppressed all of
+    /// them — precisely when encouragement matters most.
+    func testRelapseClearsTheCelebrationWatermark() {
+        var s = state(daysAgo: 62)
+        s.lastCelebratedHours = 720          // reached "1 month" last time
+        s.recordRelapse(at: now)
+        XCTAssertEqual(s.lastCelebratedHours, 0)
+
+        let unseen = Milestones.unseen(
+            for: .cigarettes,
+            quitDate: s.plan!.quitDate,
+            lastSeenHours: s.lastCelebratedHours,
+            now: now.addingTimeInterval(13 * 3600)
+        )
+        XCTAssertFalse(unseen.isEmpty, "a fresh run must reach its early milestones again")
+        XCTAssertEqual(unseen.first?.when, "20 min")
+    }
+
+    /// A future quit date is a real state, not a day 1.
+    func testFutureQuitDateHasNotStarted() {
+        var s = PersistedState()
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+                          currencyCode: "EUR",
+                          quitDate: now.addingTimeInterval(3 * 86_400))
+        let p = QuitProgress(plan: s.plan!, now: now)
+        XCTAssertFalse(p.hasStarted)
+        XCTAssertEqual(p.daysUntilStart, 3)
+        XCTAssertEqual(p.moneyKept, 0, "nothing has been saved yet")
+        XCTAssertEqual(p.unitsAvoided, 0)
+    }
+
+    /// Notifications must never be scheduled in the past for a scheduled quit.
+    func testFutureQuitStillSchedulesEveryMilestone() {
+        let quit = now.addingTimeInterval(3 * 86_400)
+        let future = Milestones.forProduct(.cigarettes)
+            .filter { $0.date(from: quit) > now }
+        XCTAssertEqual(future.count, Milestones.forProduct(.cigarettes).count,
+                       "every milestone is still ahead of a quit that hasn't begun")
+    }
+}

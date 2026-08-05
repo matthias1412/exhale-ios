@@ -54,6 +54,11 @@ extension PersistedState {
         pastAttempts.append(QuitAttempt(started: plan.quitDate, ended: date))
         plan.quitDate = date
         self.plan = plan
+        // Reset the celebration watermark, or the new run inherits the old
+        // one's and every early milestone is silently suppressed. Someone
+        // starting again at day 1 would get nothing until they passed whatever
+        // they'd already reached — exactly when encouragement matters most.
+        lastCelebratedHours = 0
     }
 
     /// One slip, streak intact.

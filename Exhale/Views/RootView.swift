@@ -7,6 +7,7 @@ import SwiftUI
 /// which is how overlays end up sliding under the Dynamic Island.
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -70,14 +71,26 @@ struct RootView: View {
         // The notification set is rebuilt from scratch here too: every fire
         // date derives from the quit date, so editing the plan has to move all
         // of them together.
+        // The whole "a milestone passed while you were away" mechanic depends
+        // on noticing when the user comes back. iOS keeps apps resident for a
+        // long time, so cold-launch alone would have made this fire rarely.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, !model.clock.isFrozen else { return }
+            model.claimPendingCelebration()
+        }
         .onChange(of: model.state) { _, newState in
             model.persist()
             guard !model.clock.isFrozen else { return }   // never during captures
             Task { await NotificationScheduler.shared.reschedule(state: newState) }
         }
-        .task {
-            // Asking on first launch would be a dialog in every screenshot, and
-            // asking before the user has a plan is asking too early.
+        // Keyed on phase. Without the id this ran exactly once, at launch,
+        // when a new user is still in .onboarding — so the guard failed and
+        // notifications were never requested, never scheduled, and no
+        // celebration was ever claimed until the app was relaunched. A brand
+        // new user's entire first session had the notification system dead.
+        .task(id: model.state.phase) {
+            // Asking before the user has a plan is asking too early, and a
+            // permission dialog would land in every screenshot.
             guard !model.clock.isFrozen, model.state.phase == .app else { return }
             await NotificationScheduler.shared.requestAuthorisation()
             await NotificationScheduler.shared.reschedule(state: model.state)
@@ -95,10 +108,17 @@ struct MainShell: View {
             AppHeader()
 
             Group {
-                switch model.tab {
-                case .today: TodayScreen()
-                case .bill: BillScreen()
-                case .milestones: MilestonesScreen()
+                // Before the quit date there is no bill and no healing — the
+                // other two tabs would show a receipt for nothing and a
+                // timeline that hasn't begun.
+                if let progress = model.progress, !progress.hasStarted {
+                    TodayScreen()
+                } else {
+                    switch model.tab {
+                    case .today: TodayScreen()
+                    case .bill: BillScreen()
+                    case .milestones: MilestonesScreen()
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -135,8 +155,11 @@ struct AppHeader: View {
             Spacer()
 
             HStack(spacing: 14) {
-                if let plan = model.plan {
-                    Text("since \(plan.quitDate.formatted(.dateTime.day().month(.abbreviated)))")
+                if let plan = model.plan, let progress = model.progress {
+                    // "since 18 Jun" for a date three days out is simply false.
+                    Text(progress.hasStarted
+                         ? "since \(plan.quitDate.formatted(.dateTime.day().month(.abbreviated)))"
+                         : "from \(plan.quitDate.formatted(.dateTime.day().month(.abbreviated)))")
                         .font(.spaceGrotesk(12))
                         .foregroundStyle(Palette.textFaint)
                 }
@@ -161,6 +184,15 @@ struct TabBar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        // Hidden entirely before the quit begins; there is nothing to switch to.
+        if let progress = model.progress, !progress.hasStarted {
+            EmptyView()
+        } else {
+            tabs
+        }
+    }
+
+    private var tabs: some View {
         HStack(spacing: 8) {
             ForEach(MainTab.allCases, id: \.self) { tab in
                 let selected = model.tab == tab

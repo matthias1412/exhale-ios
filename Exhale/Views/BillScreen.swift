@@ -10,7 +10,8 @@ struct BillScreen: View {
 
     var body: some View {
         ScrollView {
-            if let plan = model.plan, let progress = model.progress {
+            if let plan = model.plan {
+                LiveProgress(plan: plan, clock: model.clock) { progress in
                 VStack(spacing: 0) {
                     receipt(plan: plan, progress: progress)
                     TornEdge()
@@ -20,6 +21,7 @@ struct BillScreen: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 18)
                 .padding(.bottom, 14)
+                }
             }
         }
         .scrollIndicators(.hidden)
