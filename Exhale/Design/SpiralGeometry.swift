@@ -124,10 +124,13 @@ enum SpiralGeometry {
 
             // Dot i is day i+1.
             let isMilestone = milestoneDays.contains(i + 1)
-            // Marked dots are enlarged, but a year marker outranks a milestone
-            // — there are only five of them in a decade.
-            let diameter = isYear ? min(13, size * 1.6)
-                         : (isMilestone ? min(13, size * 1.35) : size)
+            // Milestones are deliberately NOT marked by size. Until about day
+            // 174 every dot is already at the 13pt clamp, so an enlargement
+            // silently does nothing — and that window holds eight of the
+            // twelve milestones, the ones that matter most. They are drawn
+            // with an inner highlight instead, which reads at any density and
+            // never exceeds the dot's own footprint.
+            let diameter = isYear ? min(13, size * 1.6) : size
 
             return Dot(
                 position: CGPoint(

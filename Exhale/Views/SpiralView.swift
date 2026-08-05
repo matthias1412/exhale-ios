@@ -153,6 +153,19 @@ struct SpiralView: View {
             : Palette.spiralDot(ramp: dot.ramp, lift: flash)
 
         context.fill(Path(ellipseIn: rect), with: .color(colour.opacity(p)))
+
+        // A milestone reads as a bright core inside its own dot. Size cannot do
+        // this job — below roughly day 174 every dot is already at the clamp —
+        // and a ring would overlap its neighbours once the spiral is dense.
+        if dot.isMilestone && !dot.isYearMarker {
+            let inner = diameter * 0.42
+            let core = CGRect(x: x - inner / 2, y: y - inner / 2,
+                              width: inner, height: inner)
+            context.fill(
+                Path(ellipseIn: core),
+                with: .color(Palette.spiralDot(ramp: dot.ramp, lift: 0.3).opacity(p))
+            )
+        }
     }
 }
 

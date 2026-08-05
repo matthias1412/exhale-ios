@@ -177,15 +177,37 @@ final class MilestoneDotTests: XCTestCase {
         XCTAssertFalse(days.contains(2), "nothing lands on day 2")
     }
 
-    func testMarkedDotsAreLargerButNeverExceedTheClamp() {
-        let dots = SpiralGeometry.dots(forDay: 90, milestoneDays: cigaretteDays)
-        let plain = dots.first { !$0.isMilestone && !$0.isYearMarker && !$0.isNewest }
-        let marked = dots.first { $0.isMilestone }
-        XCTAssertNotNil(marked)
-        XCTAssertGreaterThan(marked!.diameter, plain!.diameter)
-        for dot in dots {
-            XCTAssertLessThanOrEqual(dot.diameter, SpiralGeometry.maxDotDiameter)
+    /// Milestones are marked by an inner highlight, not by size — below about
+    /// day 174 every dot is already at the clamp, so an enlargement would
+    /// silently do nothing across the window holding most of the milestones.
+    /// This pins that they stay the same size as their neighbours.
+    func testMilestonesAreNotMarkedBySize() {
+        for day in [90, 400] {
+            let dots = SpiralGeometry.dots(forDay: day, milestoneDays: cigaretteDays)
+            let plain = dots.first { !$0.isMilestone && !$0.isYearMarker }!
+            let marked = dots.first { $0.isMilestone && !$0.isYearMarker }!
+            XCTAssertEqual(marked.diameter, plain.diameter, accuracy: 0.0001,
+                           "day \(day): marking must not change the footprint")
         }
+    }
+
+    func testNoDotEverExceedsTheClamp() {
+        for day in [1, 30, 90, 174, 200, 365, 1825, 3650] {
+            for dot in SpiralGeometry.dots(forDay: day, milestoneDays: cigaretteDays) {
+                XCTAssertLessThanOrEqual(dot.diameter, SpiralGeometry.maxDotDiameter)
+            }
+        }
+    }
+
+    /// The flag is what the renderer keys off, so it has to be right in the
+    /// range where size could never have carried the signal.
+    func testMilestonesAreFlaggedInTheClampedRange() {
+        let dots = SpiralGeometry.dots(forDay: 90, milestoneDays: cigaretteDays)
+        let marked = dots.enumerated().filter { $0.element.isMilestone }.map { $0.offset + 1 }
+        XCTAssertTrue(marked.contains(1))
+        XCTAssertTrue(marked.contains(4))    // 72h
+        XCTAssertTrue(marked.contains(8))    // 1 week
+        XCTAssertTrue(marked.contains(31))   // 1 month
     }
 
     /// A year marker outranks a milestone — there are only five in a decade.
