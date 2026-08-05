@@ -52,10 +52,12 @@ enum Currencies {
     /// Stepper increment, derived only from the currency's own minor unit —
     /// nothing here needs to know what things cost anywhere.
     ///
-    /// Two-decimal currencies nudge by 0.50, zero-decimal ones (JPY, ISK) by
-    /// 10, which is the right order of magnitude in both without a lookup.
+    /// Sized for a spend figure rather than a pack price. When the question
+    /// was "price of a pack" a 0.50 nudge was right; a weekly vape spend is an
+    /// order of magnitude larger, and stepping to it half a unit at a time is
+    /// thirty taps.
     static func priceStep(for code: String) -> Decimal {
-        fractionDigits(for: code) == 0 ? 10 : 0.5
+        fractionDigits(for: code) == 0 ? 50 : 1
     }
 
 }

@@ -6,14 +6,44 @@ struct QuitPlan: Codable, Equatable, Sendable {
     var product: NicotineProduct
     /// Units per `product.config.period` — cigarettes/day, pods/week, pouches/day.
     var amount: Int
-    /// Price of one container (pack / pod / tin) in `currencyCode`.
-    var unitPrice: Decimal
+    /// What the habit costs in a week, in `currencyCode`.
+    ///
+    /// This used to be the price of one container, with the money derived as
+    /// `amount / unitsPerContainer * unitPrice`. That only works if everyone's
+    /// container holds the same number, and none of them do: cigarettes come in
+    /// tens, twenties and twenty-fives, pouch tins run anywhere from ten to
+    /// twenty-two, and a "pod" covers everything from a refill to a disposable
+    /// that lasts a fortnight. A user answering "€6" for a tin of fifteen while
+    /// the app assumed twenty was quietly told they were saving a quarter less
+    /// than they were.
+    ///
+    /// Spend is the one number people actually know, and it needs no assumption
+    /// about packaging at all.
+    var weeklySpend: Decimal
     var currencyCode: String
     /// The exact instant of the last one. Physiological milestones and the money
     /// counter run from this; the day *number* runs off local midnights.
     var quitDate: Date
 
     var config: ProductConfig { product.config }
+
+    /// The spend as the user is asked for it — per day for cigarettes and
+    /// pouches, per week for vape, matching the amount question right before.
+    /// Stored weekly regardless, so switching product can't rescale the money.
+    var spendPerPeriod: Decimal {
+        get {
+            switch config.period {
+            case .day: weeklySpend / 7
+            case .week: weeklySpend
+            }
+        }
+        set {
+            switch config.period {
+            case .day: weeklySpend = newValue * 7
+            case .week: weeklySpend = newValue
+            }
+        }
+    }
 
     static func starting(
         product: NicotineProduct,
@@ -23,10 +53,52 @@ struct QuitPlan: Codable, Equatable, Sendable {
         QuitPlan(
             product: product,
             amount: product.config.defaultAmount,
-            unitPrice: 0,   // the user types it; we never guess
+            weeklySpend: 0,   // the user types it; we never guess
             currencyCode: currency,
             quitDate: quitDate
         )
+    }
+
+    // MARK: - Persistence
+
+    private enum CodingKeys: String, CodingKey {
+        case product, amount, weeklySpend, currencyCode, quitDate
+        case unitPrice   // pre-spend plans only
+    }
+
+    init(product: NicotineProduct, amount: Int, weeklySpend: Decimal,
+         currencyCode: String, quitDate: Date) {
+        self.product = product
+        self.amount = amount
+        self.weeklySpend = weeklySpend
+        self.currencyCode = currencyCode
+        self.quitDate = quitDate
+    }
+
+    /// Reads plans written before the switch to spend.
+    ///
+    /// Throwing here would fail the whole `PersistedState` decode and drop the
+    /// user back into onboarding with their streak gone — which is the one
+    /// thing this app must never do. Old plans are converted using the very
+    /// container assumption being retired, because for an existing user that
+    /// figure is what they have been watching tick up, and changing it under
+    /// them would be worse than carrying it forward.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        product = try container.decode(NicotineProduct.self, forKey: .product)
+        amount = try container.decode(Int.self, forKey: .amount)
+        currencyCode = try container.decode(String.self, forKey: .currencyCode)
+        quitDate = try container.decode(Date.self, forKey: .quitDate)
+
+        if let weekly = try container.decodeIfPresent(Decimal.self, forKey: .weeklySpend) {
+            weeklySpend = weekly
+        } else {
+            let unitPrice = try container.decodeIfPresent(Decimal.self, forKey: .unitPrice) ?? 0
+            let cfg = product.config
+            let dailyUnits = Double(amount) / cfg.period.daysPerPeriod
+            let dailyCost = Decimal(dailyUnits / Double(cfg.unitsPerContainer)) * unitPrice
+            weeklySpend = dailyCost * 7
+        }
     }
 }
 
@@ -82,7 +154,9 @@ struct QuitProgress: Equatable, Sendable {
 
         let cfg = plan.config
         let dailyUnits = Double(plan.amount) / cfg.period.daysPerPeriod
-        let dailyCost = Decimal(dailyUnits / Double(cfg.unitsPerContainer)) * plan.unitPrice
+        // Straight from what the user told us they spend. No container size in
+        // the money path — see `QuitPlan.weeklySpend`.
+        let dailyCost = plan.weeklySpend / 7
         self.dailyCost = dailyCost
 
         let elapsedDays = elapsed / 86_400
@@ -96,6 +170,9 @@ struct QuitProgress: Equatable, Sendable {
         let rawUnits = dailyUnits * elapsedDays
         let units = Int(((rawUnits * 1e9).rounded() / 1e9).rounded(.down))
         self.unitsAvoided = units
+        // Only ever drawn as tally glyphs on The Bill — "roughly this many
+        // packs". `unitsPerContainer` is a rough average and is deliberately
+        // kept out of anything numeric the user is asked to trust.
         self.containersAvoided = units / cfg.unitsPerContainer
         self.hoursReclaimed = Int((Double(units) * 11 / 60).rounded())
     }

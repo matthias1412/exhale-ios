@@ -15,13 +15,13 @@ final class EconomicsTests: XCTestCase {
     private func plan(
         _ product: NicotineProduct,
         amount: Int,
-        price: Decimal,
+        weekly: Decimal,
         daysAgo: Double
     ) -> QuitPlan {
         QuitPlan(
             product: product,
             amount: amount,
-            unitPrice: price,
+            weeklySpend: weekly,
             currencyCode: "EUR",
             quitDate: Date(timeIntervalSince1970: 1_700_000_000 - daysAgo * 86_400)
         )
@@ -32,14 +32,25 @@ final class EconomicsTests: XCTestCase {
     // MARK: - Cigarettes
 
     func testCigarettesDailyCost() {
-        // 15/day at €9.50 for 20 → 0.75 packs/day → €7.125/day
-        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, price: 9.50, daysAgo: 1),
+        // €49.875 a week is a seventh of that a day. No pack size involved.
+        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, weekly: 49.875, daysAgo: 1),
                          now: now(), calendar: calendar)
         XCTAssertEqual((p.dailyCost as NSDecimalNumber).doubleValue, 7.125, accuracy: 0.0001)
     }
 
+    /// The point of the change: two people spending the same get the same
+    /// money back, whatever size box it came in.
+    func testMoneyIgnoresContainerSize() {
+        let smoker = QuitProgress(plan: plan(.cigarettes, amount: 20, weekly: 70, daysAgo: 30),
+                                  now: now(), calendar: calendar)
+        let poucher = QuitProgress(plan: plan(.pouches, amount: 8, weekly: 70, daysAgo: 30),
+                                   now: now(), calendar: calendar)
+        XCTAssertEqual((smoker.moneyKept as NSDecimalNumber).doubleValue,
+                       (poucher.moneyKept as NSDecimalNumber).doubleValue, accuracy: 0.001)
+    }
+
     func testCigarettesOverNinetyDays() {
-        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, price: 9.50, daysAgo: 90),
+        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, weekly: 49.875, daysAgo: 90),
                          now: now(), calendar: calendar)
         XCTAssertEqual((p.moneyKept as NSDecimalNumber).doubleValue, 641.25, accuracy: 0.01)
         XCTAssertEqual(p.unitsAvoided, 1350)
@@ -50,8 +61,8 @@ final class EconomicsTests: XCTestCase {
     // MARK: - Vape (the weekly one)
 
     func testVapeConvertsWeeklyToDaily() {
-        // 5 pods/week → 5/7 per day. Pod IS the container, so unitsPerContainer = 1.
-        let p = QuitProgress(plan: plan(.vape, amount: 5, price: 6.00, daysAgo: 7),
+        // €30 a week, 5 pods a week.
+        let p = QuitProgress(plan: plan(.vape, amount: 5, weekly: 30.00, daysAgo: 7),
                          now: now(), calendar: calendar)
         XCTAssertEqual((p.dailyCost as NSDecimalNumber).doubleValue, 30.0 / 7, accuracy: 0.0001)
         XCTAssertEqual((p.moneyKept as NSDecimalNumber).doubleValue, 30.0, accuracy: 0.001)
@@ -60,7 +71,7 @@ final class EconomicsTests: XCTestCase {
     }
 
     func testVapeMonthlyBurn() {
-        let p = QuitProgress(plan: plan(.vape, amount: 5, price: 6.00, daysAgo: 1),
+        let p = QuitProgress(plan: plan(.vape, amount: 5, weekly: 30.00, daysAgo: 1),
                          now: now(), calendar: calendar)
         XCTAssertEqual((p.monthlyBurn as NSDecimalNumber).doubleValue,
                        (30.0 / 7) * 30.4, accuracy: 0.001)
@@ -69,8 +80,9 @@ final class EconomicsTests: XCTestCase {
     // MARK: - Pouches
 
     func testPouchContainerMaths() {
-        // 8/day, 20 per tin → a tin lasts 2.5 days. 30 days → 240 pouches → 12 tins.
-        let p = QuitProgress(plan: plan(.pouches, amount: 8, price: 5.50, daysAgo: 30),
+        // Tally glyphs only: 8/day for 30 days is 240 pouches, drawn as roughly
+        // 12 tins. Nothing about the money depends on this.
+        let p = QuitProgress(plan: plan(.pouches, amount: 8, weekly: 28.00, daysAgo: 30),
                          now: now(), calendar: calendar)
         XCTAssertEqual(p.unitsAvoided, 240)
         XCTAssertEqual(p.containersAvoided, 12)
@@ -86,21 +98,21 @@ final class EconomicsTests: XCTestCase {
         let quit = calendar.date(from: components)!
 
         let sameNight = QuitProgress(plan: QuitPlan(product: .cigarettes, amount: 15,
-                                                unitPrice: 9.5, currencyCode: "EUR",
+                                                weeklySpend: 49.875, currencyCode: "EUR",
                                                 quitDate: quit),
                                  now: quit.addingTimeInterval(240), calendar: calendar)
         XCTAssertEqual(sameNight.dayNumber, 1)
 
         // 90 minutes later it is past midnight — day 2, despite 1.5 hours elapsed.
         let afterMidnight = QuitProgress(plan: QuitPlan(product: .cigarettes, amount: 15,
-                                                    unitPrice: 9.5, currencyCode: "EUR",
+                                                    weeklySpend: 49.875, currencyCode: "EUR",
                                                     quitDate: quit),
                                      now: quit.addingTimeInterval(5400), calendar: calendar)
         XCTAssertEqual(afterMidnight.dayNumber, 2)
     }
 
     func testClockGoingBackwardsCannotRewindTheStreak() {
-        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, price: 9.5, daysAgo: 10),
+        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, weekly: 49.875, daysAgo: 10),
                          now: now().addingTimeInterval(-20 * 86_400), calendar: calendar)
         XCTAssertEqual(p.dayNumber, 1)
         XCTAssertEqual(p.elapsed, 0)
@@ -110,7 +122,7 @@ final class EconomicsTests: XCTestCase {
     // MARK: - Paywall anchor
 
     func testPaybackDays() {
-        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, price: 9.50, daysAgo: 1),
+        let p = QuitProgress(plan: plan(.cigarettes, amount: 15, weekly: 49.875, daysAgo: 1),
                          now: now(), calendar: calendar)
         // €29.99 / €7.125 per day = 4.2 → 5 days
         XCTAssertEqual(p.paybackDays(yearlyPrice: 29.99), 5)
@@ -132,11 +144,37 @@ final class EconomicsTests: XCTestCase {
         XCTAssertEqual(Currencies.priceStep(for: "JPY"), 10)
         XCTAssertEqual(Currencies.priceStep(for: "ISK"), 10)
         XCTAssertEqual(Currencies.priceStep(for: "EUR"), 0.5)
-        XCTAssertEqual(Currencies.priceStep(for: "GBP"), 0.5)
+        XCTAssertEqual(Currencies.priceStep(for: "GBP"), 1)
     }
 
     func testANewPlanHasNoInventedPrice() {
-        XCTAssertEqual(QuitPlan.starting(product: .cigarettes, currency: "EUR").unitPrice, 0)
+        XCTAssertEqual(QuitPlan.starting(product: .cigarettes, currency: "EUR").weeklySpend, 0)
+    }
+
+    /// A plan written before the switch must survive the upgrade. Losing it
+    /// would drop the user back into onboarding with their streak gone, which
+    /// is the one failure the whole app is built to prevent.
+    func testOldPlansMigrateToWeeklySpend() throws {
+        let json = """
+        {"product":"cigarettes","amount":15,"unitPrice":9.5,
+         "currencyCode":"EUR","quitDate":0}
+        """.data(using: .utf8)!
+        let plan = try JSONDecoder().decode(QuitPlan.self, from: json)
+        // Old maths: 15/day ÷ 20 per pack × €9.50 = €7.125/day = €49.875/week.
+        XCTAssertEqual((plan.weeklySpend as NSDecimalNumber).doubleValue,
+                       49.875, accuracy: 0.0001)
+        XCTAssertEqual(plan.amount, 15)
+    }
+
+    /// Stored weekly, asked per period. Cigarettes are a daily question.
+    func testSpendPerPeriodRoundTrips() {
+        var plan = QuitPlan.starting(product: .cigarettes, currency: "EUR")
+        plan.spendPerPeriod = 7
+        XCTAssertEqual((plan.weeklySpend as NSDecimalNumber).doubleValue, 49, accuracy: 0.0001)
+
+        var vape = QuitPlan.starting(product: .vape, currency: "EUR")
+        vape.spendPerPeriod = 30
+        XCTAssertEqual((vape.weeklySpend as NSDecimalNumber).doubleValue, 30, accuracy: 0.0001)
     }
 }
 
@@ -145,7 +183,7 @@ final class RelapseTests: XCTestCase {
 
     private func state(quitDaysAgo: Int) -> PersistedState {
         var s = PersistedState()
-        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
                           currencyCode: "EUR",
                           quitDate: Date(timeIntervalSince1970: 1_700_000_000
                                          - Double(quitDaysAgo) * 86_400))
@@ -197,7 +235,7 @@ final class RegressionTests: XCTestCase {
 
     private func state(daysAgo: Double) -> PersistedState {
         var s = PersistedState()
-        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
                           currencyCode: "EUR",
                           quitDate: now.addingTimeInterval(-daysAgo * 86_400))
         return s
@@ -234,7 +272,7 @@ final class RegressionTests: XCTestCase {
     /// A future quit date is a real state, not a day 1.
     func testFutureQuitDateHasNotStarted() {
         var s = PersistedState()
-        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
                           currencyCode: "EUR",
                           quitDate: now.addingTimeInterval(3 * 86_400))
         let p = QuitProgress(plan: s.plan!, now: now)
@@ -262,7 +300,7 @@ final class SlipEdgeCaseTests: XCTestCase {
 
     private func state(daysAgo: Double) -> PersistedState {
         var s = PersistedState()
-        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
                           currencyCode: "EUR",
                           quitDate: now.addingTimeInterval(-daysAgo * 86_400))
         return s
@@ -309,7 +347,7 @@ final class CloudMirrorTests: XCTestCase {
 
     private func state(day: Int, updated: TimeInterval) -> PersistedState {
         var s = PersistedState()
-        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
                           currencyCode: "EUR",
                           quitDate: Date(timeIntervalSince1970: 1_700_000_000
                                          - Double(day) * 86_400))

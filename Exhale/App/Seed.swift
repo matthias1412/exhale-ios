@@ -43,25 +43,24 @@ enum Seed {
         day: Int,
         currency: String = "EUR",
         amount: Int? = nil,
-        price: Decimal? = nil
+        spend: Decimal? = nil
     ) -> QuitPlan {
         QuitPlan(
             product: product,
             amount: amount ?? product.config.defaultAmount,
-            unitPrice: price ?? Self.seedPrice(for: product, currency: currency),
+            weeklySpend: spend ?? Self.seedSpend(for: product, currency: currency),
             currencyCode: currency,
             quitDate: quitDate(day: day)
         )
     }
 
-    /// Seeds need a concrete price to render. These are capture values only —
-    /// the shipping app never invents one.
-    private static func seedPrice(for product: NicotineProduct, currency: String) -> Decimal {
-        let pack: Decimal = currency == "ISK" ? 1890 : 9.50
+    /// Weekly spend. Capture values only — the shipping app never invents one.
+    private static func seedSpend(for product: NicotineProduct, currency: String) -> Decimal {
+        let isk = currency == "ISK"
         switch product {
-        case .cigarettes: return pack
-        case .vape: return currency == "ISK" ? 1200 : 6
-        case .pouches: return currency == "ISK" ? 1100 : 5.50
+        case .cigarettes: return isk ? 9900 : 50
+        case .vape:       return isk ? 6000 : 30
+        case .pouches:    return isk ? 5500 : 28
         }
     }
 
@@ -245,7 +244,7 @@ enum Seed {
         case "onboard-price-empty":
             // Continue must stay disabled until a price is entered.
             return onboarding(step: 4, product: .cigarettes) { model in
-                model.draft?.unitPrice = 0
+                model.draft?.weeklySpend = 0
             }
 
         case "milestones-late":
@@ -323,9 +322,17 @@ enum Seed {
         case "milestone-celebration-f70":
             return celebration(frame: 0.70)
         // For the recorder: burst runs, dismisses itself, spiral arrives behind
-        // it and lands on the dot the burst was about.
-        case "celebration-handoff":
-            return celebration(frame: nil, autoDismissAfter: 3.2)
+        // it and lands on the dot the burst was about. One per milestone,
+        // because the burst colour, the wording and — crucially — how dense
+        // the spiral is behind it are completely different at 72 hours and at
+        // a year.
+        case "celebration-handoff":       return handoff("1 week")
+        case "handoff-72h":               return handoff("72 h")
+        case "handoff-2weeks":            return handoff("2 weeks")
+        case "handoff-1month":            return handoff("1 month")
+        case "handoff-3months":           return handoff("3 months")
+        case "handoff-1year":             return handoff("1 year")
+        case "handoff-5years":            return handoff("5 years")
 
         case "debug-menu":
             return make(phase: .app, plan: plan(.cigarettes, day: 90)) { $0.debugMenuOpen = true }
@@ -360,6 +367,19 @@ enum Seed {
             model.pendingCelebration = Milestones.all.first { $0.when == "1 week" }
             model.celebrationFrame = frame
             model.celebrationAutoDismissAfter = autoDismissAfter
+        }
+    }
+
+    /// What you get for tapping the notification: the burst for the milestone
+    /// you just crossed, dismissing itself, and the spiral for that many days
+    /// arriving behind it.
+    private static func handoff(_ when: String) -> AppModel? {
+        guard let milestone = Milestones.forProduct(.cigarettes).first(where: { $0.when == when })
+        else { return nil }
+        let day = Int((milestone.hours / 24).rounded(.down)) + 1
+        return make(phase: .app, plan: plan(.cigarettes, day: day)) { model in
+            model.pendingCelebration = milestone
+            model.celebrationAutoDismissAfter = 3.2
         }
     }
 

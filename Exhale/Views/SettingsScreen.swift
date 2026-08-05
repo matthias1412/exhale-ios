@@ -125,8 +125,8 @@ struct SettingsScreen: View {
                 divider: true
             )
             SettingRow(
-                label: "Unit price",
-                value: plan.unitPrice.currencyString(plan.currencyCode),
+                label: plan.config.period == .day ? "Spend a day" : "Spend a week",
+                value: plan.spendPerPeriod.currencyString(plan.currencyCode),
                 divider: false
             )
         }

@@ -93,10 +93,10 @@ struct OnboardingFlow: View {
         case 2: !model.state.reasons.isEmpty
         // The price step was skippable. It stopped being optional the moment
         // the per-country price table went away and the field started blank:
-        // tapping through left unitPrice at zero, which makes The Bill a
+        // tapping through left the spend at zero, which makes The Bill a
         // receipt for nothing and the paywall read "Nicotine takes €0.00 from
         // you every year".
-        case 4: (model.draft?.unitPrice ?? 0) > 0
+        case 4: (model.draft?.weeklySpend ?? 0) > 0
         default: true
         }
     }

@@ -70,7 +70,7 @@ struct PriceStep: View {
             let progress = QuitProgress(plan: draft, now: model.clock.now)
 
             VStack(alignment: .leading, spacing: 14) {
-                Text(config.priceQuestion)
+                Text(config.spendQuestion)
                     .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -84,32 +84,32 @@ struct PriceStep: View {
                 .padding(.top, 4)
 
                 HStack(spacing: 26) {
-                    StepperCircle(symbol: "minus", enabled: draft.unitPrice > step) {
-                        model.draft?.unitPrice = max(step, draft.unitPrice - step)
+                    StepperCircle(symbol: "minus", enabled: draft.spendPerPeriod > step) {
+                        model.draft?.spendPerPeriod = max(step, draft.spendPerPeriod - step)
                     }
 
                     PriceField(
                         amount: Binding(
-                            get: { model.draft?.unitPrice ?? 0 },
-                            set: { model.draft?.unitPrice = $0 }
+                            get: { model.draft?.spendPerPeriod ?? 0 },
+                            set: { model.draft?.spendPerPeriod = $0 }
                         ),
                         currencyCode: draft.currencyCode
                     )
                     .frame(width: 190)
 
                     StepperCircle(symbol: "plus", enabled: true) {
-                        model.draft?.unitPrice = draft.unitPrice + step
+                        model.draft?.spendPerPeriod = draft.spendPerPeriod + step
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 30)
 
-                if draft.unitPrice > 0 {
+                if draft.weeklySpend > 0 {
                     BurnReadout(progress: progress, plan: draft, verb: config.burnVerb)
                         .padding(.top, 20)
                         .transition(.opacity)
                 } else {
-                    Text("Enter what you actually pay — we won't guess.")
+                    Text("Roughly what leaves your pocket. We won't guess it for you.")
                         .font(.spaceGrotesk(13))
                         .foregroundStyle(Palette.textFaint)
                         .frame(maxWidth: .infinity)

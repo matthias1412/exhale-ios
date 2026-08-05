@@ -5,7 +5,7 @@ import XCTest
 final class PaywallTests: XCTestCase {
 
     private func plan(currency: String) -> QuitPlan {
-        QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.50,
+        QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
                  currencyCode: currency,
                  quitDate: Date(timeIntervalSince1970: 1_700_000_000))
     }
@@ -70,7 +70,7 @@ final class PaywallTests: XCTestCase {
     /// A zero-cost habit must not divide by zero on the anchor.
     func testZeroCostHabitDoesNotCrashThePaybackAnchor() {
         var free = plan(currency: "EUR")
-        free.unitPrice = 0
+        free.weeklySpend = 0
         XCTAssertEqual(progress(free).paybackDays(yearlyPrice: 29.99), 1)
     }
 }

@@ -35,14 +35,15 @@ DEVICE="${SIM_ONE:?select-toolchain.sh did not run}"
 frame_gap() {
   case "$1" in
     sos-live)            echo 2 ;;   # 8 gaps spans a full 14s breath cycle
-    celebration-handoff) echo 1 ;;   # burst, self-dismiss at 3.2s, then reveal
+    handoff-*|celebration-handoff)
+                         echo 1 ;;   # burst, self-dismiss at 3.2s, then reveal
     *)                   echo 0 ;;
   esac
 }
 frame_count() {
   case "$1" in
-    sos-live|celebration-handoff) echo 9 ;;
-    *)                            echo 0 ;;
+    sos-live|celebration-handoff|handoff-*) echo 9 ;;
+    *)                                      echo 0 ;;
   esac
 }
 # Recorder time for the seeds with no filmstrip.

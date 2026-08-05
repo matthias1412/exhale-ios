@@ -53,7 +53,9 @@ struct ProductConfig: Sendable {
 
     // Onboarding copy
     let amountQuestion: String
-    let priceQuestion: String
+    /// Asked instead of a container price: pack, tin and pod sizes vary too
+    /// much for one number to mean the same thing to two people.
+    let spendQuestion: String
 
     // Amount
     let period: ConsumptionPeriod
@@ -103,7 +105,7 @@ struct ProductConfig: Sendable {
             displayName: "Cigarettes",
             pickerHint: "packs, rollies",
             amountQuestion: "Cigarettes on a normal day?",
-            priceQuestion: "Price of a pack?",
+            spendQuestion: "Spend on cigarettes in a normal day?",
             period: .day,
             defaultAmount: 15,
             minAmount: 1,
@@ -122,7 +124,7 @@ struct ProductConfig: Sendable {
             displayName: "Vape",
             pickerHint: "pods, disposables",
             amountQuestion: "Pods in a normal week?",
-            priceQuestion: "Price of one pod?",
+            spendQuestion: "Spend on vaping in a normal week?",
             period: .week,
             defaultAmount: 5,
             minAmount: 1,
@@ -141,7 +143,7 @@ struct ProductConfig: Sendable {
             displayName: "Nicotine pouches",
             pickerHint: "snus, pouches",
             amountQuestion: "Pouches on a normal day?",
-            priceQuestion: "Price of a tin?",
+            spendQuestion: "Spend on pouches in a normal day?",
             period: .day,
             defaultAmount: 8,
             minAmount: 1,

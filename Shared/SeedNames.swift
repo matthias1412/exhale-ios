@@ -97,6 +97,12 @@ enum SeedNames {
         "today-day365",
         "today-day1825",
         "celebration-handoff",
+        "handoff-72h",
+        "handoff-2weeks",
+        "handoff-1month",
+        "handoff-3months",
+        "handoff-1year",
+        "handoff-5years",
         "sos-live"
     ]
 
