@@ -29,7 +29,7 @@ enum SeedNames {
         "onboard-price-empty",
         "paywall",
         "paywall-loading",
-        "paywall-foreign-currency"
+        "paywall-foreign-currency",
 
         "today-day1",                   // the bloom at its smallest
         "today-day14",
