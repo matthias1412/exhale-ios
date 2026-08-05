@@ -253,3 +253,52 @@ final class RegressionTests: XCTestCase {
                        "every milestone is still ahead of a quit that hasn't begun")
     }
 }
+
+/// Edge cases around slipping, which is where a quit app is most likely to be
+/// wrong in a way the user actually feels.
+final class SlipEdgeCaseTests: XCTestCase {
+
+    private var now: Date { Date(timeIntervalSince1970: 1_700_000_000) }
+
+    private func state(daysAgo: Double) -> PersistedState {
+        var s = PersistedState()
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+                          currencyCode: "EUR",
+                          quitDate: now.addingTimeInterval(-daysAgo * 86_400))
+        return s
+    }
+
+    /// People open the app days after the cigarette, not during it.
+    func testARelapseCanBeBackdated() {
+        var s = state(daysAgo: 62)
+        let threeDaysAgo = now.addingTimeInterval(-3 * 86_400)
+        s.recordRelapse(at: threeDaysAgo)
+
+        XCTAssertEqual(QuitProgress(plan: s.plan!, now: now).dayNumber, 4,
+                       "the new streak runs from when it actually happened")
+        XCTAssertEqual(s.pastAttempts.first?.ended, threeDaysAgo)
+    }
+
+    /// The previous attempt must end where the new one begins, not overlap it.
+    func testBackdatedRelapseDoesNotOverlapAttempts() {
+        var s = state(daysAgo: 62)
+        let threeDaysAgo = now.addingTimeInterval(-3 * 86_400)
+        s.recordRelapse(at: threeDaysAgo)
+        XCTAssertEqual(s.pastAttempts.first?.ended, s.plan?.quitDate)
+    }
+
+    /// A backdated slip belongs to the run it happened in.
+    func testBackdatedSlipCountsAgainstTheRunItHappenedIn() {
+        var s = state(daysAgo: 10)
+        s.recordSlip(at: now.addingTimeInterval(-3 * 86_400))
+        XCTAssertEqual(s.slipsInCurrentAttempt().count, 1)
+    }
+
+    /// A slip dated before the current attempt began is not this run's.
+    func testSlipBeforeTheRunStartedIsNotCounted() {
+        var s = state(daysAgo: 2)
+        s.recordSlip(at: now.addingTimeInterval(-9 * 86_400))
+        XCTAssertEqual(s.slipsInCurrentAttempt().count, 0)
+        XCTAssertEqual(s.slips.count, 1)
+    }
+}

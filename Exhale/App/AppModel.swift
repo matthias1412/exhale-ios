@@ -65,6 +65,10 @@ final class AppModel {
     /// The spiral's arrival animation is a first-impression, not a transition.
     /// Without this it replayed on every tab switch back to Today.
     var hasRevealedSpiral = false
+    /// Whether iOS has actually granted permission. The scheduled-notification
+    /// chips claimed an alert was coming regardless, which is a promise the app
+    /// cannot keep once permission is denied.
+    var notificationsAuthorised = false
     /// A milestone crossed while the app was closed, waiting to be revealed.
     var pendingCelebration: Milestone?
     /// Screenshot-harness only: pins the celebration animation to a point in

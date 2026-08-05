@@ -13,6 +13,8 @@ import SwiftUI
 struct DayChipRow: View {
     @Binding var selection: Date
     let now: Date
+    /// Slips only ever happened in the past; a quit day can be scheduled.
+    var allowsFuture: Bool = true
 
     private var calendar: Calendar { .current }
 
@@ -44,7 +46,7 @@ struct DayChipRow: View {
         }
     }
 
-    private var offsets: [Int] { Array(-6...6) }
+    private var offsets: [Int] { Array(-6...(allowsFuture ? 6 : 0)) }
 
     private func date(for offset: Int) -> Date {
         let start = calendar.startOfDay(for: now)

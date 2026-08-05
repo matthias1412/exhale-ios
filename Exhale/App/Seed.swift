@@ -197,7 +197,18 @@ enum Seed {
 
         // Milestones
         case "milestones-early":
+            return make(phase: .app, plan: plan(.cigarettes, day: 2), tab: .milestones) {
+                $0.notificationsAuthorised = true
+            }
+
+        case "milestones-notifications-denied":
+            // No "notification scheduled" chip — we cannot keep that promise.
             return make(phase: .app, plan: plan(.cigarettes, day: 2), tab: .milestones)
+
+        case "slip-backdated":
+            return make(phase: .app, plan: plan(.cigarettes, day: 62)) {
+                $0.slipSheetOpen = true
+            }
         case "onboard-price-empty":
             // Continue must stay disabled until a price is entered.
             return onboarding(step: 3, product: .cigarettes) { model in

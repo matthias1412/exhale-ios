@@ -16,6 +16,10 @@ import SwiftUI
 ///   and the app says what the previous run was worth.
 struct SlipSheet: View {
     @Environment(AppModel.self) private var model
+    /// People do not open the app at the moment they smoke. Recording "now"
+    /// when it happened on Tuesday puts a wrong date in a permanent record,
+    /// and — for a relapse — starts the new streak from the wrong day.
+    @State private var when: Date?
 
     var body: some View {
         let progress = model.progress
@@ -47,6 +51,22 @@ struct SlipSheet: View {
                     .padding(.top, 10)
             }
 
+            Text("WHEN")
+                .font(.spaceGrotesk(11, weight: .medium))
+                .tracking(1.98)
+                .foregroundStyle(Palette.textFaint)
+                .padding(.top, 22)
+
+            DayChipRow(
+                selection: Binding(
+                    get: { when ?? model.clock.now },
+                    set: { when = min($0, model.clock.now) }
+                ),
+                now: model.clock.now,
+                allowsFuture: false
+            )
+            .padding(.top, 8)
+
             VStack(spacing: 12) {
                 // Listed first, and styled as the primary action, on purpose.
                 choice(
@@ -54,7 +74,7 @@ struct SlipSheet: View {
                     detail: "Your streak and your spiral stay exactly as they are.",
                     style: .accent
                 ) {
-                    model.state.recordSlip(at: model.clock.now)
+                    model.state.recordSlip(at: effectiveDate)
                     model.slipSheetOpen = false
                 }
 
@@ -63,7 +83,7 @@ struct SlipSheet: View {
                     detail: "Begins a new day 1. Your \(bestLine) is kept.",
                     style: .outline
                 ) {
-                    model.state.recordRelapse(at: model.clock.now)
+                    model.state.recordRelapse(at: effectiveDate)
                     model.slipSheetOpen = false
                 }
 
@@ -77,6 +97,11 @@ struct SlipSheet: View {
         .padding(.bottom, 30)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Palette.background)
+    }
+
+    /// Never later than now — a slip in the future is not a thing.
+    private var effectiveDate: Date {
+        min(when ?? model.clock.now, model.clock.now)
     }
 
     private var bestLine: String {

@@ -48,6 +48,8 @@ enum SeedNames {
         "bill-vape",
         "bill-long-money",              // shrunken money figure
         "milestones-early",
+        "milestones-notifications-denied",
+        "slip-backdated",
         "milestones-late",
         "settings"
 
@@ -73,6 +75,8 @@ enum SeedNames {
         "bill-cigarettes",
         "bill-tally-x10",
         "milestones-early",
+        "milestones-notifications-denied",
+        "slip-backdated",
         "sos-breathe-in",
         "settings"
     ]

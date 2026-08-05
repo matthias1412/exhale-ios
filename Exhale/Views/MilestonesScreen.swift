@@ -21,7 +21,9 @@ struct MilestonesScreen: View {
                         MilestoneRow(
                             milestone: entry.milestone,
                             state: entry.state,
+                            // Only promise an alert we can actually deliver.
                             scheduledDate: model.state.notifyMilestones
+                                && model.notificationsAuthorised
                                 ? entry.milestone.date(from: plan.quitDate)
                                 : nil
                         )
@@ -32,6 +34,11 @@ struct MilestonesScreen: View {
             }
         }
         .scrollIndicators(.hidden)
+        .task {
+            guard !model.clock.isFrozen else { return }
+            model.notificationsAuthorised =
+                await NotificationScheduler.shared.authorisationStatus() == .authorized
+        }
     }
 
     private var header: some View {
