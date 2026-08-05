@@ -9,7 +9,11 @@ platform :ios do
       key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
       issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
       key_content: ENV.fetch("APP_STORE_CONNECT_KEY"),
-      is_key_content_base64: true,
+      # The secret is set straight from the .p8 file, so it holds raw PEM.
+      # With base64 true, spaceship decodes that into binary and fails with
+      # "string contains null byte" — which reads like a corrupt key but is
+      # only a format mismatch.
+      is_key_content_base64: false,
       in_house: false
     )
 
