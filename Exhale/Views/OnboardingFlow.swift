@@ -125,6 +125,7 @@ struct ProductPickerStep: View {
                         product: product,
                         isSelected: model.draft?.product == product
                     ) {
+                        Feedback.selection()
                         model.draft = .starting(product: product)
                     }
                 }

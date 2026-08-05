@@ -181,6 +181,7 @@ struct CravingSOSScreen: View {
 
                 VStack(spacing: 12) {
                     Button {
+                        Feedback.cravingBeaten()
                         model.state.cravingsWon += 1
                         model.sosStartedAt = nil
                     } label: {

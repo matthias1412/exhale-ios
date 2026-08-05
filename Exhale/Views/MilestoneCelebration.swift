@@ -15,6 +15,9 @@ struct MilestoneCelebration: View {
     let dayNumber: Int
     let onDismiss: () -> Void
 
+    /// Set while the dot is travelling to its slot in the spiral.
+    @State private var settling = false
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppModel.self) private var model
     @State private var appeared: Date?
@@ -69,15 +72,67 @@ struct MilestoneCelebration: View {
                     .foregroundStyle(Palette.textFaint)
                     .padding(.bottom, 14)
 
-                PillButton("Good", style: .accent, action: onDismiss)
+                PillButton("Good", style: .accent) { settle() }
                     .padding(.horizontal, 40)
                     .padding(.bottom, 40)
+                    .opacity(settling ? 0 : 1)
             }
         }
-        .task { appeared = .now }
+        // The dot flies to the exact place it will live in the spiral, then
+        // hands over to the Canvas that draws it from then on. You cannot
+        // matchedGeometryEffect into a Canvas — its dots are drawn pixels, not
+        // views — but SpiralGeometry knows precisely where day N sits, so a
+        // real Circle can be flown to that point and faded out as the spiral
+        // takes over.
+        .overlay {
+            if settling {
+                GeometryReader { geo in
+                    SettlingDot(
+                        colour: milestone.colour,
+                        target: spiralPoint(in: geo.size),
+                        from: CGPoint(x: geo.size.width / 2, y: geo.size.height * 0.34)
+                    )
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            }
+        }
+        .task {
+            appeared = .now
+            // Fires as the burst launches, not on dismiss — the tap should
+            // coincide with the thing it is marking.
+            if !model.clock.isFrozen { Feedback.milestone() }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Milestone reached. \(milestone.when), \(milestone.title). \(milestone.body)")
         .accessibilityAddTraits(.isModal)
+    }
+
+    /// Where day `dayNumber`'s dot lives on the Today screen, in this view's
+    /// coordinates. The spiral is a square centred horizontally, inset 24pt,
+    /// so its geometry maps directly.
+    private func spiralPoint(in size: CGSize) -> CGPoint {
+        let side = size.width - 48
+        let scale = side / SpiralGeometry.box
+        let dots = SpiralGeometry.dots(forDay: dayNumber)
+        guard let dot = dots.last else {
+            return CGPoint(x: size.width / 2, y: size.height / 2)
+        }
+        return CGPoint(
+            x: 24 + dot.position.x * scale,
+            // The spiral occupies the flexible middle of Today; this lands it
+            // in the same band without needing that view's exact layout.
+            y: size.height * 0.42 - side / 2 + dot.position.y * scale
+        )
+    }
+
+    private func settle() {
+        guard !model.clock.isFrozen else { onDismiss(); return }
+        withAnimation(.easeInOut(duration: 0.55)) { settling = true }
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            onDismiss()
+        }
     }
 
     private func progress(at date: Date) -> Double {
@@ -148,5 +203,27 @@ private struct Burst: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+
+/// The dot in transit: leaves the celebration, lands where it will live.
+private struct SettlingDot: View {
+    let colour: Color
+    let target: CGPoint
+    let from: CGPoint
+
+    @State private var arrived = false
+
+    var body: some View {
+        Circle()
+            .fill(colour)
+            .frame(width: arrived ? 9 : 20, height: arrived ? 9 : 20)
+            .shadow(color: colour.opacity(0.8), radius: arrived ? 6 : 22)
+            .position(arrived ? target : from)
+            .opacity(arrived ? 0 : 1)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.55)) { arrived = true }
+            }
     }
 }

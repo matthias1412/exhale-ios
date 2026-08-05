@@ -82,9 +82,32 @@ enum Milestones {
                   title: "Two years free",
                   body: "Relapse risk is a fraction of what it was. This is who you are now.",
                   product: nil),
+        Milestone(hours: 26280, when: "3 years",
+                  title: "Three years free",
+                  body: "Whatever it used to be to you, it isn't that any more.",
+                  product: nil),
+        Milestone(hours: 35040, when: "4 years",
+                  title: "Four years free",
+                  body: "Long past the point where this was about willpower.",
+                  product: nil),
         Milestone(hours: 43800, when: "5 years",
                   title: "Five years out",
                   body: "For smokers: stroke risk has fallen back to that of a non-smoker.",
+                  product: nil),
+        // Every fifth year from here. Yearly this far out would be noise, but
+        // silence from year five onward — which is what this was — tells
+        // someone a decade in that the app stopped counting.
+        Milestone(hours: 87600, when: "10 years",
+                  title: "Ten years out",
+                  body: "For smokers: the risk of dying from lung cancer is around half that of someone still smoking.",
+                  product: nil),
+        Milestone(hours: 131400, when: "15 years",
+                  title: "Fifteen years out",
+                  body: "For smokers: heart disease risk is close to that of someone who never smoked.",
+                  product: nil),
+        Milestone(hours: 175200, when: "20 years",
+                  title: "Twenty years",
+                  body: "By most measures, the risk you carry is that of someone who never started.",
                   product: nil)
     ]
 

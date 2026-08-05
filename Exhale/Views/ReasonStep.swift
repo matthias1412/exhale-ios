@@ -61,6 +61,7 @@ struct ReasonStep: View {
     }
 
     private func toggle(_ reason: QuitReason) {
+        Feedback.selection()
         if let index = model.state.reasons.firstIndex(of: reason) {
             model.state.reasons.remove(at: index)
             if reason == .someone { model.state.reasonName = nil }
