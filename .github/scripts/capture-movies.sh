@@ -111,6 +111,33 @@ xcrun simctl status_bar "$UDID" override \
 
 with_timeout 180 xcrun simctl install "$UDID" "$APP_PATH"
 
+# First launch on a cold simulator pays for dyld work and took 93 seconds on
+# one run — long enough to blow the launch timeout, so the first seed recorded
+# four seconds of an app that had not started. Spend that cost once, before
+# anything is being recorded.
+echo "Warming up the first launch"
+with_timeout 180 xcrun simctl launch "$UDID" "$BUNDLE_ID" -seed today-day90 >/dev/null || true
+sleep 4
+with_timeout 30 xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+
+# recordVideo finalises on SIGINT, but if it doesn't, an unbounded `wait` blocks
+# forever: one run sat here for thirty minutes and was killed by the job
+# timeout with two of eight recordings done, at 10x billing.
+stop_recorder() {
+  local pid="$1" waited=0
+  kill -INT "$pid" 2>/dev/null || true
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge 30 ]; then
+      echo "::warning::recorder would not finalise after ${waited}s; killing it"
+      kill -9 "$pid" 2>/dev/null || true
+      break
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid" 2>/dev/null || true
+}
+
 for SEED in "${SEEDS[@]}"; do
   GAP="$(frame_gap "$SEED")"
   COUNT="$(frame_count "$SEED")"
@@ -133,10 +160,10 @@ for SEED in "${SEEDS[@]}"; do
   REC_PID=$!
   sleep 2   # recorder needs a moment to attach before it captures anything
 
-  if ! with_timeout 90 xcrun simctl launch "$UDID" "$BUNDLE_ID" -seed "$SEED" >/dev/null; then
+  if ! with_timeout 150 xcrun simctl launch "$UDID" "$BUNDLE_ID" -seed "$SEED" >/dev/null; then
     echo "::error::launch failed for seed '$SEED'"
-    kill -INT "$REC_PID" 2>/dev/null || true
-    wait "$REC_PID" 2>/dev/null || true
+    stop_recorder "$REC_PID"
+    rm -f "$OUT"   # four seconds of an app that never started
     echo "::endgroup::"
     continue
   fi
@@ -155,10 +182,7 @@ for SEED in "${SEEDS[@]}"; do
     sleep "$(plain_seconds "$SEED")"
   fi
 
-  # SIGINT, not SIGKILL — recordVideo writes the moov atom on interrupt, and a
-  # killed recording is an unplayable file.
-  kill -INT "$REC_PID" 2>/dev/null || true
-  wait "$REC_PID" 2>/dev/null || true
+  stop_recorder "$REC_PID"
   sleep 1
 
   if [[ -s "$OUT" ]]; then
