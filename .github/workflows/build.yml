@@ -12,6 +12,10 @@ on:
         description: "Sign and upload to TestFlight (needs match + App Store Connect secrets)"
         type: boolean
         default: false
+      setup_signing:
+        description: "First run only — let match CREATE certificates. Leave off afterwards."
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -63,4 +67,5 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY: ${{ secrets.APP_STORE_CONNECT_KEY }}
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          SETUP_SIGNING: ${{ inputs.setup_signing }}
         run: bundle exec fastlane beta

@@ -14,10 +14,14 @@ platform :ios do
     )
 
     # Certificates live in a separate PRIVATE repo — never in this one, which
-    # is public. Read-only in CI so a runner can never rotate them.
+    # is public. Read-only in CI so a runner can never rotate them, except on
+    # the very first run when there is nothing there yet to read.
+    first_run = ENV["SETUP_SIGNING"] == "true"
+    UI.important("SETUP_SIGNING is on — match may create certificates") if first_run
+
     match(
       type: "appstore",
-      readonly: true,
+      readonly: !first_run,
       app_identifier: "com.matthias1412.exhale",
       git_url: "https://github.com/matthias1412/exhale-certificates.git",
       git_branch: "main"
@@ -25,8 +29,13 @@ platform :ios do
 
     sh("xcodegen generate", log: false)
 
+    # No builds exist yet on the first upload, and without an explicit initial
+    # value this raises instead of returning zero.
     increment_build_number(
-      build_number: latest_testflight_build_number(api_key: api_key) + 1,
+      build_number: latest_testflight_build_number(
+        api_key: api_key,
+        initial_build_number: 0
+      ) + 1,
       xcodeproj: "Exhale.xcodeproj"
     )
 
