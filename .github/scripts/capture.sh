@@ -127,6 +127,14 @@ for DEVICE in "${DEVICES[@]}"; do
     # Long enough for the spiral's 1.1s reveal to settle.
     sleep 3
     if with_timeout 60 xcrun simctl io "$UDID" screenshot --type=png "$OUT_DIR/$SEED.png" >/dev/null; then
+      # One run caught a seed before it had drawn anything and produced a
+      # screenshot of bare background. Retry once rather than fail the job for
+      # what is usually a slow launch.
+      if [[ "$(stat -f%z "$OUT_DIR/$SEED.png")" -lt 100000 ]]; then
+        echo "::warning::$SEED looked blank, giving it another two seconds"
+        sleep 2
+        with_timeout 60 xcrun simctl io "$UDID" screenshot --type=png "$OUT_DIR/$SEED.png" >/dev/null || true
+      fi
       echo "  captured $SEED"
     else
       echo "::error::screenshot failed for seed '$SEED'"
@@ -139,15 +147,27 @@ for DEVICE in "${DEVICES[@]}"; do
 done
 
 # --- verify programmatically, not by eye -----------------------------------
+#
+# The absolute floor used to be 20 kB, which is far below anything a real
+# screen produces: a capture of the app showing nothing at all but its
+# background still came in at 74 kB and sailed through. Sizing is compared
+# against the run's own median instead, so the threshold tracks the device and
+# the screen density rather than a number guessed once.
 echo "Verifying captures"
+MEDIAN="$(find "$OUT_ROOT" -name '*.png' -exec stat -f%z {} \; \
+          | sort -n | awk '{a[NR]=$1} END {print (NR ? a[int((NR+1)/2)] : 0)}')"
+FLOOR=$(( MEDIAN * 2 / 5 ))
+echo "Median capture ${MEDIAN}B, flagging anything under ${FLOOR}B"
+
 FAILED=0
 while IFS= read -r -d '' PNG; do
   DIMS="$(sips -g pixelWidth -g pixelHeight "$PNG" | grep -oE '[0-9]+$' | paste -sd'x' -)"
   BYTES="$(stat -f%z "$PNG")"
   echo "  $(basename "$(dirname "$PNG")")/$(basename "$PNG")  $DIMS  ${BYTES}B"
-  # A screenshot of a crashed or blank app compresses to almost nothing.
-  if [[ "$BYTES" -lt 20000 ]]; then
-    echo "::error::$PNG is only ${BYTES} bytes — likely a blank or crashed screen"
+  # A screenshot of a crashed, blank or still-launching app compresses to a
+  # fraction of a real one.
+  if [[ "$BYTES" -lt 20000 || "$BYTES" -lt "$FLOOR" ]]; then
+    echo "::error::$PNG is only ${BYTES}B against a ${MEDIAN}B median — blank, crashed, or caught mid-launch"
     FAILED=1
   fi
 done < <(find "$OUT_ROOT" -name '*.png' -print0)
