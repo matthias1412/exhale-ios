@@ -2,9 +2,9 @@ import Foundation
 
 /// Every screenshot-reachable state, by name.
 ///
-/// This file is compiled into **both** the app and the UI test target so the
-/// harness can never drift from what the app actually understands. The app
-/// resolves each name in `Seed.swift`; the UI test iterates this list.
+/// Single source of truth for the harness: the app resolves each name in
+/// `Seed.swift`, and .github/scripts/capture.sh reads the names straight out of
+/// this file — which is why it must contain no unrelated string literals.
 ///
 /// Multi-step overlays get one entry per step. The breathing cycle is the
 /// obvious trap — capturing only "Breathe in" would leave two thirds of the
@@ -12,9 +12,7 @@ import Foundation
 enum SeedNames {
 
     /// Seeds captured on every device when `devices: all`.
-    static let all: [String] = onboarding + core + overlays
-
-    static let onboarding: [String] = [
+    static let all: [String] = [
         "onboard-product",
         "onboard-product-selected",
         "onboard-reason",
@@ -31,9 +29,7 @@ enum SeedNames {
         "paywall",
         "paywall-loading",
         "paywall-foreign-currency"
-    ]
 
-    static let core: [String] = [
         "today-day1",                   // the bloom at its smallest
         "today-day14",
         "today-day90",                  // the App Store hero
@@ -53,9 +49,7 @@ enum SeedNames {
         "milestones-early",
         "milestones-late",
         "settings"
-    ]
 
-    static let overlays: [String] = [
         "sos-breathe-in",
         "sos-hold",
         "sos-let-go",

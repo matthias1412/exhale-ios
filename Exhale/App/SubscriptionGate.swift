@@ -54,10 +54,9 @@ final class MockSubscriptionGate: SubscriptionGate {
     private(set) var state: SubscriptionState
     private(set) var isSubscribed: Bool
 
-    init(state: SubscriptionState = .ready(MockSubscriptionGate.sampleOffers),
-         isSubscribed: Bool = false) {
+    init(state: SubscriptionState = .ready(MockSubscriptionGate.sampleOffers)) {
         self.state = state
-        self.isSubscribed = isSubscribed
+        self.isSubscribed = false
     }
 
     static let sampleOffers: [SubscriptionOffer] = [

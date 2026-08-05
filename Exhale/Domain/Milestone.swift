@@ -14,12 +14,12 @@ struct Milestone: Identifiable, Equatable, Sendable {
     let title: String
     let body: String
     /// `nil` applies to every product.
-    let products: Set<NicotineProduct>?
+    let product: NicotineProduct?
 
     var id: String { "\(hours)-\(title)" }
 
-    func applies(to product: NicotineProduct) -> Bool {
-        products?.contains(product) ?? true
+    func applies(to candidate: NicotineProduct) -> Bool {
+        self.product == nil || self.product == candidate
     }
 
     func date(from quitDate: Date) -> Date {
@@ -33,59 +33,59 @@ enum Milestones {
         Milestone(hours: 0.34, when: "20 min",
                   title: "Heart rate settles",
                   body: "Pulse and blood pressure drift back toward normal.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 12, when: "12 h",
                   title: "Carbon monoxide clears",
                   body: "Oxygen levels in your blood return to normal.",
-                  products: [.cigarettes]),
+                  product: .cigarettes),
         Milestone(hours: 48, when: "48 h",
                   title: "Taste & smell sharpen",
                   body: "Nerve endings start repairing. Food gets better.",
-                  products: [.cigarettes]),
+                  product: .cigarettes),
         Milestone(hours: 72, when: "72 h",
                   title: "Nicotine-free body",
                   body: "The nicotine itself is out of your system. It's habit now, not chemistry.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 168, when: "1 week",
                   title: "Peak cravings behind you",
                   body: "The worst of the urges is statistically over.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 336, when: "2 weeks",
                   title: "Gums healing",
                   body: "The spot where the pouch sat stops feeling raw and tender.",
-                  products: [.pouches]),
+                  product: .pouches),
         Milestone(hours: 336, when: "2 weeks",
                   title: "Circulation improving",
                   body: "Walking and exercise start feeling easier.",
-                  products: [.cigarettes]),
+                  product: .cigarettes),
         Milestone(hours: 504, when: "3 weeks",
                   title: "Breathing easier",
                   body: "Airway irritation from vapour settles down.",
-                  products: [.vape]),
+                  product: .vape),
         Milestone(hours: 720, when: "1 month",
                   title: "Energy stabilises",
                   body: "Sleep, focus and mood level out without the spikes.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 2160, when: "3 months",
                   title: "The grip is broken",
                   body: "Cravings become rare visitors, not roommates.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 4320, when: "6 months",
                   title: "Half a year yours",
                   body: "Stress without reaching for it is your new normal.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 8760, when: "1 year",
                   title: "One full year",
                   body: "The odds of staying quit for good are now heavily on your side.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 17520, when: "2 years",
                   title: "Two years free",
                   body: "Relapse risk is a fraction of what it was. This is who you are now.",
-                  products: nil),
+                  product: nil),
         Milestone(hours: 43800, when: "5 years",
                   title: "Five years out",
                   body: "For smokers: stroke risk has fallen back to that of a non-smoker.",
-                  products: nil)
+                  product: nil)
     ]
 
     static func forProduct(_ product: NicotineProduct) -> [Milestone] {
@@ -165,13 +165,12 @@ extension Milestones {
     /// Effort rises sharply near a goal, so "one more day" is worth saying.
     static func imminent(
         for product: NicotineProduct,
-        hoursElapsed: Double,
-        withinHours: Double = 24
+        hoursElapsed: Double
     ) -> (milestone: Milestone, hoursAway: Double)? {
         guard let next = forProduct(product).first(where: { $0.hours > hoursElapsed }) else {
             return nil
         }
         let away = next.hours - hoursElapsed
-        return away <= withinHours ? (next, away) : nil
+        return away <= 24 ? (next, away) : nil
     }
 }
