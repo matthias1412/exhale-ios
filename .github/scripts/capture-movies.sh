@@ -22,14 +22,34 @@ fi
 
 DEVICE="${SIM_ONE:?select-toolchain.sh did not run}"
 
-# How long to hold the recorder open per seed. Anything not listed gets the
-# default: long enough for the 1.1s reveal plus a beat of the settled state.
-seconds_for() {
+# Stills are pulled *during* the recording as well, at these intervals. The
+# video is for a person to watch; the filmstrip is so the animation can be
+# checked without one — a claim that something moves should be backed by two
+# frames that differ, not by a file that exists.
+#
+# gap × count also sets how long the recorder stays open.
+# A screenshot round-trip costs the best part of a second, so a filmstrip can
+# only resolve animations slower than that. The 1.1s reveal is not one of them
+# — that is what the pinned-frame seed set is for — so the strip is taken only
+# where it can actually say something.
+frame_gap() {
   case "$1" in
-    sos-live)            echo 18 ;;   # a full 14s breath cycle, plus lead-in
-    celebration-handoff) echo 10 ;;   # burst, self-dismiss at 3.2s, then reveal
-    today-day1825)       echo 5  ;;
-    *)                   echo 4  ;;
+    sos-live)            echo 2 ;;   # 8 gaps spans a full 14s breath cycle
+    celebration-handoff) echo 1 ;;   # burst, self-dismiss at 3.2s, then reveal
+    *)                   echo 0 ;;
+  esac
+}
+frame_count() {
+  case "$1" in
+    sos-live|celebration-handoff) echo 9 ;;
+    *)                            echo 0 ;;
+  esac
+}
+# Recorder time for the seeds with no filmstrip.
+plain_seconds() {
+  case "$1" in
+    today-day1825) echo 5 ;;
+    *)             echo 4 ;;
   esac
 }
 
@@ -92,9 +112,16 @@ xcrun simctl status_bar "$UDID" override \
 with_timeout 180 xcrun simctl install "$UDID" "$APP_PATH"
 
 for SEED in "${SEEDS[@]}"; do
-  DURATION="$(seconds_for "$SEED")"
+  GAP="$(frame_gap "$SEED")"
+  COUNT="$(frame_count "$SEED")"
   OUT="$OUT_DIR/$SEED.mp4"
-  echo "::group::$SEED (${DURATION}s)"
+  STRIP="$OUT_DIR/frames/$SEED"
+  if [ "$COUNT" -gt 0 ]; then
+    mkdir -p "$STRIP"
+    echo "::group::$SEED (video + $COUNT frames every ${GAP}s)"
+  else
+    echo "::group::$SEED (video, $(plain_seconds "$SEED")s)"
+  fi
 
   with_timeout 30 xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
 
@@ -114,7 +141,19 @@ for SEED in "${SEEDS[@]}"; do
     continue
   fi
 
-  sleep "$DURATION"
+  if [ "$COUNT" -gt 0 ]; then
+    # Frame grabs run while the recorder is still open, so the video and the
+    # filmstrip are of the same take rather than two separate launches.
+    N=1
+    while [ "$N" -le "$COUNT" ]; do
+      with_timeout 30 xcrun simctl io "$UDID" screenshot --type=png \
+        "$STRIP/$(printf '%02d' "$N").png" >/dev/null 2>&1 || true
+      sleep "$GAP"
+      N=$((N + 1))
+    done
+  else
+    sleep "$(plain_seconds "$SEED")"
+  fi
 
   # SIGINT, not SIGKILL — recordVideo writes the moov atom on interrupt, and a
   # killed recording is an unplayable file.
@@ -146,7 +185,8 @@ while IFS= read -r -d '' MOV; do
   fi
 done < <(find "$OUT_DIR" -name '*.mp4' -print0)
 
-COUNT=$(find "$OUT_DIR" -name '*.mp4' | wc -l | tr -d ' ')
-echo "Expected ${#SEEDS[@]} recordings, produced $COUNT"
-[[ "$COUNT" -gt 0 ]] || { echo "::error::no recordings produced"; exit 1; }
+MOVIE_COUNT=$(find "$OUT_DIR" -name '*.mp4' | wc -l | tr -d ' ')
+FRAME_COUNT=$(find "$OUT_DIR/frames" -name '*.png' 2>/dev/null | wc -l | tr -d ' ')
+echo "Expected ${#SEEDS[@]} recordings, produced $MOVIE_COUNT (+ $FRAME_COUNT filmstrip frames)"
+[[ "$MOVIE_COUNT" -gt 0 ]] || { echo "::error::no recordings produced"; exit 1; }
 exit "$FAILED"
