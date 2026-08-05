@@ -47,10 +47,10 @@ final class NotificationScheduler {
             await scheduleMilestones(plan: plan, now: now)
         }
         if state.notifyWeeklyBill {
-            await scheduleWeeklyBill()
+            await scheduleWeeklyBill(plan: plan, now: now)
         }
         if state.notifyMorningCheckIn {
-            await scheduleMorningCheckIn()
+            await scheduleMorningCheckIn(plan: plan, now: now)
         }
 
         let pending = await centre.pendingNotificationRequests().count
@@ -78,37 +78,92 @@ final class NotificationScheduler {
         }
     }
 
-    private func scheduleWeeklyBill() async {
-        let content = UNMutableNotificationContent()
-        content.title = "Your week, itemised"
-        content.body = "See what you kept in your pocket this week."
-        content.sound = .default
+    /// The weekly bill, **with the actual number in it**.
+    ///
+    /// This was a repeating calendar trigger whose body read "See what you kept
+    /// in your pocket this week." A notification about money that doesn't say
+    /// the money is a notification about nothing — and the whole product is
+    /// that figure.
+    ///
+    /// Everything in Exhale derives from four stored facts, so a future value
+    /// is computable today. Eight discrete notifications with real figures
+    /// instead of one repeating placeholder; the window refills whenever the
+    /// app is opened. Well inside iOS's 64 pending limit alongside the
+    /// milestones.
+    private func scheduleWeeklyBill(plan: QuitPlan, now: Date) async {
+        let calendar = Calendar.current
+        guard var fire = calendar.nextDate(
+            after: now,
+            matching: DateComponents(hour: 10, weekday: 1),   // Sunday morning
+            matchingPolicy: .nextTime
+        ) else { return }
 
-        var components = DateComponents()
-        components.weekday = 1        // Sunday
-        components.hour = 10
+        for week in 0..<8 {
+            let progress = QuitProgress(plan: plan, now: fire)
+            let weekEarlier = QuitProgress(
+                plan: plan, now: fire.addingTimeInterval(-7 * 86_400)
+            )
+            let thisWeek = max(0, progress.moneyKept - weekEarlier.moneyKept)
 
-        await add(
-            identifier: Identifier.weeklyBill,
-            content: content,
-            trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        )
+            let content = UNMutableNotificationContent()
+            content.title = "Another week you kept it"
+            content.body = "\(thisWeek.moneyString(plan.currencyCode)) stayed in your "
+                + "pocket this week. \(progress.moneyKept.moneyString(plan.currencyCode)) "
+                + "since you stopped."
+            content.sound = .default
+
+            await add(
+                identifier: "\(Identifier.weeklyBill).\(week)",
+                content: content,
+                trigger: UNCalendarNotificationTrigger(
+                    dateMatching: calendar.dateComponents(
+                        [.year, .month, .day, .hour, .minute], from: fire
+                    ),
+                    repeats: false
+                )
+            )
+            fire = calendar.date(byAdding: .day, value: 7, to: fire) ?? fire
+        }
     }
 
-    private func scheduleMorningCheckIn() async {
-        let content = UNMutableNotificationContent()
-        content.title = "One day at a time"
-        content.body = "Your spiral is waiting."
-        content.sound = .default
+    /// The morning nudge, carrying the day count.
+    ///
+    /// "Your spiral is waiting" says nothing. The day number is evidence, and
+    /// the second line is deliberately about identity rather than effort —
+    /// people who come to see themselves as non-smokers stay stopped more
+    /// reliably than people who see themselves as smokers resisting.
+    private func scheduleMorningCheckIn(plan: QuitPlan, now: Date) async {
+        let calendar = Calendar.current
+        guard var fire = calendar.nextDate(
+            after: now, matching: DateComponents(hour: 9), matchingPolicy: .nextTime
+        ) else { return }
 
-        var components = DateComponents()
-        components.hour = 9
+        for day in 0..<7 {
+            let progress = QuitProgress(plan: plan, now: fire)
+            guard progress.hasStarted else {
+                fire = calendar.date(byAdding: .day, value: 1, to: fire) ?? fire
+                continue
+            }
 
-        await add(
-            identifier: Identifier.morningCheckIn,
-            content: content,
-            trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        )
+            let content = UNMutableNotificationContent()
+            content.title = "Day \(progress.dayNumber)"
+            content.body = progress.dayNumber <= 2
+                ? "The first days are the loudest. It gets quieter."
+                : "You've already done this \(progress.dayNumber - 1) times. Today is just the next one."
+            content.sound = .default
+
+            await add(
+                identifier: "\(Identifier.morningCheckIn).\(day)",
+                content: content,
+                trigger: UNCalendarNotificationTrigger(
+                    dateMatching: calendar.dateComponents(
+                        [.year, .month, .day, .hour, .minute], from: fire
+                    ),
+                    repeats: false
+                )
+            )
+            fire = calendar.date(byAdding: .day, value: 1, to: fire) ?? fire
+        }
     }
 
     private func add(

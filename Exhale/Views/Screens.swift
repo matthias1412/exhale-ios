@@ -158,6 +158,17 @@ struct CravingSOSScreen: View {
                         .padding(.bottom, 14)
                 }
 
+                // Self-efficacy — believing you can actually do the thing — is
+                // among the strongest predictors of staying stopped, and the
+                // count of cravings already outlasted is direct evidence of it.
+                // It was sitting on The Bill, where nobody mid-craving looks.
+                if model.state.cravingsWon > 0 {
+                    Text("You've outlasted \(model.state.cravingsWon) of these.")
+                        .font(.spaceGrotesk(13.5, weight: .bold))
+                        .foregroundStyle(Palette.accent)
+                        .padding(.bottom, 10)
+                }
+
                 Text("Most cravings die in under 3 minutes.\nYou only have to outlast this one.")
                     .font(.spaceGrotesk(14.5))
                     .multilineTextAlignment(.center)

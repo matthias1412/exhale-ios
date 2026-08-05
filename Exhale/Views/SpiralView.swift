@@ -10,6 +10,7 @@ struct SpiralView: View {
     let accessibilitySummary: String
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(AppModel.self) private var model
 
     @State private var revealStart: Date?
     @State private var isRevealing = true
@@ -34,10 +35,14 @@ struct SpiralView: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .task {
-            guard !reduceMotion else {
+            // Once per session. Switching tabs recreates this view, and
+            // replaying the arrival every time made a considered animation feel
+            // like a glitch.
+            guard !reduceMotion, !model.hasRevealedSpiral else {
                 isRevealing = false
                 return
             }
+            model.hasRevealedSpiral = true
             revealStart = .now
             try? await Task.sleep(for: .seconds(revealDuration + 0.1))
             isRevealing = false
