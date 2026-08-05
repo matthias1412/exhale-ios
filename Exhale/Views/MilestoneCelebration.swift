@@ -31,9 +31,11 @@ struct MilestoneCelebration: View {
             TimelineView(.animation(paused: reduceMotion)) { timeline in
                 let t = progress(at: timeline.date)
 
-                ZStack {
+                // Burst above, words below. Overlapping them meant the
+                // milestone's own dot ended up behind its own title.
+                VStack(spacing: 26) {
                     Burst(progress: t, colour: milestone.colour)
-                        .frame(width: 320, height: 320)
+                        .frame(width: 210, height: 210)
 
                     VStack(spacing: 0) {
                         Text(milestone.when.uppercased())
@@ -96,43 +98,48 @@ private struct Burst: View {
     let progress: Double
     let colour: Color
 
-    private let count = 64
+    private let count = 56
 
     var body: some View {
         Canvas { context, size in
             let centre = CGPoint(x: size.width / 2, y: size.height / 2)
-            // Ease out hard, so it leaps and then settles rather than drifting.
             let eased = 1 - pow(1 - progress, 3)
+            let ringRadius = (size.width / 2) * 0.86
 
             for i in 0..<count {
                 let angle = Double(i) * SpiralGeometry.goldenAngle
-                // Staggered so the ring doesn't move as one rigid disc.
+                // Staggered so it doesn't travel as one rigid disc.
                 let stagger = Double(i % 7) / 7 * 0.18
                 let local = min(1, max(0, (eased - stagger) / (1 - stagger)))
                 guard local > 0 else { continue }
 
-                let reach = (size.width / 2) * 0.92
-                let radius = reach * local
-                let diameter = 7 * (1 - local * 0.55)
-                // Fades as it travels, so the edge dissolves instead of stopping.
-                let opacity = local < 0.15 ? local / 0.15 : (1 - local) * 0.9
+                // Overshoot slightly, then settle back onto the ring — dots
+                // that simply stop look mechanical.
+                let overshoot = sin(local * .pi) * 0.09
+                let radius = ringRadius * (local + overshoot)
+                // They arrive and *stay*. The earlier version faded them to
+                // nothing by the halfway point, which left the last second of
+                // the animation as static text and no resting composition.
+                let diameter = 6.5 * (0.55 + 0.45 * local)
+                let opacity = min(1, local / 0.2) * 0.85
 
                 let point = CGPoint(
                     x: centre.x + radius * cos(angle),
                     y: centre.y + radius * sin(angle)
                 )
-                let rect = CGRect(
-                    x: point.x - diameter / 2, y: point.y - diameter / 2,
-                    width: diameter, height: diameter
+                context.fill(
+                    Path(ellipseIn: CGRect(x: point.x - diameter / 2,
+                                           y: point.y - diameter / 2,
+                                           width: diameter, height: diameter)),
+                    with: .color(colour.opacity(opacity))
                 )
-                context.fill(Path(ellipseIn: rect), with: .color(colour.opacity(opacity)))
             }
 
-            // The milestone's own dot, arriving last and staying.
-            let coreScale = 1 + sin(min(1, progress * 1.6) * .pi) * 0.6
-            let core = 16 * coreScale
+            // The milestone's own dot, held at the centre of its own ring.
+            let pulse = 1 + sin(min(1, progress * 1.5) * .pi) * 0.7
+            let core = 20 * pulse
             context.drawLayer { layer in
-                layer.addFilter(.shadow(color: colour.opacity(0.7), radius: 22))
+                layer.addFilter(.shadow(color: colour.opacity(0.8), radius: 26))
                 layer.fill(
                     Path(ellipseIn: CGRect(x: centre.x - core / 2, y: centre.y - core / 2,
                                            width: core, height: core)),
