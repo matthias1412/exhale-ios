@@ -27,6 +27,7 @@ fastlane/test_output/
 
 # CI artefacts pulled down locally for inspection
 artifacts/
+!artifacts/store/
 
 # macOS / Windows cruft
 .DS_Store
