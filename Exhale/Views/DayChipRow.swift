@@ -13,8 +13,6 @@ import SwiftUI
 struct DayChipRow: View {
     @Binding var selection: Date
     let now: Date
-    /// Days either side of today.
-    var span: Int = 6
 
     private var calendar: Calendar { .current }
 
@@ -46,7 +44,7 @@ struct DayChipRow: View {
         }
     }
 
-    private var offsets: [Int] { Array(-span...span) }
+    private var offsets: [Int] { Array(-6...6) }
 
     private func date(for offset: Int) -> Date {
         let start = calendar.startOfDay(for: now)

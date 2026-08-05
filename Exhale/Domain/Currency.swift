@@ -58,12 +58,6 @@ enum Currencies {
         fractionDigits(for: code) == 0 ? 10 : 0.5
     }
 
-    static func roundToStep(_ value: Decimal, step: Decimal) -> Decimal {
-        guard step > 0 else { return value }
-        let steps = (value / step) as NSDecimalNumber
-        let rounded = Decimal(steps.doubleValue.rounded())
-        return max(step, rounded * step)
-    }
 }
 
 extension Decimal {

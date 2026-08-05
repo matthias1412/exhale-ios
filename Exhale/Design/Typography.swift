@@ -48,7 +48,3 @@ private enum SpaceGrotesk {
     }
 }
 
-extension Text {
-    /// Counters that tick — money, units, day numbers — must not jitter.
-    func tickingDigits() -> Text { self.monospacedDigit() }
-}

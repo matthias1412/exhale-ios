@@ -79,14 +79,6 @@ enum QuitReason: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Ordering hint for the paywall's anchor — money-motivated users get the
-    /// annual figure first, everyone else gets the health timeline first.
-    var leadsWithMoney: Bool {
-        switch self {
-        case .money: true
-        default: false
-        }
-    }
 }
 
 extension Array where Element == QuitReason {

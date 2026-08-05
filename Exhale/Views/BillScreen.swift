@@ -277,8 +277,6 @@ struct TallyGlyphView: View {
 
 /// The torn bottom edge of the receipt.
 struct TornEdge: Shape {
-    var toothWidth: CGFloat = 9
-
     func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: rect.minX, y: rect.minY))
@@ -286,7 +284,7 @@ struct TornEdge: Shape {
         var x = rect.minX
         var down = true
         while x < rect.maxX {
-            let next = min(x + toothWidth, rect.maxX)
+            let next = min(x + 9, rect.maxX)
             path.addLine(to: CGPoint(x: next, y: down ? rect.maxY : rect.minY))
             x = next
             down.toggle()

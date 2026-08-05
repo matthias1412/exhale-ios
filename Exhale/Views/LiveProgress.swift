@@ -14,16 +14,13 @@ import SwiftUI
 struct LiveProgress<Content: View>: View {
     let plan: QuitPlan
     let clock: AppClock
-    /// How often to recompute. One second for money; the spiral and milestones
-    /// don't need anything like that.
-    var interval: TimeInterval = 1
     @ViewBuilder var content: (QuitProgress) -> Content
 
     var body: some View {
         if clock.isFrozen {
             content(QuitProgress(plan: plan, now: clock.now))
         } else {
-            TimelineView(.periodic(from: .now, by: interval)) { timeline in
+            TimelineView(.periodic(from: .now, by: 1)) { timeline in
                 content(QuitProgress(plan: plan, now: timeline.date))
             }
         }

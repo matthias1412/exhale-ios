@@ -80,11 +80,6 @@ struct ProductConfig: Sendable {
 
     let tallyGlyph: TallyGlyph
 
-    /// The default unit price is expressed as a multiplier of the currency's
-    /// reference pack price, so we never hardcode cross-currency rates.
-    /// See `Currencies.referencePackPrice(for:)`.
-    let priceRelativeToPack: Double
-
     /// "PACKS NOT BOUGHT"
     var tallyLabel: String { "\(containerNoun.uppercased()) NOT BOUGHT" }
 
@@ -119,8 +114,7 @@ struct ProductConfig: Sendable {
             containerNoun: "packs",
             containerNounSingular: "pack",
             burnVerb: "going up in smoke",
-            tallyGlyph: TallyGlyph(width: 15, height: 21, cornerRadius: 2),
-            priceRelativeToPack: 1.0
+            tallyGlyph: TallyGlyph(width: 15, height: 21, cornerRadius: 2)
     )
 
     static let vape = ProductConfig(
@@ -139,9 +133,7 @@ struct ProductConfig: Sendable {
             containerNoun: "pods",
             containerNounSingular: "pod",
             burnVerb: "vanishing into vapour",
-            tallyGlyph: TallyGlyph(width: 9, height: 22, cornerRadius: 5),
-            // €6.00 against a €9.50 reference pack
-            priceRelativeToPack: 6.0 / 9.5
+            tallyGlyph: TallyGlyph(width: 9, height: 22, cornerRadius: 5)
     )
 
     static let pouches = ProductConfig(
@@ -160,8 +152,6 @@ struct ProductConfig: Sendable {
             containerNoun: "tins",
             containerNounSingular: "tin",
             burnVerb: "disappearing under your lip",
-            tallyGlyph: TallyGlyph(width: 18, height: 18, cornerRadius: nil),
-            // €5.50 against a €9.50 reference pack
-            priceRelativeToPack: 5.5 / 9.5
+            tallyGlyph: TallyGlyph(width: 18, height: 18, cornerRadius: nil)
     )
 }

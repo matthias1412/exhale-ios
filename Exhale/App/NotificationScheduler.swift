@@ -36,9 +36,6 @@ final class NotificationScheduler {
         }
     }
 
-    func authorisationStatus() async -> UNAuthorizationStatus {
-        await centre.notificationSettings().authorizationStatus
-    }
 
     /// Rebuilds the entire schedule from the current plan and preferences.
     func reschedule(state: PersistedState, now: Date = Date()) async {
@@ -154,11 +151,4 @@ final class NotificationScheduler {
         )
     }
 
-    /// Diagnostic for Settings — what is actually queued, read back from the
-    /// system rather than recomputed from the plan.
-    func pendingMilestoneCount() async -> Int {
-        await centre.pendingNotificationRequests()
-            .filter { $0.identifier.hasPrefix(Identifier.milestonePrefix) }
-            .count
-    }
 }
