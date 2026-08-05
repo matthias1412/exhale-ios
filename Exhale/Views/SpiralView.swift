@@ -125,13 +125,33 @@ struct SpiralView: View {
     ) {
         // Dots arrive slightly small and settle to full size.
         let diameter = dot.diameter * scale * (0.6 + 0.4 * p)
-        let rect = CGRect(
-            x: dot.position.x * scale - diameter / 2,
-            y: dot.position.y * scale - diameter / 2,
-            width: diameter,
-            height: diameter
-        )
-        let colour = dot.isYearMarker ? Palette.yearMarker : Palette.spiralDot(ramp: dot.ramp)
+
+        // ...and arrive from slightly inboard, drifting out into place. Fading
+        // in on the spot reads as materialising; travelling the last few points
+        // outward reads as the spiral growing, which is what it is. The offset
+        // is deliberately small — a couple of points at most — because at this
+        // dot density anything larger turns into visible churn.
+        let centre = SpiralGeometry.centre
+        let dx = dot.position.x - centre.x
+        let dy = dot.position.y - centre.y
+        let travel = 1 - 0.055 * (1 - p)
+        let x = (centre.x + dx * travel) * scale
+        let y = (centre.y + dy * travel) * scale
+
+        let rect = CGRect(x: x - diameter / 2, y: y - diameter / 2,
+                          width: diameter, height: diameter)
+
+        // A brief lift as each dot lands, decaying to nothing — an ember
+        // catching rather than a light switching on. Done as brightness rather
+        // than a shadow filter: a filter per dot would mean eighteen hundred
+        // layers, and this costs nothing.
+        // Year markers already carry their own glow, so only ordinary dots
+        // get the flash — doubling up would make them strobe.
+        let flash = p >= 1 ? 0 : sin(min(1, max(0, (p - 0.45) / 0.55)) * .pi) * 0.22
+        let colour = dot.isYearMarker
+            ? Palette.yearMarker
+            : Palette.spiralDot(ramp: dot.ramp, lift: flash)
+
         context.fill(Path(ellipseIn: rect), with: .color(colour.opacity(p)))
     }
 }

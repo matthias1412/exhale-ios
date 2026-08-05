@@ -36,11 +36,16 @@ enum Palette {
 
     /// The spiral's ember → sea-glass ramp, `t` from 0 (oldest) to 1 (newest).
     /// Source is HSL; SwiftUI takes HSB, so convert rather than eyeball it.
-    static func spiralDot(ramp t: Double) -> Color {
+    ///
+    /// `lift` brightens the dot without shifting its hue, used for the brief
+    /// flash as each one lands during the reveal. Done here rather than with
+    /// `Color.mix(with:by:)`, which is iOS 18 and would not compile against our
+    /// iOS 17 target.
+    static func spiralDot(ramp t: Double, lift: Double = 0) -> Color {
         Color(
             hslHue: 18 + t * 154,
             saturation: (85 - t * 25) / 100,
-            lightness: (54 + t * 8) / 100
+            lightness: min(1, (54 + t * 8) / 100 + lift)
         )
     }
 
