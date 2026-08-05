@@ -107,6 +107,19 @@ struct RootView: View {
             // is on screen.
             await NotificationScheduler.shared.reschedule(state: model.state)
             model.claimPendingCelebration()
+
+            // A milestone crossed *while you are looking at the app* was
+            // never celebrated. Claiming only happened on becoming active, so
+            // the app had to be backgrounded and reopened first. Day one has
+            // marks at 20 minutes and 12 hours, and a brand new user watching
+            // the money tick is exactly who crosses them with the app open —
+            // so the app's very first reward was the one most likely to be
+            // silently swallowed.
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                guard model.pendingCelebration == nil else { continue }
+                model.claimPendingCelebration()
+            }
         }
     }
 }
