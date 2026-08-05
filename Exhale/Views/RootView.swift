@@ -33,6 +33,12 @@ struct RootView: View {
                     .zIndex(20)
             }
 
+            if model.slipSheetOpen {
+                SlipSheet()
+                    .transition(.move(edge: .bottom))
+                    .zIndex(25)
+            }
+
             if model.debugMenuOpen {
                 DebugMenu()
                     .transition(.opacity)

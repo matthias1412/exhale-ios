@@ -25,6 +25,10 @@ struct PersistedState: Codable, Equatable, Sendable {
     var notifyMilestones = true
     var notifyWeeklyBill = true
     var notifyMorningCheckIn = false
+    /// Finished runs, kept forever — see QuitAttempt for why.
+    var pastAttempts: [QuitAttempt] = []
+    /// Individual slips that did not end a run.
+    var slips: [Slip] = []
 }
 
 /// A frozen clock in seeded runs, so screenshots are byte-identical between
@@ -49,6 +53,7 @@ final class AppModel {
     var tab: MainTab = .today
     var settingsOpen = false
     var debugMenuOpen = false
+    var slipSheetOpen = false
     var sosStartedAt: Date?
     var banner: BannerContent?
     var onboardingStep = 0

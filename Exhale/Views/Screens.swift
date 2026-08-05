@@ -32,7 +32,9 @@ struct TodayScreen: View {
 
                 CravingButton()
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 14)
+
+                SlipLink()
+                    .padding(.bottom, 8)
             }
         }
     }
@@ -275,5 +277,20 @@ struct ScreenStub: View {
                 .foregroundStyle(Palette.textFaint)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// The quiet way out. Deliberately understated and placed below the craving
+/// button — someone who has already smoked doesn't need a loud button about it,
+/// but they do need to find one rather than just closing the app.
+struct SlipLink: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Button("I slipped") { model.slipSheetOpen = true }
+            .font(.spaceGrotesk(12))
+            .foregroundStyle(Palette.textFaint)
+            .padding(.vertical, 6)
+            .accessibilityHint("Record a cigarette without necessarily ending your streak")
     }
 }

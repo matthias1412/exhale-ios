@@ -191,6 +191,22 @@ enum Seed {
                 )
             }
 
+        case "slip-sheet":
+            return make(phase: .app, plan: plan(.cigarettes, day: 62)) {
+                $0.slipSheetOpen = true
+            }
+
+        case "today-after-relapse":
+            // A fresh day 1 that still remembers a 62-day run.
+            return make(phase: .app, plan: plan(.cigarettes, day: 1)) { model in
+                var state = model.state
+                state.pastAttempts = [
+                    QuitAttempt(started: quitDate(day: 1).addingTimeInterval(-62 * 86_400),
+                                ended: quitDate(day: 1))
+                ]
+                model.state = state
+            }
+
         case "debug-menu":
             return make(phase: .app, plan: plan(.cigarettes, day: 90)) { $0.debugMenuOpen = true }
 

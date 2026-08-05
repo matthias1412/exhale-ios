@@ -51,6 +51,8 @@ enum SeedNames {
         "sos-breathe-in",
         "sos-hold",
         "sos-let-go",
+        "slip-sheet",
+        "today-after-relapse",
         "banner-milestone",
         "debug-menu"
     ]

@@ -132,3 +132,52 @@ final class EconomicsTests: XCTestCase {
         XCTAssertGreaterThan(cigs, vape)
     }
 }
+
+/// Relapse is the norm, not the exception, so the maths around it has to hold.
+final class RelapseTests: XCTestCase {
+
+    private func state(quitDaysAgo: Int) -> PersistedState {
+        var s = PersistedState()
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+                          currencyCode: "EUR",
+                          quitDate: Date(timeIntervalSince1970: 1_700_000_000
+                                         - Double(quitDaysAgo) * 86_400))
+        return s
+    }
+
+    private var now: Date { Date(timeIntervalSince1970: 1_700_000_000) }
+
+    func testSlipDoesNotResetTheStreak() {
+        var s = state(quitDaysAgo: 60)
+        let before = QuitProgress(plan: s.plan!, now: now).dayNumber
+        s.recordSlip(at: now)
+        XCTAssertEqual(QuitProgress(plan: s.plan!, now: now).dayNumber, before,
+                       "one slip must not zero the spiral")
+        XCTAssertEqual(s.slipsInCurrentAttempt().count, 1)
+        XCTAssertTrue(s.pastAttempts.isEmpty)
+    }
+
+    func testRelapseStartsANewRunButKeepsTheOldOne() {
+        var s = state(quitDaysAgo: 60)
+        s.recordRelapse(at: now)
+        XCTAssertEqual(s.pastAttempts.count, 1)
+        XCTAssertEqual(QuitProgress(plan: s.plan!, now: now).dayNumber, 1)
+        XCTAssertEqual(s.totalAttempts, 2)
+    }
+
+    /// The days already earned still count — that is the whole point.
+    func testBestStreakSurvivesARelapse() {
+        var s = state(quitDaysAgo: 60)
+        let previous = QuitProgress(plan: s.plan!, now: now).dayNumber
+        s.recordRelapse(at: now)
+        XCTAssertEqual(s.bestStreakDays(now: now), previous)
+    }
+
+    func testSlipsFromEarlierRunsDoNotCountAgainstTheCurrentOne() {
+        var s = state(quitDaysAgo: 60)
+        s.recordSlip(at: now.addingTimeInterval(-30 * 86_400))
+        s.recordRelapse(at: now)
+        XCTAssertEqual(s.slipsInCurrentAttempt().count, 0)
+        XCTAssertEqual(s.slips.count, 1, "the slip is still on record, just not this run's")
+    }
+}
