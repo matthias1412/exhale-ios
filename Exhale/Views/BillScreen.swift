@@ -20,7 +20,7 @@ struct BillScreen: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 18)
-                .padding(.bottom, 14)
+                .padding(.bottom, 76)
                 }
             }
         }

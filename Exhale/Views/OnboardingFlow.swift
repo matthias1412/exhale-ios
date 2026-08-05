@@ -11,13 +11,22 @@ struct OnboardingFlow: View {
         VStack(alignment: .leading, spacing: 0) {
             header
 
-            switch model.onboardingStep {
-            case 0: ProductPickerStep()
-            case 1: ReasonStep()
-            case 2: AmountStep()
-            case 3: PriceStep()
-            default: QuitMomentStep()
+            Group {
+                switch model.onboardingStep {
+                case 0: ProductPickerStep()
+                case 1: ReasonStep()
+                case 2: AmountStep()
+                case 3: PriceStep()
+                default: QuitMomentStep()
+                }
             }
+            // Steps slide in the direction of travel, so Back feels like going
+            // back rather than like another forward step.
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .offset(x: 22)),
+                removal: .opacity.combined(with: .offset(x: -22))
+            ))
+            .animation(.snappy(duration: 0.28), value: model.onboardingStep)
 
             Spacer(minLength: 0)
 

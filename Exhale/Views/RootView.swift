@@ -13,14 +13,22 @@ struct RootView: View {
         ZStack {
             Palette.background.ignoresSafeArea()
 
-            switch model.state.phase {
-            case .onboarding:
-                OnboardingFlow()
-            case .paywall:
-                PaywallScreen()
-            case .app:
-                MainShell()
+            Group {
+                switch model.state.phase {
+                case .onboarding:
+                    OnboardingFlow()
+                case .paywall:
+                    PaywallScreen()
+                case .app:
+                    MainShell()
+                }
             }
+            // Onboarding into paywall into the app used to be three hard cuts.
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .offset(y: 14)),
+                removal: .opacity
+            ))
+            .animation(.snappy(duration: 0.34), value: model.state.phase)
 
             if model.settingsOpen {
                 SettingsScreen()
@@ -126,6 +134,11 @@ struct MainShell: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Tabs used to cut hard between screens. Crossfade with a little
+            // vertical travel reads as one surface changing rather than three
+            // unrelated views being swapped.
+            .transition(.opacity.combined(with: .offset(y: 8)))
+            .animation(.snappy(duration: 0.26), value: model.tab)
 
             TabBar()
         }
@@ -181,48 +194,6 @@ struct AppHeader: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, 8)
-    }
-}
-
-struct TabBar: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        // Hidden entirely before the quit begins; there is nothing to switch to.
-        if let progress = model.progress, !progress.hasStarted {
-            EmptyView()
-        } else {
-            tabs
-        }
-    }
-
-    private var tabs: some View {
-        HStack(spacing: 8) {
-            ForEach(MainTab.allCases, id: \.self) { tab in
-                let selected = model.tab == tab
-                Button {
-                    model.tab = tab
-                } label: {
-                    Text(tab.title)
-                        .font(.spaceGrotesk(13, weight: .bold))
-                        .foregroundStyle(selected ? Palette.accentSoft : Palette.textFaint)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(
-                            Capsule().fill(
-                                selected ? Palette.accent.opacity(0.14) : .clear
-                            )
-                        )
-                }
-                .accessibilityAddTraits(selected ? [.isSelected] : [])
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 8)
-        .overlay(alignment: .top) {
-            Rectangle().fill(Palette.hairline).frame(height: 1)
-        }
     }
 }
 

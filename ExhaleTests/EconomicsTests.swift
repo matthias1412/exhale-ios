@@ -302,3 +302,52 @@ final class SlipEdgeCaseTests: XCTestCase {
         XCTAssertEqual(s.slips.count, 1)
     }
 }
+
+/// The streak surviving a reinstall is the single failure users would not
+/// forgive, so the conflict rule needs to be exactly right.
+final class CloudMirrorTests: XCTestCase {
+
+    private func state(day: Int, updated: TimeInterval) -> PersistedState {
+        var s = PersistedState()
+        s.plan = QuitPlan(product: .cigarettes, amount: 15, unitPrice: 9.5,
+                          currencyCode: "EUR",
+                          quitDate: Date(timeIntervalSince1970: 1_700_000_000
+                                         - Double(day) * 86_400))
+        s.updatedAt = Date(timeIntervalSince1970: updated)
+        return s
+    }
+
+    /// A fresh install has nothing on disk — the cloud copy must win.
+    func testReinstallRestoresFromCloud() {
+        let cloud = state(day: 200, updated: 1_700_000_000)
+        XCTAssertEqual(CloudMirror.newer(nil, cloud)?.plan?.quitDate,
+                       cloud.plan?.quitDate)
+    }
+
+    func testNewerCopyWins() {
+        let older = state(day: 10, updated: 1_700_000_000)
+        let newer = state(day: 40, updated: 1_700_000_900)
+        XCTAssertEqual(CloudMirror.newer(older, newer)?.plan?.quitDate,
+                       newer.plan?.quitDate)
+        XCTAssertEqual(CloudMirror.newer(newer, older)?.plan?.quitDate,
+                       newer.plan?.quitDate)
+    }
+
+    func testNothingAnywhereIsNotAnError() {
+        XCTAssertNil(CloudMirror.newer(nil, nil))
+    }
+
+    /// updatedAt exists only to break ties. If it counted toward equality,
+    /// stamping it during a save would retrigger the save that set it.
+    func testUpdatedAtIsExcludedFromEquality() {
+        var a = state(day: 5, updated: 1_700_000_000)
+        var b = a
+        b.updatedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertEqual(a, b)
+
+        b.cravingsWon += 1
+        XCTAssertNotEqual(a, b, "real changes must still compare unequal")
+        a.cravingsWon += 1
+        XCTAssertEqual(a, b)
+    }
+}

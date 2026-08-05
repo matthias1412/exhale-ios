@@ -30,7 +30,8 @@ struct MilestonesScreen: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.vertical, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 82)
             }
         }
         .scrollIndicators(.hidden)

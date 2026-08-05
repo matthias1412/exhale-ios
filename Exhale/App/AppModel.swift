@@ -19,6 +19,10 @@ enum MainTab: String, Codable, Sendable, CaseIterable {
 
 /// What gets written to disk. Everything else is derived or ephemeral.
 struct PersistedState: Codable, Equatable, Sendable {
+    /// When this state was last written. Used only to decide which copy wins
+    /// between a device and iCloud — and excluded from `==` below, so stamping
+    /// it on save can't re-trigger the very save that set it.
+    var updatedAt: Date = .distantPast
     var phase: Phase = .onboarding
     var plan: QuitPlan?
     var cravingsWon: Int = 0
@@ -37,6 +41,17 @@ struct PersistedState: Codable, Equatable, Sendable {
     var pastAttempts: [QuitAttempt] = []
     /// Individual slips that did not end a run.
     var slips: [Slip] = []
+
+    static func == (a: Self, b: Self) -> Bool {
+        a.phase == b.phase && a.plan == b.plan
+            && a.cravingsWon == b.cravingsWon
+            && a.notifyMilestones == b.notifyMilestones
+            && a.notifyWeeklyBill == b.notifyWeeklyBill
+            && a.notifyMorningCheckIn == b.notifyMorningCheckIn
+            && a.reasons == b.reasons && a.reasonName == b.reasonName
+            && a.lastCelebratedHours == b.lastCelebratedHours
+            && a.pastAttempts == b.pastAttempts && a.slips == b.slips
+    }
 }
 
 /// A frozen clock in seeded runs, so screenshots are byte-identical between
@@ -89,6 +104,7 @@ final class AppModel {
     let subscriptions: any SubscriptionGate
 
     private let store: StateStore
+    private let cloud = CloudMirror()
     private let persistenceEnabled: Bool
 
     init(
@@ -106,17 +122,23 @@ final class AppModel {
             ?? (clock.isFrozen ? MockSubscriptionGate() : RevenueCatSubscriptionGate())
     }
 
-    /// Normal launch: load from disk.
+    /// Normal launch: whichever of disk and iCloud was written last.
+    ///
+    /// A reinstall finds nothing on disk and everything in iCloud, which is the
+    /// case this exists for.
     static func loaded() -> AppModel {
         let store = StateStore.applicationSupport
-        return AppModel(state: store.load() ?? PersistedState(), store: store)
+        let restored = CloudMirror.newer(store.load(), CloudMirror().load())
+        return AppModel(state: restored ?? PersistedState(), store: store)
     }
 
     /// Called from a single `.onChange(of: model.state)` at the root, so no
     /// mutation site has to remember to save. Seeded runs never write.
     func persist() {
         guard persistenceEnabled else { return }
+        state.updatedAt = Date()
         store.save(state)
+        cloud.save(state)
     }
 
     var plan: QuitPlan? { state.plan }

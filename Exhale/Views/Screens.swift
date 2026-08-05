@@ -51,7 +51,9 @@ struct TodayScreen: View {
                     .padding(.horizontal, 24)
 
                 SlipLink()
-                    .padding(.bottom, 8)
+                    // Clearance for the floating tab bar, which now sits over
+                    // the content rather than below it.
+                    .padding(.bottom, 62)
             }
         }
     }
@@ -140,7 +142,7 @@ struct CravingSOSScreen: View {
 
                 Spacer()
 
-                BreathingOrb(phasePosition: phasePosition, reduceMotion: reduceMotion)
+                BreathingOrb(phasePosition: phasePosition, reduceMotion: reduceMotion, elapsed: elapsed)
                     .frame(width: 240, height: 240)
 
                 Spacer()
@@ -208,6 +210,9 @@ struct CravingSOSScreen: View {
 struct BreathingOrb: View {
     let phasePosition: Double
     let reduceMotion: Bool
+    /// Drives the shader. Separate from `phasePosition` so the shimmer keeps
+    /// drifting through the hold, when the orb itself is nearly still.
+    var elapsed: Double = 0
 
     var body: some View {
         ZStack {
@@ -223,6 +228,18 @@ struct BreathingOrb: View {
                     )
                 )
                 .frame(width: 200, height: 200)
+                // A caustic drift across the surface, so breath looks like it
+                // moves *through* the orb rather than just resizing it. Off
+                // entirely under Reduce Motion.
+                .visualEffect { content, proxy in
+                    content.colorEffect(
+                        ShaderLibrary.orbShimmer(
+                            .float2(proxy.size),
+                            .float(reduceMotion ? 0 : elapsed),
+                            .float(reduceMotion ? 0 : 0.055)
+                        )
+                    )
+                }
                 .scaleEffect(reduceMotion ? 1 : scale)
                 .shadow(color: Palette.accent.opacity(reduceMotion ? 0.2 : 0.35),
                         radius: reduceMotion ? 30 : glowRadius)
