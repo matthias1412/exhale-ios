@@ -1,5 +1,14 @@
-git_branch("certificates")
+# Signing certificates live in a SEPARATE PRIVATE repo.
+#
+# This matters: the app repo is public, and `match` stores encrypted private
+# keys. Encrypted is not the same as safe to publish — a published ciphertext
+# can be brute-forced offline at leisure, and an Apple distribution certificate
+# is worth stealing. Without an explicit git_url, match defaults to the current
+# repo's origin, which would have done exactly that.
+git_url("https://github.com/matthias1412/exhale-certificates.git")
+git_branch("main")
 storage_mode("git")
+
 type("appstore")
 app_identifier(["com.matthias1412.exhale"])
 readonly(true)

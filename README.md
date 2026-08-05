@@ -6,6 +6,20 @@ for the money nicotine owed you.
 
 Local-only: no backend, no accounts, no analytics.
 
+## This repository is public
+
+Deliberately — GitHub Actions is free on public repositories, and macOS runners
+bill at 10x otherwise. What that means in practice:
+
+- **No secrets are in here.** They live in GitHub Actions secrets, which are
+  encrypted and unaffected by repository visibility. Both workflows are
+  `workflow_dispatch` only, so there is no fork-PR path that could expose them.
+- **Signing certificates are in a separate private repo.** `match` defaults to
+  the current repo's origin if you don't tell it otherwise, which would publish
+  encrypted private keys. See `fastlane/Matchfile`.
+- The Team ID and App Store app ID that do appear are public information the
+  moment an app ships — they are embedded in every binary.
+
 ## Working without a Mac
 
 The `.xcodeproj` is **generated, never committed** — XcodeGen builds it from

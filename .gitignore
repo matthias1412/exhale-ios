@@ -25,9 +25,11 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output/
 
-# CI artefacts pulled down locally for inspection
+# CI artefacts pulled down locally for inspection.
+# Note: a "!artifacts/store/" negation does NOT work here — git never descends
+# into an excluded directory — so store assets are kept out of the repo and
+# regenerated with tools/make-store-screenshots.py instead.
 artifacts/
-!artifacts/store/
 
 # macOS / Windows cruft
 .DS_Store

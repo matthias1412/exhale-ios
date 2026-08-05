@@ -13,13 +13,14 @@ platform :ios do
       in_house: false
     )
 
-    # Certificates live encrypted on the `certificates` branch — see
-    # docs/signing.md. Read-only in CI so a runner can never rotate them.
+    # Certificates live in a separate PRIVATE repo — never in this one, which
+    # is public. Read-only in CI so a runner can never rotate them.
     match(
       type: "appstore",
       readonly: true,
       app_identifier: "com.matthias1412.exhale",
-      git_branch: "certificates"
+      git_url: "https://github.com/matthias1412/exhale-certificates.git",
+      git_branch: "main"
     )
 
     sh("xcodegen generate", log: false)
