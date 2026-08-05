@@ -152,23 +152,17 @@ enum SpiralGeometry {
 enum LogoGeometry {
     static let box: CGFloat = 26
 
-    /// Dot count scales with the box.
+    /// Always 55, at every size.
     ///
-    /// The handoff locks 55 dots, and at icon size that is right. In the 26pt
-    /// header it is not: 55 dots means each one is barely over a point across
-    /// and the mark reads as noise rather than a spiral. The same problem was
-    /// found and fixed for the app icon by enlarging the dots; the header needs
-    /// the other lever, because there is no room to enlarge anything.
-    ///
-    /// The design doc anticipates this — "drop to 13 dots below 20px if it
-    /// muddies" — it just muddies sooner than expected.
-    static func dotCount(box: CGFloat) -> Int {
-        switch box {
-        case ..<20: 13
-        case ..<44: 26
-        default: 55
-        }
-    }
+    /// This was briefly made to thin out below 44pt, on the theory that 55 dots
+    /// at 26pt would read as noise. Rendering it proved the opposite: at the
+    /// header's real size — 26pt is 78 device pixels on a 3x screen — 55 dots
+    /// resolve into the double-armed rosette that is the whole point of the
+    /// mark, and 26 dots collapse into a plain ring of dots with no spiral in
+    /// it at all. It also silently split the brand in two, because the app icon
+    /// is generated at 1024 and stayed at 55 — so the mark in the header and
+    /// the icon on the home screen were visibly different marks.
+    static let dotCount = 55
 
     struct Dot: Equatable, Sendable {
         let position: CGPoint
@@ -181,10 +175,9 @@ enum LogoGeometry {
         let centre = 13.0 * scale
         let hole = 3.1 * scale
         let maxR = 12.4 * scale
-        let count = dotCount(box: box)
 
-        return (0..<count).map { i in
-            let ramp = Double(i) / Double(count - 1)
+        return (0..<dotCount).map { i in
+            let ramp = Double(i) / Double(dotCount - 1)
             let radius = hole + (maxR - hole) * ramp.squareRoot()
             let angle = Double(i) * SpiralGeometry.goldenAngle - 1.6
             return Dot(
@@ -192,8 +185,7 @@ enum LogoGeometry {
                     x: centre + radius * cos(angle),
                     y: centre + radius * sin(angle)
                 ),
-                // Fewer dots means each can be larger without crowding.
-                diameter: (1.3 + ramp * 1.2) * scale * (55.0 / Double(count)).squareRoot(),
+                diameter: (1.3 + ramp * 1.2) * scale,
                 ramp: ramp
             )
         }

@@ -110,38 +110,19 @@ final class SpiralGeometryTests: XCTestCase {
         XCTAssertEqual(dots.filter(\.isNewest).count, 1)
     }
 
-    /// The mark thins out as it shrinks. At 26pt in the header, 55 dots packed
-    /// into the same disc read as a smudge rather than a spiral.
-    func testLogoDotCountDropsWithSize() {
-        XCTAssertEqual(LogoGeometry.dotCount(box: 16), 13)
-        XCTAssertEqual(LogoGeometry.dotCount(box: 19.9), 13)
-        XCTAssertEqual(LogoGeometry.dotCount(box: 20), 26)
-        XCTAssertEqual(LogoGeometry.dotCount(box: 26), 26)     // the header mark
-        XCTAssertEqual(LogoGeometry.dotCount(box: 44), 55)
-        XCTAssertEqual(LogoGeometry.dotCount(box: 1024), 55)   // the app icon
+    /// One mark at every size. The header and the generated app icon have to
+    /// come out of the same maths, or they are two different logos.
+    func testLogoIsFiftyFiveDotsAtEverySize() {
+        for box in [16.0, 26, 43.999, 44, 56, 1024] {
+            XCTAssertEqual(LogoGeometry.dots(box: box).count, 55,
+                           "box \(box) produced a different mark")
+        }
     }
 
-    func testLogoScalesProportionallyWithinACount() {
-        // Same tier both sides, so only the box size differs.
-        let small = LogoGeometry.dots(box: 22)
-        let large = LogoGeometry.dots(box: 44 - 0.001)
-        XCTAssertEqual(small.count, large.count)
-        XCTAssertEqual(large[10].diameter / small[10].diameter,
-                       (44 - 0.001) / 22, accuracy: 0.001)
-    }
-
-    /// Fewer dots are drawn larger so the mark keeps its weight rather than
-    /// getting sparser as well as smaller.
-    func testFewerDotsAreDrawnLarger() {
-        // Either side of the 44pt boundary, so the box is the same to within a
-        // thousandth of a point and the only difference is the dot count.
-        // Index 0 has ramp 0 in every tier, which leaves nothing in the
-        // diameter but the count compensation.
-        let sparse = LogoGeometry.dots(box: 43.999)   // 26 dots
-        let dense = LogoGeometry.dots(box: 44)        // 55 dots
-        XCTAssertEqual(sparse.count, 26)
-        XCTAssertEqual(dense.count, 55)
-        XCTAssertGreaterThan(sparse[0].diameter, dense[0].diameter)
+    func testLogoScalesProportionally() {
+        let small = LogoGeometry.dots(box: 26)
+        let large = LogoGeometry.dots(box: 104)
+        XCTAssertEqual(large[10].diameter / small[10].diameter, 4, accuracy: 0.001)
     }
 }
 

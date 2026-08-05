@@ -104,12 +104,12 @@ device is the place to judge motion.</p>
 
 <script>
 const GOLDEN=2.399963;
-function mark(box,count){
-  const sc=box/26,c=13*sc,hole=3.1*sc,maxR=12.4*sc,k=Math.sqrt(55/count);
+function mark(box,count){ count=55;  // one mark at every size, matching LogoGeometry
+  const sc=box/26,c=13*sc,hole=3.1*sc,maxR=12.4*sc;
   let h='';
   for(let i=0;i<count;i++){
     const t=i/(count-1),r=hole+(maxR-hole)*Math.sqrt(t),a=i*GOLDEN-1.6;
-    const d=(1.3+t*1.2)*sc*k;
+    const d=(1.3+t*1.2)*sc;
     h+=`<div style="position:absolute;left:${(c+r*Math.cos(a)-d/2).toFixed(2)}px;top:${(c+r*Math.sin(a)-d/2).toFixed(2)}px;width:${d.toFixed(2)}px;height:${d.toFixed(2)}px;border-radius:50%;background:hsl(${Math.round(18+t*154)} ${Math.round(85-t*25)}% ${Math.round(54+t*8)}%)"></div>`;
   }
   return h;

@@ -12,6 +12,10 @@ import math
 import pathlib
 
 GOLDEN = 2.399963
+# Must equal LogoGeometry.dotCount. These drifted apart once — the in-app mark
+# was made to thin out at small sizes and the icon was not — and the result was
+# a home-screen icon that was visibly a different logo from the one in the
+# header. See tools/lint-logo.py, which now fails the build if they diverge.
 DOTS = 55
 SIZE = 1024
 SUPERSAMPLE = 4          # render big, downsample — Pillow has no AA for ellipses

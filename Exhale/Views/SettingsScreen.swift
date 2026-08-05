@@ -46,6 +46,26 @@ struct SettingsScreen: View {
 
                     testButton.padding(.top, 22)
 
+                    // Five taps on the wordmark still works, but nobody
+                    // testing a build should have to know that.
+                    SectionLabel("TESTING").padding(.top, 26)
+                    Text("Jump to any day, replay the spiral, play any milestone's celebration, and start over. Goes before the App Store build.")
+                        .font(.spaceGrotesk(12))
+                        .foregroundStyle(Palette.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 6)
+
+                    Button("Open debug tools") {
+                        model.settingsOpen = false
+                        model.debugMenuOpen = true
+                    }
+                    .font(.spaceGrotesk(14, weight: .bold))
+                    .foregroundStyle(Palette.accentSoft)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Capsule().stroke(Palette.accent.opacity(0.4), lineWidth: 1.5))
+                    .padding(.top, 12)
+
             SectionLabel("START OVER").padding(.top, 26)
             Text("Clears your plan and your history on this device and in iCloud, and runs setup again. Your streak is not recoverable afterwards.")
                 .font(.spaceGrotesk(12))

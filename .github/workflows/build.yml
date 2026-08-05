@@ -37,6 +37,15 @@ jobs:
       - name: Select toolchain
         run: bash .github/scripts/select-toolchain.sh
 
+      # Seconds, and they catch things a compiler cannot: a seed name with no
+      # case behind it, a bash-3.2 incompatibility, an app icon that has
+      # drifted away from the mark drawn inside the app.
+      - name: Lint
+        run: |
+          python3 tools/lint-seeds.py
+          python3 tools/lint-logo.py
+          bash tools/lint-shell.sh
+
       - name: Generate project
         run: |
           brew install xcodegen
