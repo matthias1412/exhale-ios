@@ -61,9 +61,21 @@ struct QuitPlan: Codable, Equatable, Sendable {
 
     // MARK: - Persistence
 
+    /// `unitPrice` has no property behind it — it exists only so an old plan
+    /// can still be read. That also means the encoder cannot be synthesised
+    /// (Swift has nothing to write for it), so it is spelled out below.
     private enum CodingKeys: String, CodingKey {
         case product, amount, weeklySpend, currencyCode, quitDate
-        case unitPrice   // pre-spend plans only
+        case unitPrice   // pre-spend plans only, never written
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(product, forKey: .product)
+        try container.encode(amount, forKey: .amount)
+        try container.encode(weeklySpend, forKey: .weeklySpend)
+        try container.encode(currencyCode, forKey: .currencyCode)
+        try container.encode(quitDate, forKey: .quitDate)
     }
 
     init(product: NicotineProduct, amount: Int, weeklySpend: Decimal,
