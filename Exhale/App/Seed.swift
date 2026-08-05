@@ -96,27 +96,30 @@ enum Seed {
         switch name {
 
         // Onboarding — one seed per step, and per product where the copy differs.
-        case "onboard-product":
+        case "onboard-intro":
             return make(phase: .onboarding) { $0.onboardingStep = 0 }
+
+        case "onboard-product":
+            return make(phase: .onboarding) { $0.onboardingStep = 1 }
 
         case "onboard-product-selected":
             // Selected state: accent border, filled radio, tinted row.
-            return onboarding(step: 0, product: .pouches)
+            return onboarding(step: 1, product: .pouches)
 
         case "onboard-amount-cigarettes":
-            return onboarding(step: 2, product: .cigarettes)
+            return onboarding(step: 3, product: .cigarettes)
         case "onboard-amount-vape":
-            return onboarding(step: 2, product: .vape)
+            return onboarding(step: 3, product: .vape)
         case "onboard-amount-pouches":
-            return onboarding(step: 2, product: .pouches)
+            return onboarding(step: 3, product: .pouches)
 
         case "onboard-price-cigarettes":
-            return onboarding(step: 3, product: .cigarettes)
+            return onboarding(step: 4, product: .cigarettes)
         case "onboard-price-vape":
-            return onboarding(step: 3, product: .vape)
+            return onboarding(step: 4, product: .vape)
 
         case "onboard-quit-moment":
-            return onboarding(step: 4, product: .cigarettes)
+            return onboarding(step: 5, product: .cigarettes)
 
         case "paywall":
             return make(phase: .paywall, plan: plan(.cigarettes, day: 1))
@@ -134,13 +137,13 @@ enum Seed {
 
         case "onboard-price-yearly":
             // The annual loss figure, which is the number that lands.
-            return onboarding(step: 3, product: .pouches)
+            return onboarding(step: 4, product: .pouches)
 
         case "onboard-reason":
-            return onboarding(step: 1, product: .cigarettes)
+            return onboarding(step: 2, product: .cigarettes)
 
         case "onboard-reason-chosen":
-            return onboarding(step: 1, product: .cigarettes) { model in
+            return onboarding(step: 2, product: .cigarettes) { model in
                 var state = model.state
                 state.reasons = [.someone, .money]
                 state.reasonName = "Emma"
@@ -158,12 +161,12 @@ enum Seed {
         case "onboard-quit-time":
             // Step 4 with the time wheel open — an overlay step that was
             // previously unreachable from a seed and therefore never captured.
-            return onboarding(step: 4, product: .cigarettes) {
+            return onboarding(step: 5, product: .cigarettes) {
                 $0.quitPickerMode = .earlierToday
             }
 
         case "onboard-quit-date":
-            return onboarding(step: 4, product: .cigarettes) {
+            return onboarding(step: 5, product: .cigarettes) {
                 $0.quitPickerMode = .pickDate
             }
 
@@ -211,7 +214,7 @@ enum Seed {
             }
         case "onboard-price-empty":
             // Continue must stay disabled until a price is entered.
-            return onboarding(step: 3, product: .cigarettes) { model in
+            return onboarding(step: 4, product: .cigarettes) { model in
                 model.draft?.unitPrice = 0
             }
 

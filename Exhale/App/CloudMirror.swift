@@ -38,6 +38,11 @@ struct CloudMirror {
         }
     }
 
+    func clear() {
+        store.removeObject(forKey: key)
+        store.synchronize()
+    }
+
     /// Newest wins.
     ///
     /// The only conflict that realistically happens is a fresh install finding

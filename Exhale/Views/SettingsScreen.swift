@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsScreen: View {
     @Environment(AppModel.self) private var model
     @State private var testSent = false
+    @State private var confirmingReset = false
 
     var body: some View {
         ZStack {
@@ -44,6 +45,31 @@ struct SettingsScreen: View {
                     }
 
                     testButton.padding(.top, 22)
+
+            SectionLabel("START OVER").padding(.top, 26)
+            Text("Clears your plan and your history on this device and in iCloud, and runs setup again. Your streak is not recoverable afterwards.")
+                .font(.spaceGrotesk(12))
+                .foregroundStyle(Palette.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 6)
+
+            Button("Reset everything") { confirmingReset = true }
+                .font(.spaceGrotesk(14, weight: .bold))
+                .foregroundStyle(Palette.ember)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Capsule().stroke(Palette.ember.opacity(0.4), lineWidth: 1.5))
+                .padding(.top, 12)
+                .confirmationDialog(
+                    "Reset everything?",
+                    isPresented: $confirmingReset,
+                    titleVisibility: .visible
+                ) {
+                    Button("Reset and start over", role: .destructive) { model.resetEverything() }
+                    Button("Keep my streak", role: .cancel) {}
+                } message: {
+                    Text("This cannot be undone.")
+                }
                 }
                 .padding(.horizontal, 26)
                 .padding(.bottom, 30)

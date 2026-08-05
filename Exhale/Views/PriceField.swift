@@ -26,6 +26,16 @@ struct PriceField: View {
                 .keyboardType(.decimalPad)
                 .focused($focused)
                 .opacity(0.001)
+                // A decimal pad has no return key. Without this there was no
+                // way to dismiss the keyboard at all — it covered the screen
+                // and the app was unreachable behind it.
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { focused = false }
+                            .font(.spaceGrotesk(15, weight: .bold))
+                    }
+                }
                 .accessibilityLabel("Price")
                 .accessibilityValue(amount > 0 ? amount.currencyString(currencyCode) : "not set")
         }

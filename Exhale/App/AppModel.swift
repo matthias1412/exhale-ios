@@ -132,6 +132,22 @@ final class AppModel {
         return AppModel(state: restored ?? PersistedState(), store: store)
     }
 
+    /// Wipes local and iCloud state and returns to onboarding.
+    ///
+    /// Restoring across a reinstall is deliberate, but without this there was
+    /// no way back to a clean slate at all — deleting the app just restored it
+    /// again, which is baffling if you actually wanted to start over.
+    func resetEverything() {
+        state = PersistedState()
+        draft = nil
+        onboardingStep = 0
+        tab = .today
+        hasRevealedSpiral = false
+        pendingCelebration = nil
+        cloud.clear()
+        persist()
+    }
+
     /// Called from a single `.onChange(of: model.state)` at the root, so no
     /// mutation site has to remember to save. Seeded runs never write.
     func persist() {

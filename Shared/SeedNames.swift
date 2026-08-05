@@ -13,6 +13,7 @@ enum SeedNames {
 
     /// Seeds captured on every device when `devices: all`.
     static let all: [String] = [
+        "onboard-intro",
         "onboard-product",
         "onboard-product-selected",
         "onboard-reason",
@@ -66,6 +67,7 @@ enum SeedNames {
     /// The cheap default set for `devices: one` — enough to catch a regression
     /// without paying for the full sweep.
     static let smoke: [String] = [
+        "onboard-intro",
         "onboard-product",
         "onboard-product-selected",
         "onboard-reason",

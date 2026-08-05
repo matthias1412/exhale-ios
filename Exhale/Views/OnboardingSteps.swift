@@ -74,7 +74,11 @@ struct PriceStep: View {
                     .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
                     .fixedSize(horizontal: false, vertical: true)
 
-                CurrencyChips(selected: draft.currencyCode) { code in
+                // The device already tells us the currency — Locale.current,
+                // no permission, no question asked. Showing fifteen chips made
+                // it look like we needed telling. The picker is still there for
+                // the minority whose store region isn't where they buy.
+                CurrencyRow(selected: draft.currencyCode) { code in
                     model.draft?.currencyCode = code
                 }
                 .padding(.top, 4)
@@ -114,6 +118,36 @@ struct PriceStep: View {
             }
             .padding(.top, 34)
         }
+    }
+}
+
+/// Shows the detected currency as a statement, not a question. The full list
+/// only appears if the user says it's wrong.
+struct CurrencyRow: View {
+    let selected: String
+    let pick: (String) -> Void
+
+    @State private var picking = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if !picking {
+                HStack(spacing: 6) {
+                    Text("Prices in \(selected)")
+                        .font(.spaceGrotesk(13))
+                        .foregroundStyle(Palette.textMuted)
+                    Button("Change") { picking = true }
+                        .font(.spaceGrotesk(13, weight: .bold))
+                        .foregroundStyle(Palette.accent)
+                }
+            } else {
+                CurrencyChips(selected: selected) { code in
+                    pick(code)
+                    picking = false
+                }
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: picking)
     }
 }
 

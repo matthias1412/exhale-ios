@@ -3,7 +3,7 @@ import SwiftUI
 /// Four steps. Only step 1 is real so far; the rest still stub out.
 struct OnboardingFlow: View {
     /// Index of the final step. Five steps: product, why, amount, price, moment.
-    static let lastStep = 4
+    static let lastStep = 5
 
     @Environment(AppModel.self) private var model
 
@@ -13,10 +13,11 @@ struct OnboardingFlow: View {
 
             Group {
                 switch model.onboardingStep {
-                case 0: ProductPickerStep()
-                case 1: ReasonStep()
-                case 2: AmountStep()
-                case 3: PriceStep()
+                case 0: IntroStep()
+                case 1: ProductPickerStep()
+                case 2: ReasonStep()
+                case 3: AmountStep()
+                case 4: PriceStep()
                 default: QuitMomentStep()
                 }
             }
@@ -88,14 +89,14 @@ struct OnboardingFlow: View {
 
     private var canContinue: Bool {
         switch model.onboardingStep {
-        case 0: model.draft != nil
-        case 1: !model.state.reasons.isEmpty
+        case 1: model.draft != nil
+        case 2: !model.state.reasons.isEmpty
         // The price step was skippable. It stopped being optional the moment
         // the per-country price table went away and the field started blank:
         // tapping through left unitPrice at zero, which makes The Bill a
         // receipt for nothing and the paywall read "Nicotine takes €0.00 from
         // you every year".
-        case 3: (model.draft?.unitPrice ?? 0) > 0
+        case 4: (model.draft?.unitPrice ?? 0) > 0
         default: true
         }
     }
