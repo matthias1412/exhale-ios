@@ -156,80 +156,61 @@ struct CurrencyChips: View {
 /// days in should not be told to start again at one.
 struct QuitMomentStep: View {
     @Environment(AppModel.self) private var model
-    @State private var chosen = Date()
-
-    private var mode: QuitPickerMode { model.quitPickerMode }
+    @State private var chosen: Date?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("When was your last one?")
+            Text("When does day one start?")
                 .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("Day 1 starts the moment you tap.")
+            Text("Now is the strongest answer. But a date you'll actually keep beats a date you won't.")
                 .font(.spaceGrotesk(14))
                 .foregroundStyle(Palette.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 12) {
-                PillButton("Just had it — start now", style: .accent) {
-                    finish(with: model.clock.now)
-                }
-
-                PillButton("Earlier today", style: .outline) {
-                    chosen = model.clock.now
-                    model.quitPickerMode = .earlierToday
-                }
-
-                PillButton("I quit before today", style: .quiet) {
-                    chosen = Calendar.current.date(
-                        byAdding: .day, value: -7, to: model.clock.now
-                    ) ?? model.clock.now
-                    model.quitPickerMode = .pickDate
-                }
+            PillButton("Just had it — start now", style: .accent) {
+                finish(with: model.clock.now)
             }
-            .padding(.top, 30)
+            .padding(.top, 24)
 
-            if mode != .none {
-                VStack(spacing: 12) {
-                    DatePicker(
-                        "When?",
-                        selection: $chosen,
-                        in: range,
-                        displayedComponents: mode == .earlierToday
-                            ? [.hourAndMinute] : [.date]
-                    )
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .colorScheme(.dark)
+            Text("OR PICK A DAY")
+                .font(.spaceGrotesk(11, weight: .medium))
+                .tracking(1.98)
+                .foregroundStyle(Palette.textFaint)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 22)
 
-                    PillButton("That's my quit moment", style: .accent) {
-                        finish(with: chosen)
-                    }
+            DayChipRow(
+                selection: Binding(
+                    get: { chosen ?? model.clock.now },
+                    set: { chosen = $0 }
+                ),
+                now: model.clock.now
+            )
+            .padding(.top, 10)
+
+            if let chosen {
+                PillButton(confirmTitle(for: chosen), style: .outline) {
+                    finish(with: chosen)
                 }
-                .padding(.top, 12)
+                .padding(.top, 18)
                 .transition(.opacity)
             }
         }
         .padding(.top, 34)
-        .animation(.snappy(duration: 0.2), value: mode)
+        .animation(.snappy(duration: 0.2), value: chosen)
     }
 
-    /// Never let someone pick the future — a quit date ahead of now would make
-    /// every derived number negative.
-    private var range: ClosedRange<Date> {
-        let now = model.clock.now
-        let earliest = mode == .earlierToday
-            ? Calendar.current.startOfDay(for: now)
-            : (Calendar.current.date(byAdding: .year, value: -20, to: now) ?? now)
-        return earliest...now
+    private func confirmTitle(for date: Date) -> String {
+        date > model.clock.now ? "Set that as my quit day" : "That's when I stopped"
     }
 
     private func finish(with date: Date) {
-        model.draft?.quitDate = min(date, model.clock.now)
+        model.draft?.quitDate = date
         if let draft = model.draft {
             model.state.plan = draft
             model.state.phase = .paywall
-            // Open on whatever they said they were doing this for.
             model.tab = model.state.reasons.primary?.preferredTab ?? .today
         }
     }

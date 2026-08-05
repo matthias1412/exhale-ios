@@ -101,6 +101,9 @@ struct ProductPickerStep: View {
                 .foregroundStyle(Palette.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
+            NotAloneNote()
+                .padding(.top, 4)
+
             VStack(spacing: 12) {
                 ForEach(NicotineProduct.allCases) { product in
                     ProductRow(
@@ -157,5 +160,39 @@ struct ProductRow: View {
         }
         .accessibilityLabel("\(product.config.displayName), \(product.config.pickerHint)")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
+
+/// Belonging, without inventing anything.
+///
+/// The obvious move here is "join millions of people who quit with Exhale",
+/// and it is a lie — the app has no users, and fabricated social proof is both
+/// dishonest and an App Store rejection risk. These two sentences do the same
+/// emotional work and are documented facts rather than claims about us.
+///
+/// The second sentence is doing double duty: normalising multiple attempts up
+/// front means the slip screen months later isn't the first time the user
+/// hears it, which is exactly when shame does the most damage.
+struct NotAloneNote: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(Palette.accent)
+                .frame(width: 5, height: 5)
+                .padding(.top, 6)
+
+            Text("You're not doing something unusual. Most people who smoke want to stop — and most who manage it needed more than one go.")
+                .font(.spaceGrotesk(12.5))
+                .lineSpacing(3)
+                .foregroundStyle(Palette.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Palette.accent.opacity(0.06))
+        )
     }
 }

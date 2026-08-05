@@ -40,6 +40,11 @@ struct QuitPlan: Codable, Equatable, Sendable {
 struct QuitProgress: Equatable, Sendable {
 
     let dayNumber: Int
+    /// False when the quit date is still ahead — the user has scheduled it.
+    /// Everything derived is zero until then; there is nothing to count yet.
+    let hasStarted: Bool
+    /// Whole days until the quit begins. Zero once it has.
+    let daysUntilStart: Int
     let elapsed: TimeInterval
     let hoursElapsed: Double
     let moneyKept: Decimal
@@ -57,6 +62,13 @@ struct QuitProgress: Equatable, Sendable {
     init(plan: QuitPlan, now: Date = Date(), calendar: Calendar = .current) {
         let raw = now.timeIntervalSince(plan.quitDate)
         let elapsed = max(0, raw)
+        self.hasStarted = raw >= 0
+
+        let startOfNow = calendar.startOfDay(for: now)
+        let startOfQuit = calendar.startOfDay(for: plan.quitDate)
+        self.daysUntilStart = max(0, calendar.dateComponents(
+            [.day], from: startOfNow, to: startOfQuit
+        ).day ?? 0)
         self.elapsed = elapsed
         self.hoursElapsed = elapsed / 3600
 

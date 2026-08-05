@@ -237,6 +237,34 @@ enum Seed {
                 model.state = state
             }
 
+        case "pre-quit-countdown":
+            // Quit day set three days out — no spiral yet, and we don't fake one.
+            return make(phase: .app) { model in
+                var state = model.state
+                var future = plan(.cigarettes, day: 1)
+                future.quitDate = Calendar.current.date(
+                    byAdding: .day, value: 3,
+                    to: Calendar.current.startOfDay(for: referenceNow)
+                ) ?? referenceNow
+                state.plan = future
+                model.state = state
+            }
+
+        case "today-imminent-milestone":
+            // ~6 hours short of the 72h mark, so the near-miss nudge shows.
+            return make(phase: .app) { model in
+                var state = model.state
+                var p = plan(.cigarettes, day: 3)
+                p.quitDate = referenceNow.addingTimeInterval(-66 * 3600)
+                state.plan = p
+                model.state = state
+            }
+
+        case "milestone-celebration":
+            return make(phase: .app, plan: plan(.cigarettes, day: 8)) { model in
+                model.pendingCelebration = Milestones.all.first { $0.when == "1 week" }
+            }
+
         case "debug-menu":
             return make(phase: .app, plan: plan(.cigarettes, day: 90)) { $0.debugMenuOpen = true }
 

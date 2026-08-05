@@ -7,7 +7,9 @@ struct TodayScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if let progress = model.progress {
+            if let progress = model.progress, !progress.hasStarted {
+                PreQuitView(progress: progress)
+            } else if let progress = model.progress {
                 ZStack {
                     SpiralView(
                         day: progress.dayNumber,
@@ -24,6 +26,16 @@ struct TodayScreen: View {
                         .tracking(0.66)
                         .foregroundStyle(Palette.textFaint)
                         .padding(.bottom, 10)
+                }
+
+                if let plan = model.plan,
+                   let soon = Milestones.imminent(
+                       for: plan.product, hoursElapsed: progress.hoursElapsed
+                   ) {
+                    ImminentMilestoneNote(
+                        milestone: soon.milestone, hoursAway: soon.hoursAway
+                    )
+                    .padding(.bottom, 12)
                 }
 
                 StatsRow(progress: progress)
@@ -196,24 +208,49 @@ struct BreathingOrb: View {
                 )
                 .frame(width: 200, height: 200)
                 .scaleEffect(reduceMotion ? 1 : scale)
+                .shadow(color: Palette.accent.opacity(reduceMotion ? 0.2 : 0.35),
+                        radius: reduceMotion ? 30 : glowRadius)
                 .overlay(
                     Text(label)
                         .font(.spaceGrotesk(17, weight: .medium))
                         .foregroundStyle(Palette.textBrightest)
+                        .id(label)
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.45), value: label)
                 )
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
     }
 
-    /// 0–4s in, 4–8s hold, 8–14s out — matching the phase label exactly.
+    /// 0–4s in, 4–8s hold, 8–14s out.
+    ///
+    /// Eased, not linear. A linear scale reads as a machine and is genuinely
+    /// harder to breathe along with — real breath accelerates then slows.
+    /// The inhale eases *out* (quick off the mark, settling at the top, which
+    /// is how a full lung feels) and the exhale eases *in and out* so the long
+    /// six seconds don't feel like a stall.
     private var scale: Double {
+        let low = 0.68, high = 1.0
         switch phasePosition {
-        case ..<4: 0.7 + 0.3 * (phasePosition / 4)
-        case ..<8: 1.0
-        default: 1.0 - 0.3 * ((phasePosition - 8) / 6)
+        case ..<4:
+            let t = phasePosition / 4
+            return low + (high - low) * (1 - pow(1 - t, 2.2))
+        case ..<8:
+            // Not perfectly still: a held breath is not a frozen one.
+            let t = (phasePosition - 4) / 4
+            return high + sin(t * .pi) * 0.012
+        default:
+            let t = (phasePosition - 8) / 6
+            return high - (high - low) * (t < 0.5
+                ? 2 * t * t
+                : 1 - pow(-2 * t + 2, 2) / 2)
         }
     }
+
+    /// The glow tightens as the lungs fill, which gives the orb some weight
+    /// rather than it just being a circle that changes size.
+    private var glowRadius: Double { 46 - (scale - 0.68) / 0.32 * 22 }
 
     var label: String {
         switch phasePosition {

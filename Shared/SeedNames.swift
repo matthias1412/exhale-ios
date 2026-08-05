@@ -39,7 +39,10 @@ enum SeedNames {
         "today-day90",                  // the App Store hero
         "today-day365",                 // first year marker
         "today-day1825",                // five years, 3pt dots
-        "today-vape",                   // product-adaptive stats row
+        "today-vape",
+        "today-imminent-milestone",
+        "pre-quit-countdown",
+        "milestone-celebration",                   // product-adaptive stats row
         "bill-cigarettes",
         "bill-tally-x10",               // past 40 containers, ×10 glyphs
         "bill-vape",
