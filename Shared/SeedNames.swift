@@ -42,7 +42,10 @@ enum SeedNames {
         "today-vape",
         "today-imminent-milestone",
         "pre-quit-countdown",
-        "milestone-celebration",                   // product-adaptive stats row
+        "milestone-celebration",
+        "milestone-celebration-f20",
+        "milestone-celebration-f45",
+        "milestone-celebration-f70",                   // product-adaptive stats row
         "bill-cigarettes",
         "bill-tally-x10",               // past 40 containers, ×10 glyphs
         "bill-vape",

@@ -64,6 +64,9 @@ final class AppModel {
     var slipSheetOpen = false
     /// A milestone crossed while the app was closed, waiting to be revealed.
     var pendingCelebration: Milestone?
+    /// Screenshot-harness only: pins the celebration animation to a point in
+    /// 0…1 so its frames can be captured rather than only its end state.
+    var celebrationFrame: Double?
     var sosStartedAt: Date?
     var banner: BannerContent?
     var onboardingStep = 0

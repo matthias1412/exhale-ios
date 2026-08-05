@@ -30,6 +30,19 @@ struct DayChipRow: View {
                 .padding(.horizontal, 2)
             }
             .onAppear { proxy.scrollTo(0, anchor: .center) }
+            // Chips run past both edges; a hard clip mid-word looks like a bug,
+            // a fade reads as "there is more this way".
+            .mask(
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black, location: 0.06),
+                        .init(color: .black, location: 0.94),
+                        .init(color: .clear, location: 1)
+                    ],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            )
         }
     }
 

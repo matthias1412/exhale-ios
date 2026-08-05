@@ -16,13 +16,17 @@ struct MilestoneCelebration: View {
     let onDismiss: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(AppModel.self) private var model
     @State private var appeared: Date?
 
     private let duration: Double = 2.4
 
     var body: some View {
         ZStack {
-            Palette.background.opacity(0.97).ignoresSafeArea()
+            // Fully opaque. At 0.97 the stats row and tab bar showed through,
+            // which made a moment that should feel like an event look like a
+            // dialog laid over a screen.
+            Palette.background.ignoresSafeArea()
 
             TimelineView(.animation(paused: reduceMotion)) { timeline in
                 let t = progress(at: timeline.date)
@@ -75,6 +79,10 @@ struct MilestoneCelebration: View {
     }
 
     private func progress(at date: Date) -> Double {
+        // Seeded runs pin the animation so individual frames can be captured
+        // and inspected — otherwise every screenshot is the resting state and
+        // the motion is never actually verified.
+        if let frozen = model.celebrationFrame { return frozen }
         guard !reduceMotion, let appeared else { return 1 }
         return min(1, max(0, date.timeIntervalSince(appeared) / duration))
     }

@@ -261,9 +261,13 @@ enum Seed {
             }
 
         case "milestone-celebration":
-            return make(phase: .app, plan: plan(.cigarettes, day: 8)) { model in
-                model.pendingCelebration = Milestones.all.first { $0.when == "1 week" }
-            }
+            return celebration(frame: nil)
+        case "milestone-celebration-f20":
+            return celebration(frame: 0.20)
+        case "milestone-celebration-f45":
+            return celebration(frame: 0.45)
+        case "milestone-celebration-f70":
+            return celebration(frame: 0.70)
 
         case "debug-menu":
             return make(phase: .app, plan: plan(.cigarettes, day: 90)) { $0.debugMenuOpen = true }
@@ -282,6 +286,14 @@ enum Seed {
             model.onboardingStep = step
             model.draft = plan(product, day: 1)
             configure(model)
+        }
+    }
+
+    /// `frame` pins the burst animation so a still can be inspected.
+    private static func celebration(frame: Double?) -> AppModel {
+        make(phase: .app, plan: plan(.cigarettes, day: 8)) { model in
+            model.pendingCelebration = Milestones.all.first { $0.when == "1 week" }
+            model.celebrationFrame = frame
         }
     }
 
