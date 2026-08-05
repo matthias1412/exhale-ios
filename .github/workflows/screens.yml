@@ -11,10 +11,14 @@ on:
         options: ["one", "all"]
         default: "one"
       seeds:
-        description: "smoke = 7 key states. all = every state in SeedNames.swift."
+        description: "smoke = key states. all = every state. motion = the spiral's arrival, frame by frame."
         type: choice
-        options: ["smoke", "all"]
+        options: ["smoke", "all", "motion"]
         default: "smoke"
+      movies:
+        description: "Also record the animations as video (one device, ~2 min)."
+        type: boolean
+        default: false
 
 jobs:
   screens:
@@ -52,5 +56,17 @@ jobs:
         with:
           name: screens-${{ inputs.devices }}-${{ inputs.seeds }}
           path: artifacts/screens
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record motion
+        if: ${{ inputs.movies }}
+        run: bash .github/scripts/capture-movies.sh
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.movies }}
+        with:
+          name: movies
+          path: artifacts/movies
           if-no-files-found: error
           retention-days: 14

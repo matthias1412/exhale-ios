@@ -110,14 +110,38 @@ final class SpiralGeometryTests: XCTestCase {
         XCTAssertEqual(dots.filter(\.isNewest).count, 1)
     }
 
-    func testLogoIsFiftyFiveDots() {
-        XCTAssertEqual(LogoGeometry.dots().count, 55)
+    /// The mark thins out as it shrinks. At 26pt in the header, 55 dots packed
+    /// into the same disc read as a smudge rather than a spiral.
+    func testLogoDotCountDropsWithSize() {
+        XCTAssertEqual(LogoGeometry.dotCount(box: 16), 13)
+        XCTAssertEqual(LogoGeometry.dotCount(box: 19.9), 13)
+        XCTAssertEqual(LogoGeometry.dotCount(box: 20), 26)
+        XCTAssertEqual(LogoGeometry.dotCount(box: 26), 26)     // the header mark
+        XCTAssertEqual(LogoGeometry.dotCount(box: 44), 55)
+        XCTAssertEqual(LogoGeometry.dotCount(box: 1024), 55)   // the app icon
     }
 
-    func testLogoScalesProportionally() {
-        let small = LogoGeometry.dots(box: 26)
-        let large = LogoGeometry.dots(box: 104)
-        XCTAssertEqual(large[10].diameter / small[10].diameter, 4, accuracy: 0.001)
+    func testLogoScalesProportionallyWithinACount() {
+        // Same tier both sides, so only the box size differs.
+        let small = LogoGeometry.dots(box: 22)
+        let large = LogoGeometry.dots(box: 44 - 0.001)
+        XCTAssertEqual(small.count, large.count)
+        XCTAssertEqual(large[10].diameter / small[10].diameter,
+                       (44 - 0.001) / 22, accuracy: 0.001)
+    }
+
+    /// Fewer dots are drawn larger so the mark keeps its weight rather than
+    /// getting sparser as well as smaller.
+    func testFewerDotsAreDrawnLarger() {
+        // Either side of the 44pt boundary, so the box is the same to within a
+        // thousandth of a point and the only difference is the dot count.
+        // Index 0 has ramp 0 in every tier, which leaves nothing in the
+        // diameter but the count compensation.
+        let sparse = LogoGeometry.dots(box: 43.999)   // 26 dots
+        let dense = LogoGeometry.dots(box: 44)        // 55 dots
+        XCTAssertEqual(sparse.count, 26)
+        XCTAssertEqual(dense.count, 55)
+        XCTAssertGreaterThan(sparse[0].diameter, dense[0].diameter)
     }
 }
 
@@ -126,13 +150,44 @@ final class SeedTests: XCTestCase {
     /// Every advertised seed must actually resolve — otherwise the screenshot
     /// job silently captures the wrong screen.
     func testEverySeedResolves() {
-        for name in SeedNames.all {
+        for name in SeedNames.all + SeedNames.motion + SeedNames.movies {
             XCTAssertNotNil(Seed.model(named: name), "seed '\(name)' does not resolve")
         }
     }
 
     func testSmokeSetIsSubsetOfAll() {
         XCTAssertTrue(Set(SeedNames.smoke).isSubset(of: Set(SeedNames.all)))
+    }
+
+    /// The motion set exists to be captured on one device instead of three, so
+    /// it must not also be sitting in `all`.
+    func testMotionSetIsSeparateFromAll() {
+        XCTAssertTrue(Set(SeedNames.motion).isDisjoint(with: Set(SeedNames.all)))
+    }
+
+    /// A pinned frame that isn't pinned is just another capture of the settled
+    /// spiral, which is the failure that would look completely fine.
+    func testMotionSeedsArePinned() {
+        for name in SeedNames.motion {
+            XCTAssertNotNil(Seed.model(named: name)?.spiralRevealFrame,
+                            "motion seed '\(name)' has no pinned frame")
+        }
+    }
+
+    /// ...and the recorded ones must not be pinned, or the video is a still.
+    func testMovieSeedsAreNotPinned() {
+        for name in SeedNames.movies {
+            XCTAssertNil(Seed.model(named: name)?.spiralRevealFrame,
+                         "movie seed '\(name)' is pinned and would record a still")
+        }
+    }
+
+    /// Day 8 is the "1 week" mark, so today's dot is also a milestone dot —
+    /// the case where the newest-dot styling and the milestone styling collide.
+    func testDayEightIsAMilestoneDay() {
+        let model = Seed.model(named: "today-day8")
+        XCTAssertEqual(model?.progress?.dayNumber, 8)
+        XCTAssertTrue(model?.milestoneDays.contains(8) == true)
     }
 
     /// Seeded runs must be deterministic or the captures aren't diffable.

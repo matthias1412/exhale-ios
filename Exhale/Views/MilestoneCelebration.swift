@@ -102,6 +102,15 @@ struct MilestoneCelebration: View {
             // Fires as the burst launches, not on dismiss — the tap should
             // coincide with the thing it is marking.
             if !model.clock.isFrozen { Feedback.milestone() }
+
+            // Harness only. simctl can record video but cannot tap, so the
+            // handoff from the burst to the spiral arriving behind it — the
+            // one sequence that is entirely about timing — could not otherwise
+            // be watched at all.
+            if let after = model.celebrationAutoDismissAfter {
+                try? await Task.sleep(for: .seconds(after))
+                onDismiss()
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Milestone reached. \(milestone.when), \(milestone.title). \(milestone.body)")

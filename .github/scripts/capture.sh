@@ -32,22 +32,16 @@ else
 fi
 
 # --- seeds -----------------------------------------------------------------
+# Each list is read from its own block, so adding a set in Swift doesn't
+# silently enlarge another one.
 extract_seeds() {
-  grep -oE '"[a-z0-9][a-z0-9-]*"' Shared/SeedNames.swift | tr -d '"' | sort -u
+  sed -n "/static let $1:/,/^    \]/p" Shared/SeedNames.swift \
+    | grep -oE '"[a-z0-9][a-z0-9-]*"' | tr -d '"'
 }
 SEEDS=()
-if [[ "${SEED_SET:-smoke}" == "all" ]]; then
-  while IFS= read -r seed; do
-    [ -n "$seed" ] && SEEDS+=("$seed")
-  done < <(extract_seeds)
-else
-  while IFS= read -r seed; do
-    [ -n "$seed" ] && SEEDS+=("$seed")
-  done < <(
-    sed -n '/static let smoke/,/\]/p' Shared/SeedNames.swift \
-      | grep -oE '"[a-z0-9][a-z0-9-]*"' | tr -d '"'
-  )
-fi
+while IFS= read -r seed; do
+  [ -n "$seed" ] && SEEDS+=("$seed")
+done < <(extract_seeds "${SEED_SET:-smoke}")
 
 if [[ ${#SEEDS[@]} -eq 0 ]]; then
   echo "::error::extracted no seed names from Shared/SeedNames.swift"

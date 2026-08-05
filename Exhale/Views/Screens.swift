@@ -127,7 +127,35 @@ struct CravingSOSScreen: View {
     private static let cycle: Double = 14
 
     var body: some View {
-        let elapsed = model.sosStartedAt.map { model.clock.now.timeIntervalSince($0) } ?? 0
+        // The orb, the phase label and the timer all derive from elapsed time,
+        // and nothing else on this screen changes — so without a timeline
+        // driving re-evaluation SwiftUI had no reason to redraw. The body ran
+        // once on open and the "breathing" orb sat frozen at the bottom of an
+        // inhale with the clock stuck on 0:00 for the entire craving.
+        if model.clock.isFrozen && !model.motionCapture {
+            // Captures pin the phase from the seed instead, so a still is
+            // reproducible.
+            content(elapsed: elapsedSince(model.clock.now))
+        } else if reduceMotion {
+            // The orb doesn't move under Reduce Motion, but the elapsed clock
+            // is information rather than decoration — "you have held out for
+            // 2:40" is the whole point — so it still needs a tick.
+            TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                content(elapsed: elapsedSince(timeline.date))
+            }
+        } else {
+            TimelineView(.animation) { timeline in
+                content(elapsed: elapsedSince(timeline.date))
+            }
+        }
+    }
+
+    private func elapsedSince(_ now: Date) -> TimeInterval {
+        model.sosStartedAt.map { max(0, now.timeIntervalSince($0)) } ?? 0
+    }
+
+    @ViewBuilder
+    private func content(elapsed: TimeInterval) -> some View {
         let phasePosition = elapsed.truncatingRemainder(dividingBy: Self.cycle)
 
         ZStack {
@@ -249,9 +277,11 @@ struct BreathingOrb: View {
                     Text(label)
                         .font(.spaceGrotesk(17, weight: .medium))
                         .foregroundStyle(Palette.textBrightest)
-                        .id(label)
-                        .transition(.opacity)
-                        .animation(.easeInOut(duration: 0.45), value: label)
+                        // Crossfaded by hand rather than with .animation(value:).
+                        // Every frame inside a TimelineView is its own discrete
+                        // update, so an implicit animation on a changing value
+                        // has nothing to interpolate and the word would snap.
+                        .opacity(labelOpacity)
                 )
         }
         .accessibilityElement(children: .ignore)
@@ -293,6 +323,17 @@ struct BreathingOrb: View {
         case ..<8: "Hold it"
         default: "Let it go"
         }
+    }
+
+    /// Dips to nothing as each phase hands over, so the word changes while it
+    /// is invisible instead of swapping under the reader.
+    private var labelOpacity: Double {
+        guard !reduceMotion else { return 1 }
+        let fade = 0.35
+        let distance = [0.0, 4, 8, 14]
+            .map { abs(phasePosition - $0) }
+            .min() ?? fade
+        return min(1, distance / fade)
     }
 }
 

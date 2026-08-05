@@ -89,6 +89,17 @@ final class AppModel {
     /// Screenshot-harness only: pins the celebration animation to a point in
     /// 0…1 so its frames can be captured rather than only its end state.
     var celebrationFrame: Double?
+    /// Screenshot-harness only: same idea for the spiral's arrival, which is
+    /// otherwise only ever captured in its finished state.
+    var spiralRevealFrame: Double?
+    /// Screenshot-harness only: dismisses the celebration on a timer, because
+    /// the recorder cannot tap.
+    var celebrationAutoDismissAfter: TimeInterval?
+    /// Screenshot-harness only: run animations in real time even though the
+    /// clock is frozen. A frozen clock is what makes stills reproducible, but
+    /// it is also what stops anything time-driven from moving — so a recording
+    /// of a seeded run would otherwise be a still that lasts ten seconds.
+    var motionCapture = false
     var sosStartedAt: Date?
     var banner: BannerContent?
     var onboardingStep = 0

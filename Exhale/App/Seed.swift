@@ -181,9 +181,39 @@ enum Seed {
             return make(phase: .app, plan: plan(.cigarettes, day: 365))
         case "today-day1825":
             return make(phase: .app, plan: plan(.cigarettes, day: 1825))
+        case "today-day8":
+            // Day 8 is the "1 week" milestone, so today's dot is a milestone
+            // dot. Live rather than pinned — this is the one the recorder uses.
+            return make(phase: .app, plan: plan(.cigarettes, day: 8))
         case "today-vape":
             // Stats row swaps "hours reclaimed" for "cravings beaten".
             return make(phase: .app, plan: plan(.vape, day: 90), cravingsWon: 12)
+
+        // The arrival animation, pinned part-way through.
+        //
+        // Every other Today seed captures the settled spiral, so the reveal was
+        // only ever verified as "it ends up right" — the shape of the ripple
+        // itself, and how it reads at one dot versus eighteen hundred, was
+        // never actually looked at.
+        case "reveal-day1-f40":     return reveal(day: 1, frame: 0.40)
+        case "reveal-day1-f75":     return reveal(day: 1, frame: 0.75)
+        case "reveal-day14-f35":    return reveal(day: 14, frame: 0.35)
+        case "reveal-day14-f70":    return reveal(day: 14, frame: 0.70)
+        case "reveal-day90-f25":    return reveal(day: 90, frame: 0.25)
+        case "reveal-day90-f55":    return reveal(day: 90, frame: 0.55)
+        case "reveal-day90-f85":    return reveal(day: 90, frame: 0.85)
+        case "reveal-day365-f50":   return reveal(day: 365, frame: 0.50)
+        case "reveal-day1825-f45":  return reveal(day: 1825, frame: 0.45)
+        case "reveal-day1825-f90":  return reveal(day: 1825, frame: 0.90)
+
+        // Today's dot is *also* a milestone dot — day 8 is "1 week", day 91 is
+        // "3 months". The newest dot is already drawn at the top of the ramp
+        // with its own glow, so the question is whether the milestone marking
+        // survives on it at all, mid-reveal and settled.
+        case "reveal-milestone-today-f60":  return reveal(day: 8, frame: 0.60)
+        case "reveal-milestone-today":      return reveal(day: 8, frame: 1.0)
+        case "reveal-milestone-dense-f60":  return reveal(day: 91, frame: 0.60)
+        case "reveal-milestone-dense":      return reveal(day: 91, frame: 1.0)
 
         // The Bill
         case "bill-cigarettes":
@@ -232,6 +262,10 @@ enum Seed {
             return sos(secondsIn: 103)   // 103 % 14 = 5  → "Hold it",    clock 1:43
         case "sos-let-go":
             return sos(secondsIn: 107)   // 107 % 14 = 9  → "Let it go",  clock 1:47
+        case "sos-live":
+            // Recorded, not shot. Starts 1s before a cycle boundary so the
+            // video opens on a full inhale.
+            return sos(secondsIn: 97, live: true)
 
         case "banner-milestone":
             return make(phase: .app, plan: plan(.cigarettes, day: 3)) {
@@ -288,6 +322,10 @@ enum Seed {
             return celebration(frame: 0.45)
         case "milestone-celebration-f70":
             return celebration(frame: 0.70)
+        // For the recorder: burst runs, dismisses itself, spiral arrives behind
+        // it and lands on the dot the burst was about.
+        case "celebration-handoff":
+            return celebration(frame: nil, autoDismissAfter: 3.2)
 
         case "debug-menu":
             return make(phase: .app, plan: plan(.cigarettes, day: 90)) { $0.debugMenuOpen = true }
@@ -309,20 +347,33 @@ enum Seed {
         }
     }
 
+    /// `frame` pins the spiral's arrival at a point in 0…1.
+    private static func reveal(day: Int, frame: Double) -> AppModel {
+        make(phase: .app, plan: plan(.cigarettes, day: day)) { model in
+            model.spiralRevealFrame = frame
+        }
+    }
+
     /// `frame` pins the burst animation so a still can be inspected.
-    private static func celebration(frame: Double?) -> AppModel {
+    private static func celebration(frame: Double?, autoDismissAfter: TimeInterval? = nil) -> AppModel {
         make(phase: .app, plan: plan(.cigarettes, day: 8)) { model in
             model.pendingCelebration = Milestones.all.first { $0.when == "1 week" }
             model.celebrationFrame = frame
+            model.celebrationAutoDismissAfter = autoDismissAfter
         }
     }
 
     private static func sos(
         secondsIn: TimeInterval,
+        live: Bool = false,
         configure: @escaping (AppModel) -> Void = { _ in }
     ) -> AppModel {
         make(phase: .app, plan: plan(.cigarettes, day: 90), cravingsWon: 6) { model in
-            model.sosStartedAt = referenceNow.addingTimeInterval(-secondsIn)
+            // A live orb has to measure from real time, not the frozen
+            // reference — anchoring to June would put the craving weeks long.
+            model.sosStartedAt = (live ? Date() : referenceNow)
+                .addingTimeInterval(-secondsIn)
+            model.motionCapture = live
             configure(model)
         }
     }

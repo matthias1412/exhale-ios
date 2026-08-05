@@ -28,7 +28,9 @@ struct SpiralView: View {
             let side = min(geo.size.width, geo.size.height)
             let scale = side / SpiralGeometry.box
 
-            TimelineView(.animation(paused: !isRevealing || reduceMotion)) { timeline in
+            TimelineView(.animation(
+                paused: !isRevealing || reduceMotion || model.spiralRevealFrame != nil
+            )) { timeline in
                 Canvas { context, _ in
                     draw(in: &context, scale: scale, progress: progress(at: timeline.date))
                 }
@@ -37,7 +39,16 @@ struct SpiralView: View {
             .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
         }
         .aspectRatio(1, contentMode: .fit)
-        .task {
+        // Keyed on whether a celebration is up. Opening the app on the day you
+        // cross a milestone fired both at once: the spiral arrived underneath
+        // an opaque full-screen celebration, and by the time that was dismissed
+        // `hasRevealedSpiral` was already true, so the spiral was simply there.
+        // The one launch where the animation matters most was the one launch
+        // that never showed it. Now it waits, and the dots arrive into a screen
+        // the user has just been told is a milestone — landing on the dot that
+        // marks it.
+        .task(id: model.pendingCelebration == nil) {
+            guard model.pendingCelebration == nil else { return }
             // Once per session. Switching tabs recreates this view, and
             // replaying the arrival every time made a considered animation feel
             // like a glitch.
@@ -57,6 +68,7 @@ struct SpiralView: View {
     // MARK: - Reveal
 
     private func progress(at date: Date) -> Double {
+        if let frozen = model.spiralRevealFrame { return frozen }
         guard !reduceMotion, let start = revealStart else { return 1 }
         return min(1, max(0, date.timeIntervalSince(start) / revealDuration))
     }

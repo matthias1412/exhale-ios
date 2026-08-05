@@ -37,6 +37,7 @@ enum SeedNames {
         "today-day90",                  // the App Store hero
         "today-day365",                 // first year marker
         "today-day1825",                // five years, 3pt dots
+        "today-day8",                   // today's dot is also a milestone dot
         "today-vape",
         "today-imminent-milestone",
         "pre-quit-countdown",
@@ -62,6 +63,41 @@ enum SeedNames {
         "today-after-relapse",
         "banner-milestone",
         "debug-menu"
+    ]
+
+    /// The spiral's arrival, pinned frame by frame. Its own set because it is
+    /// fourteen captures of one animation — worth a single device when the
+    /// motion is being worked on, not worth paying for on every sweep.
+    static let motion: [String] = [
+        "reveal-day1-f40",
+        "reveal-day1-f75",
+        "reveal-day14-f35",
+        "reveal-day14-f70",
+        "reveal-day90-f25",
+        "reveal-day90-f55",
+        "reveal-day90-f85",
+        "reveal-day365-f50",
+        "reveal-day1825-f45",
+        "reveal-day1825-f90",
+        "reveal-milestone-today-f60",
+        "reveal-milestone-today",
+        "reveal-milestone-dense-f60",
+        "reveal-milestone-dense"
+    ]
+
+    /// Recorded as video rather than stills. A pinned frame proves the drawing
+    /// is right; only motion shows whether the timing is. The breathing orb is
+    /// here because a still of it is indistinguishable from the bug where it
+    /// never moved at all. Durations live in capture-movies.sh.
+    static let movies: [String] = [
+        "today-day1",
+        "today-day14",
+        "today-day90",
+        "today-day8",
+        "today-day365",
+        "today-day1825",
+        "celebration-handoff",
+        "sos-live"
     ]
 
     /// The cheap default set for `devices: one` — enough to catch a regression

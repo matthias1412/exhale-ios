@@ -4,8 +4,8 @@
     {
       "name": "preview",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8931", "--directory", "tools/preview"],
-      "port": 8931
+      "runtimeArgs": ["-m", "http.server", "8943", "--directory", "."],
+      "port": 8943
     }
   ]
 }

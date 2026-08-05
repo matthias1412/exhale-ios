@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Exhale — onboarding, all six steps</title>
+<style>
+  @font-face { font-family:'SG'; font-weight:400;
+    src:url('/Exhale/Resources/Fonts/SpaceGrotesk-Regular.ttf') format('truetype'); }
+  @font-face { font-family:'SG'; font-weight:500;
+    src:url('/Exhale/Resources/Fonts/SpaceGrotesk-Medium.ttf') format('truetype'); }
+  @font-face { font-family:'SG'; font-weight:700;
+    src:url('/Exhale/Resources/Fonts/SpaceGrotesk-Bold.ttf') format('truetype'); }
+
+  :root{
+    --bg:#081A1D; --fg:#E9F5F3; --muted:rgba(233,245,243,.55);
+    --faint:rgba(233,245,243,.40); --accent:#7FD8CB; --on:#06181B;
+    --soft:#BDEDE4; --ember:#E8743B; --emberSoft:#E8A87F;
+    --card:rgba(233,245,243,.15); --hair:rgba(233,245,243,.08);
+  }
+  body{margin:0;background:#101214;color:var(--fg);
+       font-family:'SG',system-ui,sans-serif;padding:24px 24px 60px}
+  h1{font-size:15px;margin:0 0 4px;font-weight:700}
+  .lede{font-size:12.5px;line-height:1.6;color:#9aa;max-width:900px;margin:0 0 22px}
+  .rail{display:flex;gap:18px;flex-wrap:wrap}
+  .wrap{width:302px}
+  .stepname{font:600 11px ui-monospace,Menlo,monospace;color:#7FD8CB;margin-bottom:6px}
+  .phone{width:302px;height:656px;background:var(--bg);border-radius:34px;
+         position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);
+         display:flex;flex-direction:column;padding:0 19.5px 25px;box-sizing:border-box}
+  .status{height:36px;flex:none;display:flex;align-items:center;justify-content:space-between;
+          padding:0 6px;font-size:10.5px;font-weight:500;color:var(--fg);opacity:.9}
+  .island{position:absolute;top:8px;left:50%;transform:translateX(-50%);
+          width:95px;height:28px;border-radius:18px;background:#000;z-index:5}
+  .hdr{display:flex;align-items:center;justify-content:space-between;flex:none;padding-top:4px}
+  .mark{display:flex;align-items:center;gap:7px}
+  .dots{position:relative;width:20px;height:20px;flex:none}
+  .word{font-weight:700;letter-spacing:.22em;font-size:9.8px;color:var(--accent)}
+  .prog{display:flex;gap:4.5px}
+  .prog i{width:16.5px;height:3px;border-radius:2px;background:rgba(233,245,243,.15)}
+  .prog i.on{background:var(--accent)}
+  .body{flex:1;min-height:0;overflow:hidden;padding-top:26px}
+  .h{font-size:22.5px;font-weight:700;line-height:1.15;letter-spacing:-.2px}
+  .sub{font-size:10.5px;line-height:1.5;color:var(--muted);margin-top:9px}
+  .row{display:flex;align-items:center;gap:12px;padding:13px;border-radius:13.5px;
+       border:1.1px solid var(--card);margin-top:9px}
+  .row.sel{border-color:var(--accent);background:rgba(127,216,203,.10)}
+  .rt{font-size:12px;font-weight:700}
+  .rs{font-size:9px;color:var(--muted);margin-top:1px}
+  .ring{width:15px;height:15px;border-radius:50%;border:1.5px solid rgba(233,245,243,.30);flex:none}
+  .ring.on{border-color:var(--accent);background:var(--accent)}
+  .badge{font-size:6.8px;font-weight:700;letter-spacing:.09em;background:var(--accent);
+         color:var(--on);border-radius:9px;padding:3px 5px}
+  .cta{height:42px;border-radius:21px;background:var(--accent);color:var(--on);
+       display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .cta.off{background:rgba(233,245,243,.12);color:var(--faint)}
+  .cta.out{background:none;border:1.1px solid rgba(233,245,243,.30);color:rgba(233,245,243,.85);font-weight:500}
+  .cta.quiet{background:none;border:1px solid rgba(233,245,243,.12);color:var(--muted);font-weight:500;height:39px}
+  .foot{display:flex;align-items:center;gap:12px;flex:none}
+  .back{font-size:10.5px;color:var(--muted);padding:7px}
+  .note{display:flex;gap:8px;align-items:flex-start;background:rgba(127,216,203,.06);
+        border-radius:10.5px;padding:9px 10px;margin-top:10px}
+  .note b{display:block;width:4px;height:4px;border-radius:50%;background:var(--accent);
+          margin-top:5px;flex:none}
+  .note p{margin:0;font-size:9.4px;line-height:1.5;color:var(--muted)}
+  .bullets{margin-top:22px;display:flex;flex-direction:column;gap:13px}
+  .b{display:flex;gap:9px;align-items:flex-start}
+  .b i{width:4.5px;height:4.5px;border-radius:50%;background:var(--accent);margin-top:5px;flex:none}
+  .bt{font-size:11.2px;font-weight:700}
+  .bd{font-size:9.7px;color:var(--muted);margin-top:1px;line-height:1.4}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:19px;margin-top:27px}
+  .circ{width:42px;height:42px;border-radius:50%;border:1.1px solid rgba(233,245,243,.30);
+        display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--accent)}
+  .num{font-size:48px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;text-align:center}
+  .unit{font-size:9px;letter-spacing:.08em;color:var(--muted);margin-top:5px;text-align:center}
+  .price{font-size:28px;font-weight:700;text-align:center;border-bottom:1.1px solid rgba(233,245,243,.15);
+         padding-bottom:5px;width:140px;margin:0 auto}
+  .burn{text-align:center;margin-top:16px}
+  .burnm{font-size:9.8px;color:var(--muted)}
+  .burny{font-size:27px;font-weight:700;color:var(--emberSoft);margin-top:3px}
+  .burnl{font-size:9.8px;color:var(--muted);margin-top:2px}
+  .chips{display:flex;gap:6px;margin-top:8px;overflow:hidden}
+  .chip{border:1.1px solid var(--card);border-radius:10.5px;padding:7px 0;min-width:55px;
+        text-align:center;flex:none}
+  .chip.on{background:var(--accent);border-color:transparent}
+  .chip .d{font-size:9.8px;font-weight:700}
+  .chip.on .d{color:var(--on)}
+  .chip .m{font-size:7.5px;color:var(--faint);margin-top:1px}
+  .chip.on .m{color:rgba(6,24,27,.7)}
+  .ccy{font-size:9.8px;color:var(--muted);margin-top:6px}
+  .ccy b{color:var(--accent);font-weight:700}
+  .or{font-size:8.2px;letter-spacing:.18em;color:var(--faint);text-align:center;margin-top:17px}
+</style>
+</head>
+<body>
+<h1>Exhale — onboarding, all six steps</h1>
+<p class="lede">Real fonts, real tokens, real copy pulled from the Swift source. Rendered at 75% of an
+iPhone 17 so the whole flow fits on one screen. This is for judging <b>copy and rhythm</b> — the
+device is the place to judge motion.</p>
+
+<div class="rail" id="rail"></div>
+
+<script>
+const GOLDEN=2.399963;
+function mark(box,count){
+  const sc=box/26,c=13*sc,hole=3.1*sc,maxR=12.4*sc,k=Math.sqrt(55/count);
+  let h='';
+  for(let i=0;i<count;i++){
+    const t=i/(count-1),r=hole+(maxR-hole)*Math.sqrt(t),a=i*GOLDEN-1.6;
+    const d=(1.3+t*1.2)*sc*k;
+    h+=`<div style="position:absolute;left:${(c+r*Math.cos(a)-d/2).toFixed(2)}px;top:${(c+r*Math.sin(a)-d/2).toFixed(2)}px;width:${d.toFixed(2)}px;height:${d.toFixed(2)}px;border-radius:50%;background:hsl(${Math.round(18+t*154)} ${Math.round(85-t*25)}% ${Math.round(54+t*8)}%)"></div>`;
+  }
+  return h;
+}
+const prog=n=>[0,1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('');
+const hdr=n=>`<div class="hdr"><div class="mark"><div class="dots">${mark(20,26)}</div>
+  <div class="word">EXHALE</div></div><div class="prog">${prog(n)}</div></div>`;
+const foot=(label,off,back)=>`<div class="foot">${back?'<div class="back">Back</div>':''}
+  <div class="cta ${off?'off':''}" style="flex:1">${label}</div></div>`;
+
+const steps=[
+["0 · Intro — new","",`
+  <div class="body">
+    <div class="dots" style="width:43px;height:43px;margin-top:6px">${mark(43,55)}</div>
+    <div class="h" style="margin-top:15px">One dot for every day you don't smoke.</div>
+    <div class="sub">They build into a spiral. It gets denser and harder to give up the longer you go — that's rather the point.</div>
+    <div class="bullets">
+      <div class="b"><i></i><div><div class="bt">The money adds up</div><div class="bd">Every cigarette you don't buy, counted to the penny, live.</div></div></div>
+      <div class="b"><i></i><div><div class="bt">Your body has a schedule</div><div class="bd">Twenty minutes to five years, and we'll tell you as each one passes.</div></div></div>
+      <div class="b"><i></i><div><div class="bt">Cravings pass in minutes</div><div class="bd">One button, one guided breath, for when it's bad.</div></div></div>
+    </div>
+  </div>`,foot("Continue",false,false)],
+
+["1 · Product","",`
+  <div class="body">
+    <div class="h">What are you quitting?</div>
+    <div class="sub">No judgement. We just need the shape of the habit.</div>
+    <div class="note"><b></b><p>You're not doing something unusual. Most people who smoke want to stop — and most who manage it needed more than one go.</p></div>
+    <div class="row"><div style="flex:1"><div class="rt">Cigarettes</div><div class="rs">packs, rollies</div></div><div class="ring"></div></div>
+    <div class="row sel"><div style="flex:1"><div class="rt">Vape</div><div class="rs">pods, disposables</div></div><div class="ring on"></div></div>
+    <div class="row"><div style="flex:1"><div class="rt">Nicotine pouches</div><div class="rs">snus, pouches</div></div><div class="ring"></div></div>
+  </div>`,foot("Continue",false,true)],
+
+["2 · Why","",`
+  <div class="body">
+    <div class="h">Why now?</div>
+    <div class="sub">Pick as many as are true. We'll hand the first one back to you when it's hard.</div>
+    <div class="row"><div style="flex:1"><div class="rt">My health</div><div class="rs">Lungs, heart, the long game</div></div><div class="ring"></div></div>
+    <div class="row sel"><div style="flex:1"><div class="rt">Someone in particular</div><div class="rs">A partner, a child, a parent</div></div><div class="badge">MAIN</div><div class="ring on"></div></div>
+    <div class="row sel"><div style="flex:1"><div class="rt">The money</div><div class="rs">It adds up to real things</div></div><div class="ring on"></div></div>
+    <div class="row"><div style="flex:1"><div class="rt">Being free of it</div><div class="rs">Not needing anything</div></div><div class="ring"></div></div>
+    <div class="row" style="border-style:solid"><div style="flex:1"><div class="rs" style="font-size:10px">Their name, if you like</div></div></div>
+  </div>`,foot("Continue",false,true)],
+
+["3 · Amount","",`
+  <div class="body">
+    <div class="h">Pods in a normal week?</div>
+    <div class="sub">Your honest average. Rough is fine.</div>
+    <div class="stepper">
+      <div class="circ">−</div>
+      <div style="width:98px"><div class="num">5</div><div class="unit">PODS A WEEK</div></div>
+      <div class="circ">+</div>
+    </div>
+  </div>`,foot("Continue",false,true)],
+
+["4 · Price — currency simplified","",`
+  <div class="body">
+    <div class="h">Price of one pod?</div>
+    <div class="ccy">Prices in ISK &nbsp;<b>Change</b></div>
+    <div class="stepper">
+      <div class="circ">−</div>
+      <div class="price">1.200&nbsp;kr</div>
+      <div class="circ">+</div>
+    </div>
+    <div class="burn">
+      <div class="burnm">≈ 26.057 kr a month vanishing into vapour</div>
+      <div class="burny">312.686 kr</div>
+      <div class="burnl">a year, gone</div>
+    </div>
+  </div>`,foot("Continue",false,true)],
+
+["5 · Quit day","",`
+  <div class="body">
+    <div class="h">When does day one start?</div>
+    <div class="sub">Now is the strongest answer. But a date you'll actually keep beats a date you won't.</div>
+    <div class="cta" style="margin-top:19px">Just had it — start now</div>
+    <div class="or">OR PICK A DAY</div>
+    <div class="chips">
+      <div class="chip"><div class="d">Saturday</div><div class="m">2 Aug</div></div>
+      <div class="chip"><div class="d">Yesterday</div><div class="m">4 Aug</div></div>
+      <div class="chip on"><div class="d">Today</div><div class="m">5 Aug</div></div>
+      <div class="chip"><div class="d">Tomorrow</div><div class="m">6 Aug</div></div>
+    </div>
+    <div class="cta out" style="margin-top:15px">That's when I stopped</div>
+  </div>`,""],
+];
+
+document.getElementById('rail').innerHTML = steps.map(([name,_,body,f],i)=>`
+  <div class="wrap">
+    <div class="stepname">${name}</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>
+      ${hdr(i)}
+      ${body}
+      ${f}
+    </div>
+  </div>`).join('');
+</script>
+</body>
+</html>
