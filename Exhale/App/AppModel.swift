@@ -30,6 +30,9 @@ struct PersistedState: Codable, Equatable, Sendable {
     var reasons: [QuitReason] = []
     /// Only ever set when `.someone` is chosen. Stays on the device.
     var reasonName: String?
+    /// Hours-elapsed mark of the last milestone actually shown to the user.
+    /// Anything past this that has since been crossed is owed to them.
+    var lastCelebratedHours: Double = 0
     /// Finished runs, kept forever — see QuitAttempt for why.
     var pastAttempts: [QuitAttempt] = []
     /// Individual slips that did not end a run.
@@ -59,6 +62,8 @@ final class AppModel {
     var settingsOpen = false
     var debugMenuOpen = false
     var slipSheetOpen = false
+    /// A milestone crossed while the app was closed, waiting to be revealed.
+    var pendingCelebration: Milestone?
     var sosStartedAt: Date?
     var banner: BannerContent?
     var onboardingStep = 0
@@ -112,6 +117,21 @@ final class AppModel {
 
     /// "Day 90 of your quit, 1,350 cigarettes avoided" — what VoiceOver reads
     /// instead of ninety unlabelled dots.
+    /// Called on launch and on return to the foreground. Holds back at most one
+    /// at a time — three celebrations in a row is a queue, not a reward.
+    func claimPendingCelebration() {
+        guard let plan = state.plan else { return }
+        let unseen = Milestones.unseen(
+            for: plan.product,
+            quitDate: plan.quitDate,
+            lastSeenHours: state.lastCelebratedHours,
+            now: clock.now
+        )
+        guard let latest = unseen.last else { return }
+        pendingCelebration = latest
+        state.lastCelebratedHours = latest.hours
+    }
+
     var spiralAccessibilitySummary: String {
         guard let plan = state.plan, let p = progress else { return "Your quit spiral" }
         let units = p.unitsAvoided.formatted(.number)

@@ -48,10 +48,21 @@ enum Seed {
         QuitPlan(
             product: product,
             amount: amount ?? product.config.defaultAmount,
-            unitPrice: price ?? Currencies.defaultPrice(for: product, currency: currency),
+            unitPrice: price ?? Self.seedPrice(for: product, currency: currency),
             currencyCode: currency,
             quitDate: quitDate(day: day)
         )
+    }
+
+    /// Seeds need a concrete price to render. These are capture values only —
+    /// the shipping app never invents one.
+    private static func seedPrice(for product: NicotineProduct, currency: String) -> Decimal {
+        let pack: Decimal = currency == "ISK" ? 1890 : 9.50
+        switch product {
+        case .cigarettes: return pack
+        case .vape: return currency == "ISK" ? 1200 : 6
+        case .pouches: return currency == "ISK" ? 1100 : 5.50
+        }
     }
 
     private static func make(

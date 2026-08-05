@@ -39,6 +39,17 @@ struct RootView: View {
                     .zIndex(25)
             }
 
+            if let milestone = model.pendingCelebration, let progress = model.progress {
+                MilestoneCelebration(
+                    milestone: milestone,
+                    dayNumber: progress.dayNumber
+                ) {
+                    model.pendingCelebration = nil
+                }
+                .transition(.opacity)
+                .zIndex(35)
+            }
+
             if model.debugMenuOpen {
                 DebugMenu()
                     .transition(.opacity)
@@ -70,6 +81,7 @@ struct RootView: View {
             guard !model.clock.isFrozen, model.state.phase == .app else { return }
             await NotificationScheduler.shared.requestAuthorisation()
             await NotificationScheduler.shared.reschedule(state: model.state)
+            model.claimPendingCelebration()
         }
     }
 }

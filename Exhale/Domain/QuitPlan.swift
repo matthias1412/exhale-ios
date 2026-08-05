@@ -23,7 +23,7 @@ struct QuitPlan: Codable, Equatable, Sendable {
         QuitPlan(
             product: product,
             amount: product.config.defaultAmount,
-            unitPrice: Currencies.defaultPrice(for: product, currency: currency),
+            unitPrice: 0,   // the user types it; we never guess
             currencyCode: currency,
             quitDate: quitDate
         )

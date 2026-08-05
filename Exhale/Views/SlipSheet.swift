@@ -16,7 +16,6 @@ import SwiftUI
 ///   and the app says what the previous run was worth.
 struct SlipSheet: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         let progress = model.progress
@@ -40,6 +39,14 @@ struct SlipSheet: View {
                     .padding(.top, 14)
             }
 
+            if let reason = model.state.reasons.primary {
+                Text(reason.affirmation(name: model.state.reasonName))
+                    .font(.spaceGrotesk(14, weight: .medium))
+                    .foregroundStyle(Palette.accentSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+            }
+
             VStack(spacing: 12) {
                 // Listed first, and styled as the primary action, on purpose.
                 choice(
@@ -48,7 +55,7 @@ struct SlipSheet: View {
                     style: .accent
                 ) {
                     model.state.recordSlip(at: model.clock.now)
-                    dismiss()
+                    model.slipSheetOpen = false
                 }
 
                 choice(
@@ -57,10 +64,10 @@ struct SlipSheet: View {
                     style: .outline
                 ) {
                     model.state.recordRelapse(at: model.clock.now)
-                    dismiss()
+                    model.slipSheetOpen = false
                 }
 
-                choice(title: "Never mind", detail: nil, style: .quiet) { dismiss() }
+                choice(title: "Never mind", detail: nil, style: .quiet) { model.slipSheetOpen = false }
             }
             .padding(.top, 26)
 

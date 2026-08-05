@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// A point on the healing timeline.
 ///
@@ -133,5 +134,44 @@ enum Milestones {
             .filter { $0.hours > hoursElapsed }
             .prefix(limit)
             .map { $0 }
+    }
+}
+
+extension Milestone {
+    /// Each milestone owns a colour, so the dot it leaves in the spiral is
+    /// individually recognisable rather than one of a thousand identical ones.
+    /// Walks the same ember → sea-glass ramp the spiral uses, so a milestone
+    /// dot always looks like it belongs to the streak it sits in.
+    var colour: Color {
+        let ramp = min(1, log(hours + 1) / log(43_800 + 1))
+        return Palette.spiralDot(ramp: ramp)
+    }
+}
+
+extension Milestones {
+    /// Milestones passed since `lastSeen` — what the user has "earned" while
+    /// the app was closed and hasn't been shown yet.
+    static func unseen(
+        for product: NicotineProduct,
+        quitDate: Date,
+        lastSeenHours: Double,
+        now: Date
+    ) -> [Milestone] {
+        let elapsed = max(0, now.timeIntervalSince(quitDate)) / 3600
+        return forProduct(product).filter { $0.hours > lastSeenHours && $0.hours <= elapsed }
+    }
+
+    /// The next milestone, and how close it is — used for the near-miss nudge.
+    /// Effort rises sharply near a goal, so "one more day" is worth saying.
+    static func imminent(
+        for product: NicotineProduct,
+        hoursElapsed: Double,
+        withinHours: Double = 24
+    ) -> (milestone: Milestone, hoursAway: Double)? {
+        guard let next = forProduct(product).first(where: { $0.hours > hoursElapsed }) else {
+            return nil
+        }
+        let away = next.hours - hoursElapsed
+        return away <= withinHours ? (next, away) : nil
     }
 }

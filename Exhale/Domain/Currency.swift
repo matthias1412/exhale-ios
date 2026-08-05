@@ -34,27 +34,12 @@ enum Currencies {
         return codes
     }
 
-    /// Typical shelf price of a 20-cigarette pack, used only as the initial
-    /// stepper value. Editable by the user on the very next tap.
-    private static let referencePackPrices: [String: Double] = [
-        "EUR": 9.50, "USD": 9.00, "GBP": 16.00, "CHF": 9.50,
-        "DKK": 65, "NOK": 150, "SEK": 90, "ISK": 1800,
-        "PLN": 20, "CZK": 160, "CAD": 18, "AUD": 45,
-        "JPY": 600, "BRL": 12
-    ]
-
-    /// Falls back to 10 units for currencies we have no reference for. That is
-    /// a starting position, not a claim about local prices.
-    static func referencePackPrice(for code: String) -> Double {
-        referencePackPrices[code.uppercased()] ?? 10
-    }
-
-    static func defaultPrice(for product: NicotineProduct, currency: String) -> Decimal {
-        let pack = referencePackPrice(for: currency)
-        let raw = pack * product.config.priceRelativeToPack
-        let step = priceStep(for: currency)
-        return roundToStep(Decimal(raw), step: step)
-    }
+    /// There is deliberately **no table of typical prices per country**.
+    ///
+    /// Guessing what a pack costs in 175 storefronts is data we would have to
+    /// keep correct forever, and being wrong shows the user a number that
+    /// insults them. The user types their own price; the app starts blank and
+    /// asks. That is both more accurate and less code.
 
     /// Number of fraction digits this currency actually uses (0 for JPY, ISK…).
     static func fractionDigits(for code: String) -> Int {
@@ -64,18 +49,13 @@ enum Currencies {
         return f.maximumFractionDigits
     }
 
-    /// Stepper increment: roughly one twentieth of a typical pack, snapped to a
-    /// 1/2/5 × 10ⁿ value, and never finer than the currency's minor unit.
+    /// Stepper increment, derived only from the currency's own minor unit —
+    /// nothing here needs to know what things cost anywhere.
+    ///
+    /// Two-decimal currencies nudge by 0.50, zero-decimal ones (JPY, ISK) by
+    /// 10, which is the right order of magnitude in both without a lookup.
     static func priceStep(for code: String) -> Decimal {
-        let target = referencePackPrice(for: code) / 20
-        let magnitude = pow(10.0, (log10(target)).rounded(.down))
-        let normalised = target / magnitude
-        let nice: Double = normalised < 1.5 ? 1 : (normalised < 3.5 ? 2 : 5)
-        var step = nice * magnitude
-
-        let minorUnit = pow(10.0, -Double(fractionDigits(for: code)))
-        if step < minorUnit { step = minorUnit }
-        return Decimal(step)
+        fractionDigits(for: code) == 0 ? 10 : 0.5
     }
 
     static func roundToStep(_ value: Decimal, step: Decimal) -> Decimal {

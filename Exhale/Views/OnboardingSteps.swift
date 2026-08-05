@@ -76,11 +76,6 @@ struct PriceStep: View {
 
                 CurrencyChips(selected: draft.currencyCode) { code in
                     model.draft?.currencyCode = code
-                    // Re-seed the price: a number that made sense in euros is
-                    // meaningless in yen.
-                    model.draft?.unitPrice = Currencies.defaultPrice(
-                        for: draft.product, currency: code
-                    )
                 }
                 .padding(.top, 4)
 
@@ -89,12 +84,14 @@ struct PriceStep: View {
                         model.draft?.unitPrice = max(step, draft.unitPrice - step)
                     }
 
-                    Text(draft.unitPrice.currencyString(draft.currencyCode))
-                        .font(.spaceGrotesk(38, weight: .bold, relativeTo: .title))
-                        .monospacedDigit()
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
-                        .frame(width: 190)
+                    PriceField(
+                        amount: Binding(
+                            get: { model.draft?.unitPrice ?? 0 },
+                            set: { model.draft?.unitPrice = $0 }
+                        ),
+                        currencyCode: draft.currencyCode
+                    )
+                    .frame(width: 190)
 
                     StepperCircle(symbol: "plus", enabled: true) {
                         model.draft?.unitPrice = draft.unitPrice + step
@@ -103,8 +100,17 @@ struct PriceStep: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 30)
 
-                BurnReadout(progress: progress, plan: draft, verb: config.burnVerb)
-                    .padding(.top, 20)
+                if draft.unitPrice > 0 {
+                    BurnReadout(progress: progress, plan: draft, verb: config.burnVerb)
+                        .padding(.top, 20)
+                        .transition(.opacity)
+                } else {
+                    Text("Enter what you actually pay — we won't guess.")
+                        .font(.spaceGrotesk(13))
+                        .foregroundStyle(Palette.textFaint)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 20)
+                }
             }
             .padding(.top, 34)
         }

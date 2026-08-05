@@ -126,10 +126,17 @@ final class EconomicsTests: XCTestCase {
             (Currencies.priceStep(for: "JPY") as NSDecimalNumber).doubleValue, 1)
     }
 
-    func testDefaultPriceRespectsProductRatio() {
-        let cigs = Currencies.defaultPrice(for: .cigarettes, currency: "EUR")
-        let vape = Currencies.defaultPrice(for: .vape, currency: "EUR")
-        XCTAssertGreaterThan(cigs, vape)
+    /// There must be no per-country price table to go stale — the user types
+    /// their own price and the stepper is derived from the currency alone.
+    func testStepDerivesFromCurrencyNotFromAPriceTable() {
+        XCTAssertEqual(Currencies.priceStep(for: "JPY"), 10)
+        XCTAssertEqual(Currencies.priceStep(for: "ISK"), 10)
+        XCTAssertEqual(Currencies.priceStep(for: "EUR"), 0.5)
+        XCTAssertEqual(Currencies.priceStep(for: "GBP"), 0.5)
+    }
+
+    func testANewPlanHasNoInventedPrice() {
+        XCTAssertEqual(QuitPlan.starting(product: .cigarettes, currency: "EUR").unitPrice, 0)
     }
 }
 
