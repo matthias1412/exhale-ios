@@ -2,6 +2,9 @@ import SwiftUI
 
 /// Four steps. Only step 1 is real so far; the rest still stub out.
 struct OnboardingFlow: View {
+    /// Index of the final step. Five steps: product, why, amount, price, moment.
+    static let lastStep = 4
+
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -10,14 +13,15 @@ struct OnboardingFlow: View {
 
             switch model.onboardingStep {
             case 0: ProductPickerStep()
-            case 1: AmountStep()
-            case 2: PriceStep()
+            case 1: ReasonStep()
+            case 2: AmountStep()
+            case 3: PriceStep()
             default: QuitMomentStep()
             }
 
             Spacer(minLength: 0)
 
-            if model.onboardingStep < 3 {
+            if model.onboardingStep < Self.lastStep {
                 footer
             }
         }
@@ -37,14 +41,14 @@ struct OnboardingFlow: View {
             }
             Spacer()
             HStack(spacing: 6) {
-                ForEach(0..<4, id: \.self) { i in
+                ForEach(0..<(Self.lastStep + 1), id: \.self) { i in
                     Capsule()
                         .fill(i <= model.onboardingStep ? Palette.accent
                                                         : Palette.textPrimary.opacity(0.15))
                         .frame(width: 22, height: 4)
                 }
             }
-            .accessibilityLabel("Step \(model.onboardingStep + 1) of 4")
+            .accessibilityLabel("Step \(model.onboardingStep + 1) of \(Self.lastStep + 1)")
         }
     }
 
@@ -74,7 +78,11 @@ struct OnboardingFlow: View {
     }
 
     private var canContinue: Bool {
-        model.onboardingStep != 0 || model.draft != nil
+        switch model.onboardingStep {
+        case 0: model.draft != nil
+        case 1: !model.state.reasons.isEmpty
+        default: true
+        }
     }
 }
 

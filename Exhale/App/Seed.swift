@@ -93,19 +93,19 @@ enum Seed {
             return onboarding(step: 0, product: .pouches)
 
         case "onboard-amount-cigarettes":
-            return onboarding(step: 1, product: .cigarettes)
+            return onboarding(step: 2, product: .cigarettes)
         case "onboard-amount-vape":
-            return onboarding(step: 1, product: .vape)
+            return onboarding(step: 2, product: .vape)
         case "onboard-amount-pouches":
-            return onboarding(step: 1, product: .pouches)
+            return onboarding(step: 2, product: .pouches)
 
         case "onboard-price-cigarettes":
-            return onboarding(step: 2, product: .cigarettes)
+            return onboarding(step: 3, product: .cigarettes)
         case "onboard-price-vape":
-            return onboarding(step: 2, product: .vape)
+            return onboarding(step: 3, product: .vape)
 
         case "onboard-quit-moment":
-            return onboarding(step: 3, product: .cigarettes)
+            return onboarding(step: 4, product: .cigarettes)
 
         case "paywall":
             return make(phase: .paywall, plan: plan(.cigarettes, day: 1))
@@ -123,17 +123,36 @@ enum Seed {
 
         case "onboard-price-yearly":
             // The annual loss figure, which is the number that lands.
-            return onboarding(step: 2, product: .pouches)
+            return onboarding(step: 3, product: .pouches)
+
+        case "onboard-reason":
+            return onboarding(step: 1, product: .cigarettes)
+
+        case "onboard-reason-chosen":
+            return onboarding(step: 1, product: .cigarettes) { model in
+                var state = model.state
+                state.reasons = [.someone, .money]
+                state.reasonName = "Emma"
+                model.state = state
+            }
+
+        case "sos-with-reason":
+            return sos(secondsIn: 100) { model in
+                var state = model.state
+                state.reasons = [.someone]
+                state.reasonName = "Emma"
+                model.state = state
+            }
 
         case "onboard-quit-time":
             // Step 4 with the time wheel open — an overlay step that was
             // previously unreachable from a seed and therefore never captured.
-            return onboarding(step: 3, product: .cigarettes) {
+            return onboarding(step: 4, product: .cigarettes) {
                 $0.quitPickerMode = .earlierToday
             }
 
         case "onboard-quit-date":
-            return onboarding(step: 3, product: .cigarettes) {
+            return onboarding(step: 4, product: .cigarettes) {
                 $0.quitPickerMode = .pickDate
             }
 
@@ -227,9 +246,13 @@ enum Seed {
         }
     }
 
-    private static func sos(secondsIn: TimeInterval) -> AppModel {
+    private static func sos(
+        secondsIn: TimeInterval,
+        configure: @escaping (AppModel) -> Void = { _ in }
+    ) -> AppModel {
         make(phase: .app, plan: plan(.cigarettes, day: 90), cravingsWon: 6) { model in
             model.sosStartedAt = referenceNow.addingTimeInterval(-secondsIn)
+            configure(model)
         }
     }
 }

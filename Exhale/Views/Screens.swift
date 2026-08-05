@@ -128,6 +128,19 @@ struct CravingSOSScreen: View {
 
                 Spacer()
 
+                if let reason = model.state.reasons.primary {
+                    // Their own stated reason, handed back at the moment it is
+                    // hardest to remember. A self-chosen goal recalled under
+                    // temptation is a commitment device; "stay strong" is not.
+                    Text(reason.affirmation(name: model.state.reasonName))
+                        .font(.spaceGrotesk(15, weight: .medium))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                        .foregroundStyle(Palette.accentSoft)
+                        .frame(maxWidth: 280)
+                        .padding(.bottom, 14)
+                }
+
                 Text("Most cravings die in under 3 minutes.\nYou only have to outlast this one.")
                     .font(.spaceGrotesk(14.5))
                     .multilineTextAlignment(.center)

@@ -223,6 +223,8 @@ struct QuitMomentStep: View {
         if let draft = model.draft {
             model.state.plan = draft
             model.state.phase = .paywall
+            // Open on whatever they said they were doing this for.
+            model.tab = model.state.reasons.primary?.preferredTab ?? .today
         }
     }
 }

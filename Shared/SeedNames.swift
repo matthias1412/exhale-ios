@@ -17,6 +17,8 @@ enum SeedNames {
     static let onboarding: [String] = [
         "onboard-product",
         "onboard-product-selected",
+        "onboard-reason",
+        "onboard-reason-chosen",
         "onboard-amount-cigarettes",
         "onboard-amount-vape",          // the per-week question
         "onboard-amount-pouches",
@@ -51,6 +53,7 @@ enum SeedNames {
         "sos-breathe-in",
         "sos-hold",
         "sos-let-go",
+        "sos-with-reason",
         "slip-sheet",
         "today-after-relapse",
         "banner-milestone",
@@ -62,6 +65,8 @@ enum SeedNames {
     static let smoke: [String] = [
         "onboard-product",
         "onboard-product-selected",
+        "onboard-reason",
+        "onboard-reason-chosen",
         "paywall",
         "today-day90",
         "bill-cigarettes",

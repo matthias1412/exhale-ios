@@ -25,6 +25,11 @@ struct PersistedState: Codable, Equatable, Sendable {
     var notifyMilestones = true
     var notifyWeeklyBill = true
     var notifyMorningCheckIn = false
+    /// Why they're quitting, in the order chosen. The first drives the
+    /// personalisation — see QuitReason.
+    var reasons: [QuitReason] = []
+    /// Only ever set when `.someone` is chosen. Stays on the device.
+    var reasonName: String?
     /// Finished runs, kept forever — see QuitAttempt for why.
     var pastAttempts: [QuitAttempt] = []
     /// Individual slips that did not end a run.
