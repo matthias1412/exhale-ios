@@ -17,7 +17,7 @@ final class PaywallTests: XCTestCase {
     /// The annual figure is the persuasive one, so it had better be right.
     func testYearlyBurnIsDailyCostTimesThreeSixtyFive() {
         let p = progress(plan(currency: "EUR"))
-        // 15/day at €9.50 per 20 = €7.125/day
+        // €49.875 a week is €7.125 a day. No pack size involved.
         XCTAssertEqual((p.dailyCost as NSDecimalNumber).doubleValue, 7.125, accuracy: 0.001)
         XCTAssertEqual((p.yearlyBurn as NSDecimalNumber).doubleValue,
                        7.125 * 365, accuracy: 0.01)

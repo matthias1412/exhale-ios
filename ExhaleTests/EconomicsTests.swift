@@ -141,9 +141,10 @@ final class EconomicsTests: XCTestCase {
     /// There must be no per-country price table to go stale — the user types
     /// their own price and the stepper is derived from the currency alone.
     func testStepDerivesFromCurrencyNotFromAPriceTable() {
-        XCTAssertEqual(Currencies.priceStep(for: "JPY"), 10)
-        XCTAssertEqual(Currencies.priceStep(for: "ISK"), 10)
-        XCTAssertEqual(Currencies.priceStep(for: "EUR"), 0.5)
+        // Sized for a weekly spend, not a pack price — see Currencies.priceStep.
+        XCTAssertEqual(Currencies.priceStep(for: "JPY"), 50)
+        XCTAssertEqual(Currencies.priceStep(for: "ISK"), 50)
+        XCTAssertEqual(Currencies.priceStep(for: "EUR"), 1)
         XCTAssertEqual(Currencies.priceStep(for: "GBP"), 1)
     }
 
