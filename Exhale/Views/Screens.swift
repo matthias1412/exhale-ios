@@ -244,46 +244,79 @@ struct BreathingOrb: View {
     /// drifting through the hold, when the orb itself is nearly still.
     var elapsed: Double = 0
 
+    /// Dots per lung. Enough to read as a surface, few enough that a Canvas
+    /// redraw at 120Hz stays free.
+    private static let dotCount = 150
+    /// How far the expansion lags between the innermost dot and the rim. This
+    /// is what makes it a breath rather than a resize: the middle moves first
+    /// and the edge follows.
+    private static let lagSeconds: Double = 0.9
+
     var body: some View {
         ZStack {
-            Circle().stroke(Palette.accent.opacity(0.25), lineWidth: 1.5)
-
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [Palette.accent.opacity(0.5), Palette.accent.opacity(0.12)],
-                        center: UnitPoint(x: 0.5, y: 0.42),
-                        startRadius: 0,
-                        endRadius: 100
-                    )
-                )
-                .frame(width: 200, height: 200)
-                // A caustic drift across the surface, so breath looks like it
-                // moves *through* the orb rather than just resizing it. Off
-                // entirely under Reduce Motion.
-                .visualEffect { content, proxy in
-                    content.colorEffect(
-                        ShaderLibrary.orbShimmer(
-                            .float2(proxy.size),
-                            .float(reduceMotion ? 0 : elapsed),
-                            .float(reduceMotion ? 0 : 0.055)
-                        )
-                    )
-                }
-                .scaleEffect(reduceMotion ? 1 : scale)
-                .shadow(color: Palette.accent.opacity(reduceMotion ? 0.2 : 0.35),
-                        radius: reduceMotion ? 30 : glowRadius)
-                .overlay(
-                    Text(label)
-                        .font(.spaceGrotesk(17, weight: .medium))
-                        .foregroundStyle(Palette.textBrightest)
-                        // Crossfaded by hand rather than with .animation(value:).
-                        // Every frame inside a TimelineView is its own discrete
-                        // update, so an implicit animation on a changing value
-                        // has nothing to interpolate and the word would snap.
-                        .opacity(labelOpacity)
-                )
+            Canvas { context, size in
+                draw(in: &context, size: size)
+            }
+            Text(label)
+                .font(.spaceGrotesk(17, weight: .medium))
+                .foregroundStyle(Palette.textBrightest)
+                // Crossfaded by hand rather than with .animation(value:).
+                // Every frame inside a TimelineView is its own discrete
+                // update, so an implicit animation on a changing value
+                // has nothing to interpolate and the word would snap.
+                .opacity(labelOpacity)
         }
+
+    /// The orb, built from the same phyllotaxis as the spiral and the logo.
+    ///
+    /// It used to be a blurred radial gradient — the one object in the app not
+    /// made of dots, which is exactly why it read as a smudge sitting on top of
+    /// the design rather than as part of it. Same maths, same golden angle,
+    /// same accent; it just breathes.
+    private func draw(in context: inout GraphicsContext, size: CGSize) {
+        let centre = CGPoint(x: size.width / 2, y: size.height / 2)
+        let unit = min(size.width, size.height) / 240
+
+        // The rim the lung breathes inside, so the orb still has an edge.
+        let rim = 108 * unit
+        context.stroke(
+            Path(ellipseIn: CGRect(x: centre.x - rim, y: centre.y - rim,
+                                   width: rim * 2, height: rim * 2)),
+            with: .color(Palette.accent.opacity(0.16)),
+            lineWidth: 1.5
+        )
+
+        // Additive, so where dots crowd at the centre they brighten instead of
+        // flattening into a disc.
+        context.drawLayer { layer in
+            layer.blendMode = .plusLighter
+            for i in 0..<Self.dotCount {
+                let t = Double(i) / Double(Self.dotCount - 1)
+                // Outer dots read the breath from slightly in the past.
+                let lag = reduceMotion ? 0 : t * Self.lagSeconds
+                let s = Self.scale(atPhase: (elapsed - lag).truncatingRemainder(dividingBy: 14))
+                let radius = (13 + 84 * t.squareRoot()) * unit * s
+                // A quarter-degree of twist with the breath, so the surface
+                // turns very slightly rather than only swelling.
+                let angle = Double(i) * SpiralGeometry.goldenAngle - 1.6 + (s - 0.84) * 0.5
+                let d = (1.7 + t * 2.5) * unit * (0.86 + 0.14 * s)
+
+                let x = centre.x + cos(angle) * radius
+                let y = centre.y + sin(angle) * radius
+                let rect = CGRect(x: x - d / 2, y: y - d / 2, width: d, height: d)
+                layer.opacity = 0.26 + 0.60 * t
+                layer.fill(Path(ellipseIn: rect), with: .color(Palette.accent))
+            }
+        }
+
+        let core = 5 * unit * scale
+        context.fill(
+            Path(ellipseIn: CGRect(x: centre.x - core, y: centre.y - core,
+                                   width: core * 2, height: core * 2)),
+            with: .color(Palette.accentSoft)
+        )
+    }
+
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
     }
@@ -295,27 +328,29 @@ struct BreathingOrb: View {
     /// The inhale eases *out* (quick off the mark, settling at the top, which
     /// is how a full lung feels) and the exhale eases *in and out* so the long
     /// six seconds don't feel like a stall.
-    private var scale: Double {
+    private var scale: Double { Self.scale(atPhase: phasePosition) }
+
+    static func scale(atPhase raw: Double) -> Double {
+        // Negative phases come from the outer dots reading the breath from
+        // slightly in the past; wrap them rather than clamping, or the rim
+        // would freeze for the first second of every craving.
+        let phase = raw < 0 ? raw + 14 : raw
         let low = 0.68, high = 1.0
-        switch phasePosition {
+        switch phase {
         case ..<4:
-            let t = phasePosition / 4
+            let t = phase / 4
             return low + (high - low) * (1 - pow(1 - t, 2.2))
         case ..<8:
             // Not perfectly still: a held breath is not a frozen one.
-            let t = (phasePosition - 4) / 4
+            let t = (phase - 4) / 4
             return high + sin(t * .pi) * 0.012
         default:
-            let t = (phasePosition - 8) / 6
+            let t = (phase - 8) / 6
             return high - (high - low) * (t < 0.5
                 ? 2 * t * t
                 : 1 - pow(-2 * t + 2, 2) / 2)
         }
     }
-
-    /// The glow tightens as the lungs fill, which gives the orb some weight
-    /// rather than it just being a circle that changes size.
-    private var glowRadius: Double { 46 - (scale - 0.68) / 0.32 * 22 }
 
     var label: String {
         switch phasePosition {

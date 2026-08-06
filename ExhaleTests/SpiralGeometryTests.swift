@@ -347,3 +347,54 @@ final class RevealRampTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(short, 1.0)
     }
 }
+
+/// The arrival must not save half the streak for the last blink.
+///
+/// A pure exponential did exactly that — measured off a capture, five years
+/// was only at day 907 with 90% of the animation elapsed, so 918 days landed
+/// in the final third of a second. That is the same "it all appears at once"
+/// the count-up replaced, moved to the end.
+final class RevealTailTests: XCTestCase {
+
+    func testTheEndDoesNotDumpTheStreak() {
+        for day in [90, 365, 1825] {
+            let atNinety = RevealRamp.countedDay(atProgress: 0.9, totalDays: day)
+            let total = RevealRamp.countedDay(atProgress: 1, totalDays: day)
+            let leftForTheLastTenth = (total - atNinety) / total
+            XCTAssertLessThan(leftForTheLastTenth, 0.35,
+                "day \(day): \(Int(leftForTheLastTenth * 100))% of the streak arrives in the last 10% of the time")
+        }
+    }
+
+    /// ...while the opening still has to be slow enough to read.
+    func testTheOpeningStaysSlowAfterTheEasing() {
+        for day in [90, 365, 1825] {
+            let atTenth = RevealRamp.countedDay(atProgress: 0.1, totalDays: day)
+            let total = RevealRamp.countedDay(atProgress: 1, totalDays: day)
+            XCTAssertLessThan(atTenth / total, 0.06,
+                              "day \(day) opened too fast to read individual days")
+        }
+    }
+}
+
+/// The orb reads the breath from slightly in the past at its rim, which means
+/// asking for a negative phase. That must wrap, not clamp — clamping froze the
+/// rim for the first second of every craving.
+final class BreathingOrbTests: XCTestCase {
+
+    func testNegativePhasesWrapRatherThanFreeze() {
+        let justBeforeZero = BreathingOrb.scale(atPhase: -0.5)
+        let sameMomentWrapped = BreathingOrb.scale(atPhase: 13.5)
+        XCTAssertEqual(justBeforeZero, sameMomentWrapped, accuracy: 0.0001)
+    }
+
+    func testTheBreathActuallyMoves() {
+        let inhaleStart = BreathingOrb.scale(atPhase: 0)
+        let full = BreathingOrb.scale(atPhase: 4)
+        let exhaled = BreathingOrb.scale(atPhase: 13.9)
+        XCTAssertEqual(inhaleStart, 0.68, accuracy: 0.001)
+        XCTAssertEqual(full, 1.0, accuracy: 0.001)
+        XCTAssertLessThan(exhaled, 0.72, "the exhale never returned to empty")
+        XCTAssertGreaterThan(full - inhaleStart, 0.3)
+    }
+}
