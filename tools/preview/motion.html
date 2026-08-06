@@ -1,0 +1,388 @@
+<meta charset="utf-8">
+<title>Exhale — motion options</title>
+<style>
+  :root{
+    --bg:#081A1D; --fg:#E9F5F3; --muted:rgba(233,245,243,.55);
+    --faint:rgba(233,245,243,.38); --accent:#7FD8CB; --ember:#E8743B;
+    --card:rgba(233,245,243,.13);
+  }
+  body{margin:0;background:#0d0f11;color:var(--fg);
+       font:14px/1.5 -apple-system,Segoe UI,system-ui,sans-serif;padding:22px 22px 70px}
+  h1{font-size:16px;margin:0 0 4px}
+  h2{font-size:13px;margin:34px 0 4px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  p.lede{font-size:12.5px;color:#9aa;max-width:900px;margin:0 0 16px;line-height:1.6}
+  .note{font-size:12px;color:var(--muted);max-width:900px;margin:0 0 14px;line-height:1.6}
+  .rail{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .cell{background:var(--bg);border-radius:18px;padding:12px;width:236px}
+  .cell canvas{display:block;width:212px;height:212px;cursor:pointer}
+  .name{font-size:12px;font-weight:600;margin-bottom:2px}
+  .name em{font-style:normal;color:var(--accent)}
+  .desc{font-size:10.8px;color:var(--muted);line-height:1.45;min-height:44px;margin-bottom:8px}
+  .bar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+  button{font:inherit;font-size:12px;background:none;color:var(--muted);
+         border:1px solid var(--card);border-radius:999px;padding:5px 12px;cursor:pointer}
+  button.on{background:var(--accent);color:#06181B;border-color:transparent;font-weight:600}
+  .replay{margin-top:8px;width:100%;text-align:center}
+</style>
+
+<h1>Exhale — motion options</h1>
+<p class="lede">Click any panel to replay it. Same phyllotaxis maths as the app, same colour ramp.
+Timing and easing are the real values — this is for picking a direction, not for pixel-matching;
+the device is still where it gets signed off.</p>
+
+<h2>1 · The spiral arriving</h2>
+<p class="note"><b>Why the current one feels flat:</b> it is a fade-in with a 5.5% inward drift.
+I wrote that drift deliberately small because larger values "turned into visible churn" at 1,800 dots —
+but at every count below a few hundred it reads as nothing happening. The variants below make the
+arrival mean something without churning: the spiral <em>unwinds</em> into place, or a visible edge
+sweeps outward and dots land behind it.</p>
+<div class="bar" id="dayBar"></div>
+<div class="rail" id="spiralRail"></div>
+
+<h2>2 · The milestone burst</h2>
+<p class="note">Currently a ring of dots expands and fades while text appears under it. The ring
+never does anything the eye can follow, and the dot that is supposed to hand off to the spiral
+just vanishes.</p>
+<div class="rail" id="burstRail"></div>
+
+<h2>3 · The breathing orb</h2>
+<p class="note"><b>The real problem:</b> this whole app is made of dots, and the orb is the one thing
+that isn't — it is a blurred radial gradient, which is why it reads as a smudge rather than as part
+of the same object. The alternatives are built from the app's own dots.</p>
+<div class="rail" id="orbRail"></div>
+
+<script>
+const GOLD = 2.399963, BOX = 302, CX = 151, CY = 151;
+const HOLE = 44, MAXR = 145, BLOOM = 90;
+
+const lerp = (a,b,t) => a + (b-a)*t;
+const clamp01 = t => t < 0 ? 0 : t > 1 ? 1 : t;
+const easeOut = t => 1 - Math.pow(1-t, 3);
+const easeInOut = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+// slight overshoot, settling — this is what "landing" reads as
+const backOut = (t, s=1.9) => 1 + (s+1)*Math.pow(t-1,3) + s*Math.pow(t-1,2);
+const spring = t => 1 - Math.pow(2, -9*t) * Math.cos(t*Math.PI*3.2);
+
+function band(day){
+  const p = clamp01(day / BLOOM);
+  return { inner: lerp(92, HOLE, p), outer: lerp(92, MAXR, p) };
+}
+function dotDiameter(n){
+  const annulus = Math.PI * (MAXR*MAXR - HOLE*HOLE);
+  const d = Math.sqrt(annulus / Math.max(n,40)) * 0.62;
+  return Math.max(3, Math.min(13, d));
+}
+function ramp(t){
+  return `hsl(${18+t*154} ${85-t*25}% ${54+t*8}%)`;
+}
+function rampLift(t, lift){
+  return `hsl(${18+t*154} ${85-t*25}% ${Math.min(92,(54+t*8)+lift*46)}%)`;
+}
+function dots(day){
+  const n = Math.min(day, 3650);
+  const {inner, outer} = band(day);
+  const size = dotDiameter(n);
+  const span = Math.max(0, outer - inner - size/2);
+  const out = [];
+  for(let i=0;i<n;i++){
+    const t = n>1 ? i/(n-1) : 1;
+    const r = inner + span * (n>1 ? Math.sqrt(t) : 0);
+    const a = i*GOLD - 1.6;
+    out.push({x: CX + r*Math.cos(a), y: CY + r*Math.sin(a),
+              d: size, t, i,
+              year: (i+1)%365===0, newest: i===n-1});
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- panels
+function panel(rail, name, desc, duration, draw){
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.innerHTML = `<div class="name">${name}</div><div class="desc">${desc}</div>`;
+  const cv = document.createElement('canvas');
+  const DPR = window.devicePixelRatio || 2;
+  cv.width = 212*DPR; cv.height = 212*DPR;
+  cell.appendChild(cv);
+  const btn = document.createElement('button');
+  btn.className = 'replay'; btn.textContent = 'Replay';
+  cell.appendChild(btn);
+  rail.appendChild(cell);
+
+  const ctx = cv.getContext('2d');
+  ctx.scale(DPR*212/BOX, DPR*212/BOX);
+  let start = null, raf = null;
+  function frame(now){
+    if(start === null) start = now;
+    const p = clamp01((now - start)/duration);
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle = '#081A1D';
+    ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.restore();
+    draw(ctx, p);
+    if(p < 1) raf = requestAnimationFrame(frame);
+  }
+  function play(){ if(raf) cancelAnimationFrame(raf); start = null; raf = requestAnimationFrame(frame); }
+  cv.onclick = play; btn.onclick = play;
+  return play;
+}
+
+// ---------------------------------------------------------------- spiral
+let DAY = 90;
+const spiralRail = document.getElementById('spiralRail');
+const players = [];
+
+function spiralVariant(rail, name, desc, duration, fn){
+  players.push({
+    rebuild: () => {},
+    play: panel(rail, name, desc, duration, (ctx,p) => fn(ctx, p, dots(DAY)))
+  });
+}
+
+function drawDot(ctx, x, y, d, colour, alpha){
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = colour;
+  ctx.beginPath(); ctx.arc(x, y, d/2, 0, 6.2832); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// A — exactly what ships today
+function current(ctx, p, ds){
+  const W = 0.25;
+  ds.forEach(dot => {
+    const s = ds.length>1 ? (dot.i/(ds.length-1))*(1-W) : 0;
+    const local = clamp01((p - s)/(ds.length>1?W:1));
+    const q = easeOut(local);
+    if(q<=0) return;
+    const travel = 1 - 0.055*(1-q);
+    const x = CX + (dot.x-CX)*travel, y = CY + (dot.y-CY)*travel;
+    const flash = q>=1 ? 0 : Math.sin(clamp01((q-.45)/.55)*Math.PI)*0.22;
+    drawDot(ctx, x, y, dot.d*(0.6+0.4*q), rampLift(dot.t, flash), q);
+  });
+}
+
+// B — the whole spiral unwinds into place
+function unwind(ctx, p, ds){
+  const W = 0.34;
+  const turn = (1 - easeOut(p)) * -0.42;          // ~24° of rotation, settling
+  const grow = 0.90 + 0.10 * backOut(clamp01(p/0.85));
+  ds.forEach(dot => {
+    const s = ds.length>1 ? (dot.i/(ds.length-1))*(1-W) : 0;
+    const local = clamp01((p - s)/(ds.length>1?W:1));
+    if(local<=0) return;
+    const q = backOut(local);
+    const dx = dot.x-CX, dy = dot.y-CY;
+    const r = Math.hypot(dx,dy), a = Math.atan2(dy,dx) + turn;
+    const x = CX + Math.cos(a)*r*grow, y = CY + Math.sin(a)*r*grow;
+    const flash = Math.sin(clamp01(local)*Math.PI)*0.30;
+    drawDot(ctx, x, y, dot.d*Math.max(0.15,q), rampLift(dot.t, flash), clamp01(local*1.6));
+  });
+}
+
+// C — a bright edge sweeps outward, dots land behind it
+function sweep(ctx, p, ds){
+  const front = easeInOut(p);                     // 0..1 across the radius
+  const {inner, outer} = band(DAY);
+  ds.forEach(dot => {
+    const r = Math.hypot(dot.x-CX, dot.y-CY);
+    const rt = (r - inner) / Math.max(1, outer-inner);
+    const local = clamp01((front - rt) * 4.5);     // sharp leading edge
+    if(local<=0) return;
+    const q = backOut(local);
+    const pull = 1 - 0.16*(1-easeOut(local));      // arrives from inboard
+    const x = CX + (dot.x-CX)*pull, y = CY + (dot.y-CY)*pull;
+    const flash = Math.sin(clamp01(local)*Math.PI)*0.42;
+    drawDot(ctx, x, y, dot.d*Math.max(0.1,Math.min(1.08,q)), rampLift(dot.t, flash), clamp01(local*2));
+  });
+  // the edge itself
+  if(p<1){
+    const r = inner + (outer-inner)*front;
+    ctx.globalAlpha = 0.30*(1-p);
+    ctx.strokeStyle = '#BDEDE4'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(CX,CY,r,0,6.2832); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// D — oldest first, each dot springs into place
+function springy(ctx, p, ds){
+  const W = 0.42;
+  ds.forEach(dot => {
+    const s = ds.length>1 ? (dot.i/(ds.length-1))*(1-W) : 0;
+    const local = clamp01((p - s)/(ds.length>1?W:1));
+    if(local<=0) return;
+    const q = spring(local);
+    const pull = 1 - 0.22*(1-q);
+    const x = CX + (dot.x-CX)*pull, y = CY + (dot.y-CY)*pull;
+    const flash = Math.sin(clamp01(local)*Math.PI)*0.34;
+    drawDot(ctx, x, y, dot.d*Math.max(0.1,q), rampLift(dot.t, flash), clamp01(local*2.2));
+  });
+}
+
+spiralVariant(spiralRail, 'A · <em>ships today</em>',
+  'Fade in, oldest to newest, with a 5.5% inward drift. Nothing overshoots, nothing rotates.',
+  1100, current);
+spiralVariant(spiralRail, 'B · unwind',
+  'The whole disc rotates about 24° and grows 10% into place while dots land with a small overshoot. Reads as the spiral coiling rather than appearing.',
+  1500, unwind);
+spiralVariant(spiralRail, 'C · sweep',
+  'A bright ring travels outward and dots land behind its edge. Order is by radius, not by index, so the growth is legible at any day count.',
+  1400, sweep);
+spiralVariant(spiralRail, 'D · spring',
+  'Same order as today, but each dot travels 22% and lands on a damped spring. Cheapest change; keeps the current character.',
+  1600, springy);
+
+const dayBar = document.getElementById('dayBar');
+[8,30,90,365,1825].forEach(d => {
+  const b = document.createElement('button');
+  b.textContent = d === 8 ? 'day 8' : d === 1825 ? '5 years' : 'day '+d;
+  if(d===DAY) b.className='on';
+  b.onclick = () => {
+    DAY = d;
+    [...dayBar.children].forEach(c=>c.className='');
+    b.className='on';
+    players.forEach(p=>p.play());
+  };
+  dayBar.appendChild(b);
+});
+
+// ---------------------------------------------------------------- burst
+const burstRail = document.getElementById('burstRail');
+const MCOL = '#7ED957';
+
+function burstCurrent(ctx, p){
+  const r = 20 + easeOut(p)*66;
+  ctx.globalAlpha = 1-p*0.15;
+  for(let i=0;i<64;i++){
+    const a = i/64*6.2832;
+    drawDot(ctx, CX+Math.cos(a)*r, CY+Math.sin(a)*r, 5, MCOL, 1);
+  }
+  ctx.globalAlpha = 1;
+  drawDot(ctx, CX, CY, 26, MCOL, 1);
+}
+
+function burstShockwave(ctx, p){
+  // three rings leaving at different speeds, thinning as they go
+  for(let ring=0; ring<3; ring++){
+    const off = ring*0.13;
+    const lp = clamp01((p-off)/(1-off));
+    if(lp<=0) continue;
+    const r = 18 + easeOut(lp)*(74 - ring*10);
+    const alpha = (1-lp)*(1-ring*0.24);
+    const count = 52 - ring*10;
+    for(let i=0;i<count;i++){
+      const a = i/count*6.2832 + ring*0.4 + lp*0.30;   // slight swirl
+      drawDot(ctx, CX+Math.cos(a)*r, CY+Math.sin(a)*r,
+              5.2*(1-lp*0.55), MCOL, alpha);
+    }
+  }
+  // core: quick punch, then a slow settle
+  const punch = p<0.18 ? backOut(p/0.18) : 1 - (p-0.18)/0.82*0.28;
+  drawDot(ctx, CX, CY, 26*punch, MCOL, 1);
+}
+
+function burstHandoff(ctx, p){
+  // ring goes out, then everything collapses onto the dot's real spiral slot
+  const target = dots(90)[7];
+  const out = clamp01(p/0.55), back = clamp01((p-0.5)/0.5);
+  for(let i=0;i<56;i++){
+    const a = i/56*6.2832;
+    const r = 18 + easeOut(out)*70;
+    const x = CX+Math.cos(a)*r, y = CY+Math.sin(a)*r;
+    const fx = lerp(x, target.x, easeInOut(back));
+    const fy = lerp(y, target.y, easeInOut(back));
+    drawDot(ctx, fx, fy, 5*(1-back*0.7), MCOL, (1-back)*(1-out*0.2));
+  }
+  const cx = lerp(CX, target.x, easeInOut(back));
+  const cy = lerp(CY, target.y, easeInOut(back));
+  drawDot(ctx, cx, cy, lerp(26, 9, easeInOut(back)), MCOL, 1);
+  if(back>0.6){
+    ctx.globalAlpha = (back-0.6)/0.4*0.5;
+    ctx.strokeStyle = MCOL; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(target.x,target.y,16,0,6.2832); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+const burstPlayers = [];
+burstPlayers.push(panel(burstRail, 'A · <em>ships today</em>',
+  'One ring of dots expands and stops. The core never moves.', 2400, burstCurrent));
+burstPlayers.push(panel(burstRail, 'B · shockwave',
+  'Three rings leave at different speeds with a slight swirl, thinning as they go. The core punches then settles.', 2400, burstShockwave));
+burstPlayers.push(panel(burstRail, 'C · handoff',
+  'The ring goes out, then everything collapses onto the dot\'s actual position in the spiral — the burst literally becomes the dot it is about.', 2600, burstHandoff));
+
+// ---------------------------------------------------------------- orb
+const orbRail = document.getElementById('orbRail');
+const CYCLE = 14000;
+function phase(ms){
+  const t = (ms/1000) % 14;
+  if(t < 4)  return {name:'in',   s: 0.68 + 0.32*(1-Math.pow(1-t/4, 2.2))};
+  if(t < 8)  return {name:'hold', s: 1.0 + Math.sin((t-4)/4*Math.PI)*0.012};
+  return {name:'out', s: 1.0 - 0.32*easeInOut((t-8)/6)};
+}
+
+function orbCurrent(ctx, p){
+  const {s} = phase(p*CYCLE);
+  const R = 66*s;
+  const g = ctx.createRadialGradient(CX, CY-8, 0, CX, CY, R);
+  g.addColorStop(0, 'rgba(127,216,203,.50)');
+  g.addColorStop(1, 'rgba(127,216,203,.12)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,6.2832); ctx.fill();
+  ctx.strokeStyle = 'rgba(127,216,203,.25)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(CX,CY,80,0,6.2832); ctx.stroke();
+}
+
+function orbDots(ctx, p){
+  const {s} = phase(p*CYCLE);
+  // the app's own phyllotaxis, breathing by radius
+  const N = 120;
+  for(let i=0;i<N;i++){
+    const t = i/(N-1);
+    const r = (16 + 62*Math.sqrt(t)) * s;
+    const a = i*GOLD - 1.6;
+    const d = (1.9 + t*2.6) * (0.85 + 0.15*s);
+    ctx.globalAlpha = 0.30 + 0.62*t;
+    ctx.fillStyle = '#7FD8CB';
+    ctx.beginPath(); ctx.arc(CX+Math.cos(a)*r, CY+Math.sin(a)*r, d/2, 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = 'rgba(127,216,203,.20)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(CX,CY,84,0,6.2832); ctx.stroke();
+}
+
+function orbRings(ctx, p){
+  const ms = p*CYCLE, {s, name} = phase(ms);
+  // concentric rings, drifting outward on the inhale and inward on the exhale
+  const drift = ((ms/1000)%14)/14;
+  for(let k=0;k<5;k++){
+    const base = 22 + k*15;
+    const r = base*s + (name==='out' ? -6 : 6)*Math.sin((drift*6.2832)+k);
+    ctx.globalAlpha = 0.46 - k*0.06;
+    ctx.strokeStyle = '#7FD8CB';
+    ctx.lineWidth = 2.2 - k*0.28;
+    ctx.beginPath(); ctx.arc(CX,CY,Math.max(4,r),0,6.2832); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#BDEDE4';
+  ctx.beginPath(); ctx.arc(CX,CY,7*s,0,6.2832); ctx.fill();
+}
+
+const orbPlayers = [];
+orbPlayers.push(panel(orbRail, 'A · <em>ships today</em>',
+  'A blurred radial gradient that scales. The only object in the app not made of dots, which is why it reads as a smudge.', CYCLE, orbCurrent));
+orbPlayers.push(panel(orbRail, 'B · dot lung',
+  'The same phyllotaxis as the spiral and the logo, breathing by radius. Ties the craving screen to the rest of the app.', CYCLE, orbDots));
+orbPlayers.push(panel(orbRail, 'C · rings',
+  'Concentric rings expanding on the inhale, contracting on the exhale, with a little drift so a held breath is not a frozen one.', CYCLE, orbRings));
+
+players.forEach(p=>p.play());
+burstPlayers.forEach(f=>f());
+orbPlayers.forEach(f=>f());
+// The orb breathes for as long as the craving lasts — loop it rather than
+// freeze on the last frame, which is what made it look static in the first place.
+setInterval(() => orbPlayers.forEach(f=>f()), CYCLE);
+setInterval(() => burstPlayers.forEach(f=>f()), 4200);
+</script>
