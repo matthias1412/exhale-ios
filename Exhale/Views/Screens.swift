@@ -10,14 +10,14 @@ struct TodayScreen: View {
             if let progress = model.progress, !progress.hasStarted {
                 PreQuitView(progress: progress)
             } else if let progress = model.progress {
-                ZStack {
-                    SpiralView(
-                        day: progress.dayNumber,
-                        milestoneDays: model.milestoneDays,
-                        accessibilitySummary: model.spiralAccessibilitySummary
-                    )
-                    SpiralCentreLabel(day: progress.dayNumber)
-                }
+                // The numeral is drawn inside SpiralView now: it counts up in
+                // lockstep with the dots, and two sibling views cannot share
+                // one animation clock without one lagging a frame behind.
+                SpiralView(
+                    day: progress.dayNumber,
+                    milestoneDays: model.milestoneDays,
+                    accessibilitySummary: model.spiralAccessibilitySummary
+                )
                 .frame(maxHeight: .infinity)
                 .padding(.horizontal, 24)
 

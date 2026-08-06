@@ -266,3 +266,84 @@ final class MilestoneDotTests: XCTestCase {
         }
     }
 }
+
+/// The arrival's timing. Eyeballing a curve in a screenshot proves nothing —
+/// these pin the properties the animation is supposed to have.
+final class RevealRampTests: XCTestCase {
+
+    func testTheNumeralLandsOnTheStreakAndNeverPastIt() {
+        for day in [1, 3, 8, 90, 365, 1825] {
+            XCTAssertEqual(RevealRamp.displayedDay(atProgress: 1, totalDays: day), day,
+                           "day \(day) did not finish on its own number")
+            for step in stride(from: 0.0, through: 1.0, by: 0.02) {
+                let shown = RevealRamp.displayedDay(atProgress: step, totalDays: day)
+                XCTAssertLessThanOrEqual(shown, day, "overshot the real streak at \(step)")
+                XCTAssertGreaterThanOrEqual(shown, 1)
+            }
+        }
+    }
+
+    /// The counter deliberately runs one flight window past the streak so the
+    /// final dot has somewhere to land. Without it the animation ended with
+    /// its last dots frozen in mid-air, which is the failure the rewrite
+    /// exists to fix — and it would have looked like a rendering bug.
+    func testEveryDotHasLandedByTheEnd() {
+        for day in [1, 3, 8, 90, 365, 1825] {
+            let counted = RevealRamp.countedDay(atProgress: 1, totalDays: day)
+            let window = RevealRamp.flightWindow(forDay: day)
+            let lastDotBorn = Double(day - 1)
+            let age = (counted - lastDotBorn) / window
+            XCTAssertGreaterThanOrEqual(age, 1,
+                "day \(day): the newest dot is still in flight when the animation ends")
+        }
+    }
+
+    /// A three-day streak with a five-day flight window would finish with
+    /// every dot still airborne.
+    func testShortStreaksGetAShorterFlight() {
+        XCTAssertLessThan(RevealRamp.flightWindow(forDay: 3), 2)
+        XCTAssertEqual(RevealRamp.flightWindow(forDay: 1825), 5, accuracy: 0.0001)
+    }
+
+    func testCountOnlyEverGoesUp() {
+        for day in [3, 90, 1825] {
+            var previous = -1.0
+            for step in stride(from: 0.0, through: 1.0, by: 0.01) {
+                let now = RevealRamp.countedDay(atProgress: step, totalDays: day)
+                XCTAssertGreaterThanOrEqual(now, previous, "went backwards at \(step)")
+                previous = now
+            }
+        }
+    }
+
+    /// The whole point of the exponential: the opening has to be slow enough
+    /// that the first days land as separate events, at every streak length.
+    func testTheOpeningIsAlwaysSlow() {
+        for day in [8, 90, 365, 1825] {
+            let atTenPercent = RevealRamp.countedDay(atProgress: 0.1, totalDays: day)
+            XCTAssertLessThan(atTenPercent, Double(day) * 0.10,
+                              "day \(day) dumped too much of the streak up front")
+        }
+    }
+
+    func testItAcceleratesRatherThanRunningFlat() {
+        let day = 365
+        let first = RevealRamp.countedDay(atProgress: 0.5, totalDays: day)
+        let second = RevealRamp.countedDay(atProgress: 1, totalDays: day) - first
+        XCTAssertGreaterThan(second, first * 2,
+                             "the second half should cover far more days than the first")
+    }
+
+    /// A longer streak must visibly take longer to arrive — that is the
+    /// emotional claim the whole animation rests on.
+    func testLongerStreaksTakeLonger() {
+        let short = RevealRamp.duration(forDay: 3)
+        let medium = RevealRamp.duration(forDay: 90)
+        let long = RevealRamp.duration(forDay: 1825)
+        XCTAssertLessThan(short, medium)
+        XCTAssertLessThan(medium, long)
+        // ...but never long enough to be a wait on every cold launch.
+        XCTAssertLessThanOrEqual(long, 3.0)
+        XCTAssertGreaterThanOrEqual(short, 1.0)
+    }
+}
