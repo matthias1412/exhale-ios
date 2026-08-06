@@ -42,6 +42,7 @@ jobs:
       # drifted away from the mark drawn inside the app.
       - name: Lint
         run: |
+          python3 tools/lint-braces.py
           python3 tools/lint-seeds.py
           python3 tools/lint-logo.py
           bash tools/lint-shell.sh

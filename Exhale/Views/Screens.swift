@@ -266,6 +266,9 @@ struct BreathingOrb: View {
                 // has nothing to interpolate and the word would snap.
                 .opacity(labelOpacity)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
 
     /// The orb, built from the same phyllotaxis as the spiral and the logo.
     ///
@@ -315,10 +318,6 @@ struct BreathingOrb: View {
                                    width: core * 2, height: core * 2)),
             with: .color(Palette.accentSoft)
         )
-    }
-
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
     }
 
     /// 0–4s in, 4–8s hold, 8–14s out.
