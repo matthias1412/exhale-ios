@@ -46,7 +46,7 @@ struct DebugMenu: View {
                     dayStepper.padding(.top, 14)
 
                     SectionLabel("ANIMATIONS").padding(.top, 26)
-                    Text("The spiral arrives once per session, so switching tabs won't show it again. This forces it.")
+                    Text("Set a day above, then swipe the app away and open it again — that's the real thing, exactly as someone on day \(currentDay) would see it. The button below forces the same arrival without the relaunch.")
                         .font(.spaceGrotesk(12))
                         .foregroundStyle(Palette.textMuted)
                         .fixedSize(horizontal: false, vertical: true)

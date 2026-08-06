@@ -142,7 +142,7 @@ stop_recorder() {
 for SEED in "${SEEDS[@]}"; do
   GAP="$(frame_gap "$SEED")"
   COUNT="$(frame_count "$SEED")"
-  OUT="$OUT_DIR/$SEED.mp4"
+  OUT="$OUT_DIR/$SEED.mov"
   STRIP="$OUT_DIR/frames/$SEED"
   if [ "$COUNT" -gt 0 ]; then
     mkdir -p "$STRIP"
@@ -155,8 +155,13 @@ for SEED in "${SEEDS[@]}"; do
 
   # Recorder first, app second: the reveal starts on the first frame the app
   # draws, so starting the recorder afterwards would miss the thing being
-  # recorded. h264 in an mp4 rather than the default HEVC .mov so it plays on
-  # anything without a codec hunt.
+  # recorded.
+  #
+  # The extension is .mov because that is what simctl actually writes — the
+  # container is QuickTime whatever you name the file, and h264 only changes
+  # the codec inside it. Calling the output .mp4 produced files that Windows
+  # refused to open, which looked like a broken recording rather than a
+  # mislabelled one.
   xcrun simctl io "$UDID" recordVideo --codec h264 --force "$OUT" &
   REC_PID=$!
   sleep 2   # recorder needs a moment to attach before it captures anything
@@ -208,9 +213,9 @@ while IFS= read -r -d '' MOV; do
     echo "::error::$MOV is only ${BYTES} bytes — likely a black or crashed screen"
     FAILED=1
   fi
-done < <(find "$OUT_DIR" -name '*.mp4' -print0)
+done < <(find "$OUT_DIR" -name '*.mov' -print0)
 
-MOVIE_COUNT=$(find "$OUT_DIR" -name '*.mp4' | wc -l | tr -d ' ')
+MOVIE_COUNT=$(find "$OUT_DIR" -name '*.mov' | wc -l | tr -d ' ')
 FRAME_COUNT=$(find "$OUT_DIR/frames" -name '*.png' 2>/dev/null | wc -l | tr -d ' ')
 echo "Expected ${#SEEDS[@]} recordings, produced $MOVIE_COUNT (+ $FRAME_COUNT filmstrip frames)"
 [[ "$MOVIE_COUNT" -gt 0 ]] || { echo "::error::no recordings produced"; exit 1; }
