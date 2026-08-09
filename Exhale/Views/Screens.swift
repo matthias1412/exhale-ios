@@ -123,8 +123,7 @@ struct CravingSOSScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// 4s in, 4s hold, 6s out.
-    private static let cycle: Double = 14
+    private static let pattern = BreathPattern.standard
 
     var body: some View {
         // The orb, the phase label and the timer all derive from elapsed time,
@@ -156,8 +155,6 @@ struct CravingSOSScreen: View {
 
     @ViewBuilder
     private func content(elapsed: TimeInterval) -> some View {
-        let phasePosition = elapsed.truncatingRemainder(dividingBy: Self.cycle)
-
         ZStack {
             Palette.cravingOverlay.ignoresSafeArea()
 
@@ -171,7 +168,7 @@ struct CravingSOSScreen: View {
 
                 Spacer()
 
-                BreathingOrb(phasePosition: phasePosition, reduceMotion: reduceMotion, elapsed: elapsed)
+                BreathingOrb(elapsed: elapsed, reduceMotion: reduceMotion)
                     .frame(width: 240, height: 240)
 
                 Spacer()
@@ -237,137 +234,135 @@ struct CravingSOSScreen: View {
     }
 }
 
+/// The breathing orb: a body of the app's own dots inside a fixed ring.
+///
+/// The ring never moves, so the *gap* between it and the body is what says how
+/// full the breath is. That is the whole point of having a ring, and what the
+/// old version missed — it had one, but a blurred gradient inside it that
+/// never read against anything.
+///
+/// The body is 320 dots on the same phyllotaxis as the spiral and the logo,
+/// shaded by a real sphere normal so it reads as curved rather than as a flat
+/// disc. It is made of the app's material rather than painted to look like it.
 struct BreathingOrb: View {
-    let phasePosition: Double
+    /// Seconds since the craving started.
+    let elapsed: Double
     let reduceMotion: Bool
-    /// Drives the shader. Separate from `phasePosition` so the shimmer keeps
-    /// drifting through the hold, when the orb itself is nearly still.
-    var elapsed: Double = 0
 
-    /// Dots per lung. Enough to read as a surface, few enough that a Canvas
-    /// redraw at 120Hz stays free.
-    private static let dotCount = 150
-    /// How far the expansion lags between the innermost dot and the rim. This
-    /// is what makes it a breath rather than a resize: the middle moves first
-    /// and the edge follows.
-    private static let lagSeconds: Double = 0.9
+    var pattern: BreathPattern = .standard
+
+    /// Enough to read as a surface, few enough that a Canvas redraw at 120Hz
+    /// stays free.
+    private static let dotCount = 320
+    /// Design units. The body reaches the ring at the top of the inhale.
+    private static let ringRadius: Double = 104
+    private static let emptyRadius: Double = 30
+
+    private var state: (fullness: Double, phase: BreathPattern.Phase) {
+        reduceMotion ? (0.72, .hold) : pattern.state(at: elapsed)
+    }
 
     var body: some View {
         ZStack {
             Canvas { context, size in
                 draw(in: &context, size: size)
             }
-            Text(label)
+            Text(state.phase.instruction)
                 .font(.spaceGrotesk(17, weight: .medium))
                 .foregroundStyle(Palette.textBrightest)
                 // Crossfaded by hand rather than with .animation(value:).
-                // Every frame inside a TimelineView is its own discrete
-                // update, so an implicit animation on a changing value
-                // has nothing to interpolate and the word would snap.
-                .opacity(labelOpacity)
+                // Every frame inside a TimelineView is its own discrete update,
+                // so an implicit animation on a changing value has nothing to
+                // interpolate and the word would snap.
+                .opacity(reduceMotion ? 1 : pattern.instructionOpacity(at: elapsed))
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
+        .accessibilityLabel(state.phase.instruction)
     }
 
-    /// The orb, built from the same phyllotaxis as the spiral and the logo.
-    ///
-    /// It used to be a blurred radial gradient — the one object in the app not
-    /// made of dots, which is exactly why it read as a smudge sitting on top of
-    /// the design rather than as part of it. Same maths, same golden angle,
-    /// same accent; it just breathes.
     private func draw(in context: inout GraphicsContext, size: CGSize) {
         let centre = CGPoint(x: size.width / 2, y: size.height / 2)
         let unit = min(size.width, size.height) / 240
+        let fullness = state.fullness
+        let radius = (Self.emptyRadius
+            + fullness * (Self.ringRadius - Self.emptyRadius)) * unit
 
-        // The rim the lung breathes inside, so the orb still has an edge.
-        let rim = 108 * unit
+        // Halo first, so the body sits on top of its own light.
+        context.drawLayer { layer in
+            layer.blendMode = .plusLighter
+            layer.fill(
+                Path(ellipseIn: CGRect(x: centre.x - radius * 1.6,
+                                       y: centre.y - radius * 1.6,
+                                       width: radius * 3.2, height: radius * 3.2)),
+                with: .radialGradient(
+                    Gradient(colors: [
+                        Palette.accent.opacity(0.10 + 0.14 * fullness),
+                        Palette.accent.opacity(0)
+                    ]),
+                    center: centre,
+                    startRadius: radius * 0.75,
+                    endRadius: radius * 1.6
+                )
+            )
+        }
+
+        // The body. Lit from up and to the left, as if the phone were held
+        // under a window; the surface turns very slowly so the held breath is
+        // never completely still.
+        let lx = -0.45, ly = -0.55, lz = 0.70
+        context.drawLayer { layer in
+            layer.blendMode = .plusLighter
+            for i in 0..<Self.dotCount {
+                let t = Double(i) / Double(Self.dotCount - 1)
+                let q = t.squareRoot()                 // even areal spread
+                let angle = Double(i) * SpiralGeometry.goldenAngle - 1.6
+                    + (reduceMotion ? 0 : elapsed * 0.04)
+                let dx = cos(angle) * q, dy = sin(angle) * q
+                let z = max(0, 1 - q * q).squareRoot() // the sphere's normal
+                let lambert = max(0, dx * lx + dy * ly + z * lz)
+                let shade = 0.16 + 0.84 * pow(lambert, 0.9)
+
+                let d = (0.9 + 1.9 * (1 - q * 0.6)) * (0.8 + 0.2 * fullness) * unit
+                let x = centre.x + dx * radius
+                let y = centre.y + dy * radius
+                layer.opacity = 0.30 + 0.62 * shade
+                layer.fill(
+                    Path(ellipseIn: CGRect(x: x - d / 2, y: y - d / 2, width: d, height: d)),
+                    with: .color(Palette.orbDot(shade: shade))
+                )
+            }
+        }
+
+        // A rim brighter than the middle, which is what makes a disc read as a
+        // sphere rather than a circle.
+        context.drawLayer { layer in
+            layer.blendMode = .plusLighter
+            layer.fill(
+                Path(ellipseIn: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                       width: radius * 2, height: radius * 2)),
+                with: .radialGradient(
+                    Gradient(stops: [
+                        .init(color: Palette.accent.opacity(0), location: 0),
+                        .init(color: Palette.accentSoft.opacity(0.10 + 0.08 * fullness),
+                              location: 0.82),
+                        .init(color: Palette.textBrightest.opacity(0.26 + 0.20 * fullness),
+                              location: 1)
+                    ]),
+                    center: centre,
+                    startRadius: radius * 0.55,
+                    endRadius: radius
+                )
+            )
+        }
+
+        // The fixed reference the body is read against.
+        let rim = Self.ringRadius * unit
         context.stroke(
             Path(ellipseIn: CGRect(x: centre.x - rim, y: centre.y - rim,
                                    width: rim * 2, height: rim * 2)),
             with: .color(Palette.accent.opacity(0.16)),
             lineWidth: 1.5
         )
-
-        // Additive, so where dots crowd at the centre they brighten instead of
-        // flattening into a disc.
-        context.drawLayer { layer in
-            layer.blendMode = .plusLighter
-            for i in 0..<Self.dotCount {
-                let t = Double(i) / Double(Self.dotCount - 1)
-                // Outer dots read the breath from slightly in the past.
-                let lag = reduceMotion ? 0 : t * Self.lagSeconds
-                let s = Self.scale(atPhase: (elapsed - lag).truncatingRemainder(dividingBy: 14))
-                let radius = (13 + 84 * t.squareRoot()) * unit * s
-                // A quarter-degree of twist with the breath, so the surface
-                // turns very slightly rather than only swelling.
-                let angle = Double(i) * SpiralGeometry.goldenAngle - 1.6 + (s - 0.84) * 0.5
-                let d = (1.7 + t * 2.5) * unit * (0.86 + 0.14 * s)
-
-                let x = centre.x + cos(angle) * radius
-                let y = centre.y + sin(angle) * radius
-                let rect = CGRect(x: x - d / 2, y: y - d / 2, width: d, height: d)
-                layer.opacity = 0.26 + 0.60 * t
-                layer.fill(Path(ellipseIn: rect), with: .color(Palette.accent))
-            }
-        }
-
-        let core = 5 * unit * scale
-        context.fill(
-            Path(ellipseIn: CGRect(x: centre.x - core, y: centre.y - core,
-                                   width: core * 2, height: core * 2)),
-            with: .color(Palette.accentSoft)
-        )
-    }
-
-    /// 0–4s in, 4–8s hold, 8–14s out.
-    ///
-    /// Eased, not linear. A linear scale reads as a machine and is genuinely
-    /// harder to breathe along with — real breath accelerates then slows.
-    /// The inhale eases *out* (quick off the mark, settling at the top, which
-    /// is how a full lung feels) and the exhale eases *in and out* so the long
-    /// six seconds don't feel like a stall.
-    private var scale: Double { Self.scale(atPhase: phasePosition) }
-
-    static func scale(atPhase raw: Double) -> Double {
-        // Negative phases come from the outer dots reading the breath from
-        // slightly in the past; wrap them rather than clamping, or the rim
-        // would freeze for the first second of every craving.
-        let phase = raw < 0 ? raw + 14 : raw
-        let low = 0.68, high = 1.0
-        switch phase {
-        case ..<4:
-            let t = phase / 4
-            return low + (high - low) * (1 - pow(1 - t, 2.2))
-        case ..<8:
-            // Not perfectly still: a held breath is not a frozen one.
-            let t = (phase - 4) / 4
-            return high + sin(t * .pi) * 0.012
-        default:
-            let t = (phase - 8) / 6
-            return high - (high - low) * (t < 0.5
-                ? 2 * t * t
-                : 1 - pow(-2 * t + 2, 2) / 2)
-        }
-    }
-
-    var label: String {
-        switch phasePosition {
-        case ..<4: "Breathe in"
-        case ..<8: "Hold it"
-        default: "Let it go"
-        }
-    }
-
-    /// Dips to nothing as each phase hands over, so the word changes while it
-    /// is invisible instead of swapping under the reader.
-    private var labelOpacity: Double {
-        guard !reduceMotion else { return 1 }
-        let fade = 0.35
-        let distance = [0.0, 4, 8, 14]
-            .map { abs(phasePosition - $0) }
-            .min() ?? fade
-        return min(1, distance / fade)
     }
 }
 

@@ -49,6 +49,14 @@ enum Palette {
         )
     }
 
+    /// A dot on the breathing orb's surface, lit by `shade` (0 = facing away
+    /// from the light, 1 = facing it). Fixed hue, so the body reads as one
+    /// object under one light rather than as a colour ramp.
+    static func orbDot(shade: Double) -> Color {
+        Color(hslHue: 170, saturation: 0.52,
+              lightness: min(1, (46 + shade * 44) / 100))
+    }
+
     static let yearMarker = Color(hex: 0xE8A87F)
 }
 

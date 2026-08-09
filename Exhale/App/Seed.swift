@@ -255,15 +255,15 @@ enum Seed {
 
         // Craving SOS — one seed per breathing phase. A bug hid in step 2 of a
         // three-step overlay last time precisely because only step 1 was shot.
+        // The cycle is 11s now — 4 in, 1 held, 6 out — so these land at
+        // 1s, 4s and 8s into it respectively.
         case "sos-breathe-in":
-            return sos(secondsIn: 100)   // 100 % 14 = 2  → "Breathe in", clock 1:40
+            return sos(secondsIn: 100)   // 100 % 11 = 1  → "Breathe in", clock 1:40
         case "sos-hold":
-            return sos(secondsIn: 103)   // 103 % 14 = 5  → "Hold it",    clock 1:43
+            return sos(secondsIn: 103)   // 103 % 11 = 4  → "Hold it",    clock 1:43
         case "sos-let-go":
-            return sos(secondsIn: 107)   // 107 % 14 = 9  → "Let it go",  clock 1:47
+            return sos(secondsIn: 107)   // 107 % 11 = 8  → "Let it go",  clock 1:47
         case "sos-live":
-            // Recorded, not shot. Starts 1s before a cycle boundary so the
-            // video opens on a full inhale.
             return sos(secondsIn: 97, live: true)
 
         case "banner-milestone":

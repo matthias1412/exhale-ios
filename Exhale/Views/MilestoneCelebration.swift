@@ -24,6 +24,17 @@ struct MilestoneCelebration: View {
 
     private let duration: Double = 2.4
 
+    /// Where this milestone's dot sits in the spiral, as a fraction of the
+    /// burst canvas. The gather lands here so the burst resolves into the dot
+    /// it is about rather than dissolving in the middle of the screen.
+    private var spiralSlot: UnitPoint {
+        let day = max(1, Int((milestone.hours / 24).rounded(.down)) + 1)
+        let dots = SpiralGeometry.dots(forDay: day)
+        guard let last = dots.last else { return .center }
+        return UnitPoint(x: last.position.x / SpiralGeometry.box,
+                         y: last.position.y / SpiralGeometry.box)
+    }
+
     var body: some View {
         ZStack {
             // Fully opaque. At 0.97 the stats row and tab bar showed through,
@@ -37,7 +48,7 @@ struct MilestoneCelebration: View {
                 // Burst above, words below. Overlapping them meant the
                 // milestone's own dot ended up behind its own title.
                 VStack(spacing: 26) {
-                    Burst(progress: t, colour: milestone.colour)
+                    Burst(progress: t, colour: milestone.colour, target: spiralSlot)
                         .frame(width: 210, height: 210)
 
                     VStack(spacing: 0) {
@@ -158,63 +169,116 @@ struct MilestoneCelebration: View {
 ///
 /// Drawn in a single `Canvas` rather than as views, for the same reason the
 /// spiral is: this runs alongside everything else on screen.
+/// The burst: flare, bloom, gather.
+///
+/// Three acts of one thing rather than three effects stacked.
+///
+/// **Flare** — a white punch at the core, the moment of impact.
+/// **Bloom** — the app's own phyllotaxis opening outward, unwinding as it
+/// goes. This is the part that is *ours*; the flare and the gather are both
+/// borrowed grammar. An earlier attempt randomised each dot's radius and
+/// departure time to make it feel organic and destroyed the golden-angle
+/// lattice in the process — what came out was a scatter running on a bloom's
+/// schedule. Radius and order are exact here for that reason.
+/// **Gather** — everything converges on the dot's position in the spiral, so
+/// the burst becomes the thing it is about instead of dissipating in place.
+///
+/// Ignite's contribution is the flare and a gravity pull applied to the whole
+/// field at once, which breathes the bloom back inward without breaking it.
 private struct Burst: View {
     let progress: Double
     let colour: Color
+    /// Where this milestone's dot lives in the spiral, in unit coordinates
+    /// (0...1 of the canvas). The gather lands here.
+    var target: UnitPoint = .center
 
-    private let count = 56
+    private let count = 90
+
+    // Variant L: a fast, tight bloom and heavy gravity, so it leaves like a
+    // firework and is hauled back into place.
+    private let bloomEnd = 0.50
+    private let gatherAt = 0.44
+    private let stagger = 0.26
+    private let unwind = 0.7
+    private let gravity = 30.0
 
     var body: some View {
         Canvas { context, size in
             let centre = CGPoint(x: size.width / 2, y: size.height / 2)
-            let eased = 1 - pow(1 - progress, 3)
-            let ringRadius = (size.width / 2) * 0.86
+            let unit = min(size.width, size.height) / 302
+            let landing = CGPoint(x: size.width * target.x, y: size.height * target.y)
 
-            for i in 0..<count {
-                let angle = Double(i) * SpiralGeometry.goldenAngle
-                // Staggered so it doesn't travel as one rigid disc.
-                let stagger = Double(i % 7) / 7 * 0.18
-                let local = min(1, max(0, (eased - stagger) / (1 - stagger)))
-                guard local > 0 else { continue }
+            let bloom = clamp((progress - 0.03) / (bloomEnd - 0.03))
+            let gather = clamp((progress - gatherAt) / (1 - gatherAt))
+            let g = easeInOut(gather)
 
-                // Overshoot slightly, then settle back onto the ring — dots
-                // that simply stop look mechanical.
-                let overshoot = sin(local * .pi) * 0.09
-                let radius = ringRadius * (local + overshoot)
-                // They arrive and *stay*. The earlier version faded them to
-                // nothing by the halfway point, which left the last second of
-                // the animation as static text and no resting composition.
-                let diameter = 6.5 * (0.55 + 0.45 * local)
-                let opacity = min(1, local / 0.2) * 0.85
+            context.drawLayer { layer in
+                layer.blendMode = .plusLighter
+                for i in 0..<count {
+                    let t = Double(i) / Double(count - 1)
+                    // Ordered departure: inner dots leave first and the outer
+                    // ones follow, which is what draws the arms.
+                    let start = t * stagger
+                    let local = clamp((bloom - start) / max(0.001, 1 - start))
+                    guard local > 0 else { continue }
+                    let e = easeOutQuint(local)
 
-                let point = CGPoint(
-                    x: centre.x + radius * cos(angle),
-                    y: centre.y + radius * sin(angle)
-                )
-                context.fill(
-                    Path(ellipseIn: CGRect(x: point.x - diameter / 2,
-                                           y: point.y - diameter / 2,
-                                           width: diameter, height: diameter)),
-                    with: .color(colour.opacity(opacity))
+                    var radius = (26 + 72 * t.squareRoot()) * e * unit
+                    let angle = Double(i) * SpiralGeometry.goldenAngle - 1.6 - (1 - e) * unwind
+                    radius -= pow(clamp((progress - 0.40) / 0.60), 2) * gravity * unit
+
+                    let bx = centre.x + cos(angle) * radius
+                    let by = centre.y + sin(angle) * radius
+                    let x = bx + (landing.x - bx) * g
+                    let y = by + (landing.y - by) * g
+
+                    let d = (2.2 + t * 3.4) * (0.5 + 0.5 * local) * (1 - g * 0.75) * unit
+                    layer.opacity = min(1, local * 3) * (1 - pow(g, 1.4)) * 0.95
+                    layer.fill(
+                        Path(ellipseIn: CGRect(x: x - d / 2, y: y - d / 2, width: d, height: d)),
+                        with: .color(progress < 0.09 ? Palette.textBrightest : colour)
+                    )
+                }
+            }
+
+            // The core: white flare, then it shrinks and rides in to the slot.
+            let flare = progress < 0.09 ? backOut(progress / 0.09, 3.4) : 1
+            let cx = centre.x + (landing.x - centre.x) * g
+            let cy = centre.y + (landing.y - centre.y) * g
+            let cd = (30 * max(0.12, flare) + (9 - 30 * max(0.12, flare)) * g) * unit
+            context.drawLayer { layer in
+                layer.addFilter(.shadow(color: colour.opacity(0.8), radius: 26 * (1 - g)))
+                layer.fill(
+                    Path(ellipseIn: CGRect(x: cx - cd / 2, y: cy - cd / 2,
+                                           width: cd, height: cd)),
+                    with: .color(progress < 0.11 ? Palette.textBrightest : colour)
                 )
             }
 
-            // The milestone's own dot, held at the centre of its own ring.
-            let pulse = 1 + sin(min(1, progress * 1.5) * .pi) * 0.7
-            let core = 20 * pulse
-            context.drawLayer { layer in
-                layer.addFilter(.shadow(color: colour.opacity(0.8), radius: 26))
-                layer.fill(
-                    Path(ellipseIn: CGRect(x: centre.x - core / 2, y: centre.y - core / 2,
-                                           width: core, height: core)),
-                    with: .color(colour)
+            // The ring that marks where the moment now lives.
+            if gather > 0.55 {
+                let k = (gather - 0.55) / 0.45
+                let r = (10 + k * 8) * unit
+                context.stroke(
+                    Path(ellipseIn: CGRect(x: landing.x - r, y: landing.y - r,
+                                           width: r * 2, height: r * 2)),
+                    with: .color(colour.opacity(k * 0.55)),
+                    lineWidth: 1.2
                 )
             }
         }
         .allowsHitTesting(false)
     }
-}
 
+    private func clamp(_ t: Double) -> Double { min(1, max(0, t)) }
+    private func easeInOut(_ t: Double) -> Double {
+        t < 0.5 ? 2 * t * t : 1 - pow(-2 * t + 2, 2) / 2
+    }
+    private func easeOutQuint(_ t: Double) -> Double { 1 - pow(1 - t, 5) }
+    private func backOut(_ t: Double, _ s: Double) -> Double {
+        1 + (s + 1) * pow(t - 1, 3) + s * pow(t - 1, 2)
+    }
+}
 
 /// The dot in transit: leaves the celebration, lands where it will live.
 private struct SettlingDot: View {

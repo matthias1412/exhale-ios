@@ -184,10 +184,7 @@ final class SeedTests: XCTestCase {
                 return "?"
             }
             let elapsed = model.clock.now.timeIntervalSince(started)
-            return BreathingOrb(
-                phasePosition: elapsed.truncatingRemainder(dividingBy: 14),
-                reduceMotion: true
-            ).label
+            return BreathPattern.standard.state(at: elapsed).phase.instruction
         }
         XCTAssertEqual(phases, ["Breathe in", "Hold it", "Let it go"])
     }
@@ -377,24 +374,84 @@ final class RevealTailTests: XCTestCase {
     }
 }
 
-/// The orb reads the breath from slightly in the past at its rim, which means
-/// asking for a negative phase. That must wrap, not clamp — clamping froze the
-/// rim for the first second of every craving.
-final class BreathingOrbTests: XCTestCase {
+/// The pacing of the craving screen's breath.
+///
+/// Two defects lived here and neither was visible in a screenshot: the curve
+/// began the inhale at its fastest, so every breath opened with a lurch; and
+/// it silently added about a second and a half to whatever hold was
+/// prescribed.
+final class BreathPatternTests: XCTestCase {
 
-    func testNegativePhasesWrapRatherThanFreeze() {
-        let justBeforeZero = BreathingOrb.scale(atPhase: -0.5)
-        let sameMomentWrapped = BreathingOrb.scale(atPhase: 13.5)
-        XCTAssertEqual(justBeforeZero, sameMomentWrapped, accuracy: 0.0001)
+    private let pattern = BreathPattern.standard
+
+    func testTheChosenPacing() {
+        XCTAssertEqual(pattern.inhale, 4)
+        XCTAssertEqual(pattern.hold, 1)
+        XCTAssertEqual(pattern.exhale, 6)
+        XCTAssertEqual(pattern.cycle, 11)
+        XCTAssertEqual(pattern.breathsPerMinute, 60.0 / 11, accuracy: 0.001)
     }
 
-    func testTheBreathActuallyMoves() {
-        let inhaleStart = BreathingOrb.scale(atPhase: 0)
-        let full = BreathingOrb.scale(atPhase: 4)
-        let exhaled = BreathingOrb.scale(atPhase: 13.9)
-        XCTAssertEqual(inhaleStart, 0.68, accuracy: 0.001)
-        XCTAssertEqual(full, 1.0, accuracy: 0.001)
-        XCTAssertLessThan(exhaled, 0.72, "the exhale never returned to empty")
-        XCTAssertGreaterThan(full - inhaleStart, 0.3)
+    /// The exhale has to be longer than the inhale — that lengthening is the
+    /// vagal lever, and it is the whole reason the app is called Exhale.
+    func testTheExhaleIsLongerThanTheInhale() {
+        XCTAssertGreaterThan(pattern.exhale, pattern.inhale)
+    }
+
+    /// The defect the user felt before any measurement found it: the old curve
+    /// left the bottom at 0.549 of fullness per second, its fastest moment of
+    /// the whole inhale, so the breath began with a jump. A raised cosine
+    /// starts from rest and peaks in the middle, which is how lungs fill.
+    func testTheInhaleStartsFromRest() {
+        let step = 1.0 / 120
+        let atStart = (pattern.state(at: step).fullness
+            - pattern.state(at: 0).fullness) / step
+        let atMiddle = (pattern.state(at: pattern.inhale / 2 + step).fullness
+            - pattern.state(at: pattern.inhale / 2).fullness) / step
+
+        XCTAssertLessThan(atStart, 0.05, "the inhale still lurches off the bottom")
+        XCTAssertGreaterThan(atMiddle, atStart * 4,
+                             "the breath should be quickest in the middle, not at the start")
+    }
+
+    func testItRunsEmptyToFullAndBack() {
+        XCTAssertEqual(pattern.state(at: 0).fullness, 0, accuracy: 0.001)
+        XCTAssertEqual(pattern.state(at: pattern.inhale).fullness, 1, accuracy: 0.001)
+        XCTAssertEqual(pattern.state(at: pattern.cycle - 0.001).fullness, 0, accuracy: 0.01)
+    }
+
+    func testThePhasesLandWhereTheySay() {
+        XCTAssertEqual(pattern.state(at: 1).phase, .inhale)
+        XCTAssertEqual(pattern.state(at: 4.5).phase, .hold)
+        XCTAssertEqual(pattern.state(at: 7).phase, .exhale)
+        // ...and it wraps rather than running off the end.
+        XCTAssertEqual(pattern.state(at: pattern.cycle + 1).phase, .inhale)
+        XCTAssertEqual(pattern.state(at: -1).phase, .exhale)
+    }
+
+    /// Easing quietly rewrites the pattern: the time actually spent near full
+    /// is longer than the prescribed hold. That is acceptable and predictable
+    /// with a raised cosine — it was 1.5s with the old curve — but it must not
+    /// run away.
+    func testTheApexDoesNotOutstayThePattern() {
+        var nearFull = 0.0
+        let step = 0.01
+        var t = 0.0
+        while t < pattern.cycle {
+            if pattern.state(at: t).fullness >= 0.97 { nearFull += step }
+            t += step
+        }
+        XCTAssertGreaterThan(nearFull, pattern.hold,
+                             "easing should soften the apex, not remove it")
+        XCTAssertLessThan(nearFull, pattern.hold + 1.4,
+                          "the curve is adding more hold than it was asked for")
+    }
+
+    func testTheInstructionFadesAtEveryHandover() {
+        for boundary in [0.0, pattern.inhale, pattern.inhale + pattern.hold] {
+            XCTAssertLessThan(pattern.instructionOpacity(at: boundary), 0.05,
+                              "the word swaps in plain sight at \(boundary)s")
+        }
+        XCTAssertEqual(pattern.instructionOpacity(at: pattern.inhale / 2), 1, accuracy: 0.001)
     }
 }
