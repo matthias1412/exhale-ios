@@ -31,6 +31,7 @@
   .cell{background:var(--panel);border:1px solid var(--line);border-radius:20px;
         padding:14px;display:flex;flex-direction:column;gap:8px}
   .cell.now{border-color:rgba(232,168,127,.42)}
+  .cell.pick{border-color:rgba(127,216,203,.55);box-shadow:0 0 0 1px rgba(127,216,203,.18)}
   .cap{display:flex;align-items:baseline;gap:8px}
   .key{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em}
   .key.now{color:var(--ember)}
@@ -412,7 +413,7 @@ const EASES={
     note:"Ease-out to the power 2.2 on the inhale, ease-in-out on the exhale. Most of the movement happens early, so the top is vague and the apex outstays the pattern.",
     in:t=>1-Math.pow(1-t,2.2), out:t=>easeInOut(t)}
 };
-let EASE="current";
+let EASE="sine";   // the chosen curve — "What ships" is kept only for comparison
 
 function phaseOf(pat,ms){
   const [i,h,e,r]=pat, cycle=(i+h+e+r)*1000, E=EASES[EASE];
@@ -465,7 +466,9 @@ function sphere(c,ms,pat,label){
 }
 
 const PATTERNS=[
-  {key:"N1",name:"4–4–6 · what ships",pat:[4,4,6,0],now:true,
+  {key:"✓",name:"4–1–6 · chosen",pat:[4,1,6,0],chosen:true,
+   why:"11s, 5.5 breaths a minute, exhale half again as long as the inhale. One second at the top, which on sine easing is delivered as about 2.1s — a beat you can land on, nowhere near enough to load CO2. This is what the build in flight uses."},
+  {key:"N1",name:"4–4–6 · what shipped",pat:[4,4,6,0],now:true,
    why:"14s, about 4.3 breaths a minute. Chosen by feel, not evidence. The four-second hold is the part worth questioning: holds raise CO2 and, for someone already agitated, can add to the panic rather than settle it."},
   {key:"N2",name:"4–0–6 · resonance",pat:[4,0,6,0],
    why:"10s, exactly 6 breaths a minute — the resonance frequency where baroreflex gain and heart-rate variability peak for most adults. The best-evidenced slow-breathing rate there is, and no hold to fight."},
@@ -488,7 +491,7 @@ function build(gridId,items){
   const grid=document.getElementById(gridId), out=[];
   for(const v of items){
     const cell=document.createElement("div");
-    cell.className="cell"+(v.now?" now":"");
+    cell.className="cell"+(v.now?" now":"")+(v.chosen?" pick":"");
     cell.innerHTML=`<div class="cap"><span class="key${v.now?" now":""}">${v.key}</span>
       <span class="ttl">${v.name}</span></div><div class="why">${v.why}</div>`;
     const cv=document.createElement("canvas");
