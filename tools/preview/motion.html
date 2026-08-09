@@ -1,268 +1,304 @@
 <meta charset="utf-8">
-<title>Exhale — arrivals and breath</title>
+<title>Exhale — how a day arrives</title>
 <style>
-  :root{ --bg:#081A1D; --fg:#E9F5F3; --muted:rgba(233,245,243,.55);
-         --accent:#7FD8CB; --card:rgba(233,245,243,.13); }
-  body{margin:0;background:#0d0f11;color:var(--fg);
-       font:14px/1.5 -apple-system,Segoe UI,system-ui,sans-serif;padding:22px 22px 80px}
-  h1{font-size:16px;margin:0 0 4px}
-  h2{font-size:13px;margin:34px 0 6px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-  p.lede,p.note{font-size:12.5px;max-width:960px;margin:0 0 14px;line-height:1.6}
-  p.lede{color:#9aa} p.note{color:var(--muted)}
-  .rail{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
-  .cell{background:var(--bg);border-radius:18px;padding:12px;width:250px}
-  .cell canvas{display:block;width:226px;height:226px;cursor:pointer;border-radius:10px}
-  .name{font-size:12px;font-weight:600;margin-bottom:2px}
-  .name em{font-style:normal;color:var(--accent)}
-  .desc{font-size:10.8px;color:var(--muted);line-height:1.45;min-height:56px;margin-bottom:6px}
-  .bar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;align-items:center}
-  .bar span{font-size:11px;color:var(--muted);margin-right:4px}
-  button{font:inherit;font-size:12px;background:none;color:var(--muted);
-         border:1px solid var(--card);border-radius:999px;padding:5px 12px;cursor:pointer}
+  /* Committed to a single dark world on purpose: these animations are judged
+     against the app's own background, and re-rendering them on a light ground
+     would be judging something the user will never see. */
+  :root{
+    --ground:#0A1012;      /* page, cooled very slightly toward the accent */
+    --panel:#081A1D;       /* the app's actual background */
+    --line:rgba(233,245,243,.10);
+    --ink:#E9F5F3;
+    --ink-2:rgba(233,245,243,.62);
+    --ink-3:rgba(233,245,243,.40);
+    --accent:#7FD8CB;
+    --ember:#E8A87F;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;
+       padding:26px 26px 90px}
+  h1{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{font-size:13px;color:var(--ink-2);max-width:70ch;margin:0 0 22px}
+  .sub b{color:var(--ink)}
+
+  /* control rail ------------------------------------------------------- */
+  .rail{position:sticky;top:0;z-index:5;background:var(--ground);
+        border-bottom:1px solid var(--line);padding:12px 0 14px;margin-bottom:20px;
+        display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+  .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+       color:var(--ink-3);margin-right:2px}
+  button{font:inherit;font-size:12.5px;background:none;color:var(--ink-2);
+         border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer;
+         transition:background .12s,color .12s,border-color .12s}
+  button:hover{color:var(--ink);border-color:rgba(233,245,243,.28)}
   button.on{background:var(--accent);color:#06181B;border-color:transparent;font-weight:600}
-  .replay{margin-top:6px;width:100%;text-align:center}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  input[type=range]{accent-color:var(--accent);width:min(340px,42vw);cursor:pointer}
+  .read{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink-2);min-width:12ch}
+  .read b{color:var(--accent);font-weight:600}
+
+  /* panels ------------------------------------------------------------- */
+  .grid{display:grid;gap:16px;
+        grid-template-columns:repeat(auto-fill,minmax(258px,1fr))}
+  .cell{background:var(--panel);border:1px solid var(--line);border-radius:20px;
+        padding:14px;display:flex;flex-direction:column;gap:8px}
+  .cell.pick{border-color:rgba(127,216,203,.42)}
+  .cap{display:flex;align-items:baseline;gap:8px}
+  .key{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+  .key.bad{color:var(--ember)}
+  .ttl{font-size:13.5px;font-weight:600}
+  .why{font-size:11.5px;color:var(--ink-2);line-height:1.5;min-height:5.2em}
+  canvas{display:block;width:100%;aspect-ratio:1;border-radius:12px;background:#081A1D}
+  .foot{font-size:11.5px;color:var(--ink-3);margin-top:26px;max-width:70ch}
+  @media (prefers-reduced-motion:reduce){ .rail{position:static} }
 </style>
 
-<h1>Exhale — arrivals and breath</h1>
-<p class="lede">The count-up stays: the numeral ticks and a dot lands on each day. What changes below is
-<b>where the dot comes from</b>. Panels crop to the phone's width, so anything starting outside the
-frame genuinely flies in from off-screen. Click to replay.</p>
+<h1>Exhale — how a day arrives</h1>
+<p class="sub">Seven takes on the one you picked: a day is <b>born at the numeral and travels out
+to its slot</b>. Each changes one property of that — where it starts, how far it unwinds, how it
+paces, how much comet it drags. All run off <b>one shared clock</b>, so drag the scrubber to freeze
+the same instant across every panel; that is where they separate. Try it at <b>5y</b>, where three
+of them fall apart.</p>
 
-<div class="bar" id="dayBar"><span>day count</span></div>
-<div class="rail" id="rail"></div>
+<div class="rail">
+  <div class="grp"><span class="lbl">Streak</span><span id="days"></span></div>
+  <div class="grp">
+    <button id="play" class="on">Pause</button>
+    <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Animation progress">
+    <span class="read" id="read"></span>
+  </div>
+</div>
 
-<h2>The breathing orb</h2>
-<p class="note">Rebuilt out of the same dots as everything else. The gradient blob is kept first for
-comparison — it is the only object in the app not made of dots, which is exactly why it reads as a
-smudge. These loop continuously; a full cycle is 4s in, 4s hold, 6s out.</p>
-<div class="rail" id="orbRail"></div>
+<div class="grid" id="grid"></div>
+
+<p class="foot">Numerals render in a system face here; the app sets them in Space Grotesk. Judge the
+motion, not the type.</p>
 
 <script>
+"use strict";
 const GOLD=2.399963, BOX=302, CX=151, CY=151, HOLE=44, MAXR=145, BLOOM=90;
-const lerp=(a,b,t)=>a+(b-a)*t, clamp01=t=>t<0?0:t>1?1:t;
+const clamp01=t=>t<0?0:t>1?1:t, lerp=(a,b,t)=>a+(b-a)*t;
 const easeOut=t=>1-Math.pow(1-t,3);
-const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-const backOut=(t,s=2.4)=>1+(s+1)*Math.pow(t-1,3)+s*Math.pow(t-1,2);
+const easeOutQuint=t=>1-Math.pow(1-t,5);
+const backOut=(t,s=2.0)=>1+(s+1)*Math.pow(t-1,3)+s*Math.pow(t-1,2);
+const smoother=t=>t*t*t*(t*(t*6-15)+10);
 
-function band(day){const p=clamp01(day/BLOOM);return{inner:lerp(92,HOLE,p),outer:lerp(92,MAXR,p)};}
-function dotDiameter(n){const a=Math.PI*(MAXR*MAXR-HOLE*HOLE);
-  return Math.max(3,Math.min(13,Math.sqrt(a/Math.max(n,40))*0.62));}
-function rampLift(t,l){return `hsl(${18+t*154} ${85-t*25}% ${Math.min(95,(54+t*8)+l*46)}%)`;}
+const band=d=>{const p=clamp01(d/BLOOM);return{inner:lerp(92,HOLE,p),outer:lerp(92,MAXR,p)};};
+const dotD=n=>Math.max(3,Math.min(13,Math.sqrt(Math.PI*(MAXR*MAXR-HOLE*HOLE)/Math.max(n,40))*0.62));
+const lift=(t,l)=>`hsl(${18+t*154} ${85-t*25}% ${Math.min(96,(54+t*8)+l*46)}%)`;
+
+const cache={};
 function dots(day){
-  const n=Math.min(day,3650), {inner,outer}=band(day), size=dotDiameter(n);
+  if(cache[day]) return cache[day];
+  const n=Math.min(day,3650), {inner,outer}=band(day), size=dotD(n);
   const span=Math.max(0,outer-inner-size/2), out=[];
   for(let i=0;i<n;i++){
     const t=n>1?i/(n-1):1, r=inner+span*(n>1?Math.sqrt(t):0), a=i*GOLD-1.6;
-    out.push({x:CX+r*Math.cos(a),y:CY+r*Math.sin(a),d:size,t,i,ang:a,rad:r});
+    out.push({x:CX+r*Math.cos(a), y:CY+r*Math.sin(a), d:size, t, i, ang:a, rad:r});
   }
-  return out;
+  return cache[day]=out;
 }
-function rampK(n){return Math.max(1.6,Math.min(7,Math.log(Math.max(n,2))*1.15));}
-function duration(n){return Math.max(1.0,Math.min(3.0,0.8+0.35*Math.log(Math.max(n,2))))*1000;}
-function dayAt(p,n,k){return n*(Math.exp(k*p)-1)/(Math.exp(k)-1);}
+const rampK=n=>Math.max(1.6,Math.min(7,Math.log(Math.max(n,2))*1.15));
+const flightWindow=n=>Math.min(5,Math.max(0.8,n/3));
+function counted(p,n){
+  const target=n+flightWindow(n), k=rampK(n), c=clamp01(p);
+  return target*(((Math.exp(k*c)-1)/(Math.exp(k)-1))*0.6 + smoother(c)*0.4);
+}
+const duration=n=>Math.max(1.0,Math.min(3.0,0.8+0.35*Math.log(Math.max(n,2))))*1000;
+const shownDay=(p,n)=>Math.max(1,Math.min(n,Math.floor(counted(p,n))));
 
-function panel(rail,name,desc,draw,fixedDur){
-  const cell=document.createElement('div'); cell.className='cell';
-  cell.innerHTML=`<div class="name">${name}</div><div class="desc">${desc}</div>`;
-  const cv=document.createElement('canvas'); const DPR=window.devicePixelRatio||2;
-  cv.width=226*DPR; cv.height=226*DPR; cell.appendChild(cv);
-  const btn=document.createElement('button'); btn.className='replay'; btn.textContent='Replay';
-  cell.appendChild(btn); document.getElementById(rail).appendChild(cell);
-  const ctx=cv.getContext('2d'); ctx.scale(DPR*226/BOX,DPR*226/BOX);
-  let start=null,raf=null;
-  function frame(now){
-    if(start===null) start=now;
-    const dur=fixedDur||duration(DAY);
-    const p=clamp01((now-start)/dur);
-    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-    ctx.fillStyle='#081A1D'; ctx.fillRect(0,0,cv.width,cv.height); ctx.restore();
-    draw(ctx,p,DAY);
-    if(p<1) raf=requestAnimationFrame(frame);
+function dot(c,x,y,d,col,a){
+  if(a<=0.004||d<=0) return;
+  c.globalAlpha=a; c.fillStyle=col;
+  c.beginPath(); c.arc(x,y,d/2,0,6.2832); c.fill(); c.globalAlpha=1;
+}
+function numeral(c,shown,total){
+  const yr=Math.floor(shown/365);
+  const big=yr>=1?String(yr):String(shown);
+  const over=yr>=1?(yr===1?"YEAR":"YEARS"):"DAY";
+  const veil=band(total).inner-dotD(total)/2;
+  const g=c.createRadialGradient(CX,CY,0,CX,CY,veil);
+  g.addColorStop(0,"#081A1D"); g.addColorStop(.75,"#081A1D"); g.addColorStop(1,"rgba(8,26,29,0)");
+  c.fillStyle=g; c.beginPath(); c.arc(CX,CY,veil,0,6.2832); c.fill();
+  c.textAlign="center"; c.fillStyle="rgba(233,245,243,.55)";
+  c.font="500 11px system-ui,sans-serif"; c.letterSpacing="3px";
+  c.fillText(over,CX,CY-26); c.letterSpacing="0px";
+  c.fillStyle="#F3FBF9"; c.font=`700 ${big.length>3?42:52}px system-ui,sans-serif`;
+  c.fillText(big,CX,CY+20);
+  if(yr>=1){
+    const rem=shown-yr*365;
+    c.fillStyle="rgba(233,245,243,.55)"; c.font="400 12px system-ui,sans-serif";
+    c.fillText(rem>0?`+ ${rem} days`:"to the day",CX,CY+40);
   }
-  function play(){ if(raf)cancelAnimationFrame(raf); start=null; raf=requestAnimationFrame(frame); }
-  cv.onclick=play; btn.onclick=play; return play;
 }
 
-function dot(ctx,x,y,d,colour,alpha){
-  if(alpha<=0.004||d<=0) return;
-  ctx.globalAlpha=alpha; ctx.fillStyle=colour;
-  ctx.beginPath(); ctx.arc(x,y,d/2,0,6.2832); ctx.fill(); ctx.globalAlpha=1;
-}
-function numeral(ctx,shown,total){
-  const years=Math.floor(shown/365);
-  const big=years>=1?String(years):String(Math.floor(shown));
-  const over=years>=1?(years===1?'YEAR':'YEARS'):'DAY';
-  const veil=band(total).inner-dotDiameter(total)/2;
-  const g=ctx.createRadialGradient(CX,CY,0,CX,CY,veil);
-  g.addColorStop(0,'#081A1D'); g.addColorStop(.75,'#081A1D'); g.addColorStop(1,'rgba(8,26,29,0)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,veil,0,6.2832); ctx.fill();
-  ctx.textAlign='center'; ctx.fillStyle='rgba(233,245,243,.55)';
-  ctx.font='500 11px system-ui,sans-serif'; ctx.letterSpacing='3px';
-  ctx.fillText(over,CX,CY-26); ctx.letterSpacing='0px';
-  ctx.fillStyle='#F3FBF9'; ctx.font=`700 ${big.length>3?42:52}px system-ui,sans-serif`;
-  ctx.fillText(big,CX,CY+20);
-}
+/* ---- variants -------------------------------------------------------
+   All of these are the B idea: a day is born at the numeral and travels out
+   to its slot. What differs is the path, the pacing and how much trail. */
 
-// ---- where a dot comes from ----------------------------------------------
-// Each returns the off-screen start point for dot `o`. BOX is the phone's
-// width, so anything beyond it is genuinely outside the frame.
-const origins = {
-  // straight out along its own radius, past the edge
-  radial: o => ({x: CX+Math.cos(o.ang)*BOX*1.15, y: CY+Math.sin(o.ang)*BOX*1.15}),
-  // in from whichever side is nearest — reads as coming from off the phone
-  sides: o => {
-    const left = o.x < CX;
-    return {x: left ? -BOX*0.35 : BOX*1.35, y: o.y + (o.i%2?-40:40)};
-  },
-  // up from underneath, like the days are stacking up
-  below: o => ({x: o.x + (o.i%2?-26:26), y: BOX*1.30}),
-  // alternating left/right, which gives the stream a weave
-  weave: o => ({x: o.i%2 ? -BOX*0.30 : BOX*1.30, y: lerp(o.y, CY, 0.35)})
-};
+// deterministic per-dot jitter, so a "random" scatter is identical every replay
+const hash=i=>{ const x=Math.sin(i*127.1)*43758.5453; return x-Math.floor(x); };
 
-// A curved path reads as thrown rather than dragged: pull the control point
-// off the straight line, perpendicular to it.
-function flightPoint(from, to, t, bow){
-  const mx=(from.x+to.x)/2, my=(from.y+to.y)/2;
-  const dx=to.x-from.x, dy=to.y-from.y;
-  const cx=mx-dy*bow, cy=my+dx*bow;
-  const u=1-t;
-  return {x:u*u*from.x+2*u*t*cx+t*t*to.x, y:u*u*from.y+2*u*t*cy+t*t*to.y};
-}
-
-function flier(opts){
-  return function(ctx,p,n){
-    const ds=dots(n), k=rampK(n), shown=dayAt(p,n,k);
-    ds.forEach(o=>{
-      const born=o.i+1;
-      if(shown < born-1) return;
-      const age=clamp01((shown-(born-1))/opts.land);
-      const from=origins[opts.from](o);
-      const e=easeOut(age);
-      // trail: a few ghosts along the path behind the dot
-      if(opts.trail && age<1){
-        for(let g=1;g<=opts.trail;g++){
-          const ta=Math.max(0,age-g*0.13);
-          if(ta<=0) continue;
-          const q=flightPoint(from,o,easeOut(ta),opts.bow);
-          dot(ctx,q.x,q.y,o.d*0.62*(1-g/(opts.trail+1)),
-              rampLift(o.t,0.5),0.16*(1-g/(opts.trail+1))*(1-age));
+function core(cfg){
+  return function(c,p,n){
+    const ds=dots(n), k=counted(p,n), w=flightWindow(n)*(cfg.windowScale||1);
+    const veil=band(n).inner-dotD(n)/2;
+    const birthR = cfg.fromVeil ? veil*0.72 : 6;
+    c.save(); c.globalCompositeOperation="lighter";
+    for(const o of ds){
+      if(k<o.i) continue;
+      const age=clamp01((k-o.i)/w);
+      const ease=cfg.ease(age);
+      // radius: optionally overshooting past the slot and settling back
+      const rEase = cfg.overshoot ? backOut(Math.min(1,age*1.05),cfg.overshoot) : ease;
+      const jitter = cfg.jitter ? (hash(o.i)-0.5)*cfg.jitter : 0;
+      const pos=(e,rE)=>{
+        const r=lerp(birthR,o.rad,rE);
+        const a=o.ang-(1-e)*cfg.unwind + jitter*(1-e);
+        return [CX+Math.cos(a)*r, CY+Math.sin(a)*r];
+      };
+      if(age<1 && cfg.ghosts){
+        for(let g=1;g<=cfg.ghosts;g++){
+          const ta=age-g*cfg.ghostGap; if(ta<=0) continue;
+          const ge=cfg.ease(ta);
+          const gr=cfg.overshoot ? backOut(Math.min(1,ta*1.05),cfg.overshoot) : ge;
+          const [gx,gy]=pos(ge,gr);
+          dot(c,gx,gy,o.d*cfg.ghostSize*(1-g/(cfg.ghosts+1)),
+              lift(o.t,cfg.ghostHeat), cfg.ghostAlpha*(1-g/(cfg.ghosts+1))*(1-age));
         }
       }
-      const q = age>=1 ? o : flightPoint(from,o,e,opts.bow);
-      const land = age>=1 ? 1 : backOut(clamp01(age*1.05));
-      const heat = Math.pow(1-age,1.5)*0.85;
-      dot(ctx,q.x,q.y,o.d*Math.max(0.1,Math.min(1.2,land)),rampLift(o.t,heat),clamp01(age*3));
-    });
-    numeral(ctx,Math.max(1,Math.floor(shown)),n);
+      const [x,y]=pos(ease,rEase);
+      const heat=Math.pow(1-age,cfg.cool)*cfg.heat;
+      dot(c,x,y,o.d*Math.min(1.2,Math.max(0.12,backOut(Math.min(1,age*1.1)))),
+          cfg.white && age<0.25 ? "#F4FFFD" : lift(o.t,heat), clamp01(age*4));
+    }
+    c.restore();
+    // a faint ring leaving the core each time the count ticks a whole day
+    if(cfg.pulse){
+      const frac=k-Math.floor(k);
+      if(frac<0.55 && k>0.5){
+        const g=frac/0.55;
+        c.save(); c.globalCompositeOperation="lighter";
+        c.globalAlpha=0.16*(1-g); c.strokeStyle="#BDEDE4"; c.lineWidth=1.4;
+        c.beginPath(); c.arc(CX,CY,veil*0.55+g*26,0,6.2832); c.stroke();
+        c.restore(); c.globalAlpha=1;
+      }
+    }
+    numeral(c,shownDay(p,n),n);
   };
 }
 
-function popIn(ctx,p,n){        // the count-up without any travel, for contrast
-  const ds=dots(n),k=rampK(n),shown=dayAt(p,n,k);
-  ds.forEach(o=>{
-    const born=o.i+1; if(shown<born-1) return;
-    const age=clamp01((shown-(born-1))/4);
-    const q=backOut(age), heat=Math.pow(1-age,1.6)*0.8;
-    dot(ctx,o.x,o.y,o.d*Math.max(0.08,Math.min(1.15,q)),rampLift(o.t,heat),clamp01(age*2.4));
-  });
-  numeral(ctx,Math.max(1,Math.floor(shown)),n);
+const VARIANTS=[
+  {key:"B", name:"As you saw it", pick:true,
+   why:"Born dead centre, quintic ease outward, unwinding the last 50°, four ghosts. The reference — everything else is a change to one property of this.",
+   draw:core({ease:easeOutQuint, unwind:0.9, ghosts:4, ghostGap:0.10, ghostSize:0.7,
+              ghostAlpha:0.30, ghostHeat:0.75, heat:0.9, cool:1.3})},
+
+  {key:"B1", name:"From the number's edge",
+   why:"Starts at the rim of the numeral rather than its centre, so nothing is hidden under the veil and the travel is shorter. Calmest of the family at high day counts.",
+   draw:core({ease:easeOutQuint, unwind:0.55, fromVeil:true, ghosts:3, ghostGap:0.11,
+              ghostSize:0.7, ghostAlpha:0.28, ghostHeat:0.7, heat:0.85, cool:1.4})},
+
+  {key:"B2", name:"Full turn",
+   why:"Unwinds a turn and a half instead of 50°, with six ghosts, so each day visibly spirals out rather than drifting. The most obviously phyllotactic — and the busiest.",
+   draw:core({ease:easeOutQuint, unwind:9.0, ghosts:6, ghostGap:0.075, ghostSize:0.8,
+              ghostAlpha:0.34, ghostHeat:0.85, heat:0.95, cool:1.2})},
+
+  {key:"B3", name:"Thrown",
+   why:"Accelerates out of the numeral and decelerates hard into the slot, overshooting slightly past its position before settling back. Reads as thrown rather than released.",
+   draw:core({ease:smoother, unwind:0.7, overshoot:2.6, ghosts:4, ghostGap:0.09,
+              ghostSize:0.75, ghostAlpha:0.30, ghostHeat:0.8, heat:0.9, cool:1.3})},
+
+  {key:"B4", name:"Jet",
+   why:"A third of the flight time, so days leave the core in a continuous stream rather than as separate arcs, with a long bright comet behind each. Most energetic; closest to a firework.",
+   draw:core({ease:easeOut, unwind:1.3, windowScale:0.35, ghosts:8, ghostGap:0.055,
+              ghostSize:0.85, ghostAlpha:0.40, ghostHeat:0.95, heat:1.0, cool:1.1, white:true})},
+
+  {key:"B5", name:"Scattered",
+   why:"Each day leaves at a slightly different angle — deterministic, so a replay is identical — and starts white before cooling into its ramp colour. Organic rather than mechanical.",
+   draw:core({ease:easeOutQuint, unwind:0.8, jitter:1.5, ghosts:4, ghostGap:0.10,
+              ghostSize:0.7, ghostAlpha:0.30, ghostHeat:0.8, heat:0.95, cool:1.25, white:true})},
+
+  {key:"B6", name:"With a pulse",
+   why:"The reference, plus a faint ring leaving the numeral on each whole day counted. Ties the number to the dots so the count reads as the cause rather than a caption.",
+   draw:core({ease:easeOutQuint, unwind:0.9, ghosts:4, ghostGap:0.10, ghostSize:0.7,
+              ghostAlpha:0.30, ghostHeat:0.75, heat:0.9, cool:1.3, pulse:true})}
+];
+
+let DAY=90, t=0, playing=true, last=null;
+const panels=[];
+const grid=document.getElementById("grid");
+for(const v of VARIANTS){
+  const cell=document.createElement("div");
+  cell.className="cell"+(v.pick?" pick":"");
+  cell.innerHTML=`<div class="cap"><span class="key${v.bad?" bad":""}">${v.key}</span>
+    <span class="ttl">${v.name}</span></div><div class="why">${v.why}</div>`;
+  const cv=document.createElement("canvas");
+  cell.appendChild(cv); grid.appendChild(cell);
+  panels.push({v, cv, ctx:cv.getContext("2d"), sized:0});
 }
 
-let DAY=90;
-const P=[];
-P.push(panel('rail','A · <em>count-up, no travel</em>',
-  'Yesterday\'s version. Dots pop into place where they belong. The count works; the arrival still doesn\'t mean anything.',
-  popIn));
-P.push(panel('rail','B · in from the sides',
-  'Each day flies in from off the left or right edge on a curved path, with a short trail. The weave comes from alternating sides.',
-  flier({from:'sides', land:5, bow:0.16, trail:3})));
-P.push(panel('rail','C · up from below',
-  'Days rise from under the phone and settle into the ring — reads as the streak stacking up rather than assembling.',
-  flier({from:'below', land:5, bow:0.10, trail:3})));
-P.push(panel('rail','D · in from the rim',
-  'Each dot comes straight in along its own radius from outside the frame. The most orderly; at high day counts it becomes a converging shower.',
-  flier({from:'radial', land:4, bow:0.05, trail:2})));
+function sizeUp(p){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=Math.round(p.cv.clientWidth*dpr);
+  if(w===p.sized||w===0) return;
+  p.cv.width=w; p.cv.height=w; p.sized=w;
+  p.ctx.setTransform(w/BOX,0,0,w/BOX,0,0);
+}
 
-const dayBar=document.getElementById('dayBar');
-[3,8,30,90,365,1825].forEach(d=>{
-  const b=document.createElement('button');
-  b.textContent=d>=365?(d/365)+'y':'day '+d;
-  if(d===DAY)b.className='on';
-  b.onclick=()=>{DAY=d;[...dayBar.querySelectorAll('button')].forEach(c=>c.className='');
-    b.className='on'; P.forEach(f=>f());};
+function render(){
+  for(const p of panels){
+    sizeUp(p);
+    const c=p.ctx;
+    c.save(); c.setTransform(1,0,0,1,0,0);
+    c.fillStyle="#081A1D"; c.fillRect(0,0,p.cv.width,p.cv.height); c.restore();
+    p.v.draw(c,t,DAY);
+  }
+  const d=shownDay(t,DAY);
+  document.getElementById("read").innerHTML =
+    `<b>${Math.round(t*100)}%</b> · day ${d} of ${DAY}`;
+  document.getElementById("scrub").value = Math.round(t*1000);
+}
+
+function tick(now){
+  if(last===null) last=now;
+  const dt=now-last; last=now;
+  if(playing){
+    t += dt/duration(DAY);
+    if(t>=1){ t=1; render(); setTimeout(()=>{ if(playing){ t=0; } },700); }
+  }
+  render();
+  requestAnimationFrame(tick);
+}
+
+const dayBar=document.getElementById("days");
+for(const d of [3,8,30,90,365,730,1825]){
+  const b=document.createElement("button");
+  b.textContent = d>=365 ? (d/365)+"y" : d+"d";
+  if(d===DAY) b.className="on";
+  b.onclick=()=>{
+    DAY=d; t=0;
+    [...dayBar.children].forEach(c=>c.className="");
+    b.className="on";
+  };
   dayBar.appendChild(b);
-});
-
-// ---- the orb --------------------------------------------------------------
-const CYCLE=14000;
-function breath(ms){
-  const t=(ms/1000)%14;
-  if(t<4)  return {s:0.68+0.32*(1-Math.pow(1-t/4,2.2)), phase:'in',  local:t/4};
-  if(t<8)  return {s:1.0+Math.sin((t-4)/4*Math.PI)*0.012, phase:'hold', local:(t-4)/4};
-  return {s:1.0-0.32*easeInOut((t-8)/6), phase:'out', local:(t-8)/6};
 }
 
-function orbGradient(ctx,p){
-  const {s}=breath(p*CYCLE), R=66*s;
-  const g=ctx.createRadialGradient(CX,CY-8,0,CX,CY,R);
-  g.addColorStop(0,'rgba(127,216,203,.50)'); g.addColorStop(1,'rgba(127,216,203,.12)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,R,0,6.2832); ctx.fill();
-  ctx.strokeStyle='rgba(127,216,203,.25)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.arc(CX,CY,80,0,6.2832); ctx.stroke();
+const playBtn=document.getElementById("play");
+playBtn.onclick=()=>{
+  playing=!playing;
+  playBtn.textContent = playing ? "Pause" : "Play";
+  playBtn.classList.toggle("on", playing);
+};
+document.getElementById("scrub").oninput=e=>{
+  playing=false; playBtn.textContent="Play"; playBtn.classList.remove("on");
+  t=clamp01(e.target.value/1000);
+};
+
+if(window.matchMedia("(prefers-reduced-motion:reduce)").matches){
+  playing=false; playBtn.textContent="Play"; playBtn.classList.remove("on"); t=0.5;
 }
-
-// Dots on the app's own phyllotaxis, with the expansion arriving at the
-// outside a beat after the inside — so the breath travels through it.
-function orbLung(ctx,p){
-  const ms=p*CYCLE, N=150;
-  for(let i=0;i<N;i++){
-    const t=i/(N-1);
-    const delay=t*900;                                  // outer dots lag
-    const {s}=breath(ms-delay);
-    const r=(14+66*Math.sqrt(t))*s;
-    const a=i*GOLD-1.6+ (s-0.84)*0.5;                   // slight twist with the breath
-    const d=(1.7+t*2.4)*(0.86+0.14*s);
-    dot(ctx,CX+Math.cos(a)*r,CY+Math.sin(a)*r,d,'#7FD8CB',0.26+0.60*t);
-  }
-  const {s}=breath(ms);
-  ctx.strokeStyle='rgba(127,216,203,.16)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.arc(CX,CY,88,0,6.2832); ctx.stroke();
-  ctx.fillStyle='rgba(189,237,228,.9)';
-  ctx.beginPath(); ctx.arc(CX,CY,4.5*s,0,6.2832); ctx.fill();
-}
-
-// Particles that actually travel: released from the middle on the inhale,
-// drawn back in on the exhale, each on its own loop so it never looks locked.
-function orbStream(ctx,p){
-  const ms=p*CYCLE, {s,phase}=breath(ms), N=90;
-  for(let i=0;i<N;i++){
-    const seed=(i*0.61803)%1;
-    const t=i/(N-1);
-    const a=i*GOLD-1.6;
-    // each particle sits somewhere along its own out-and-back journey
-    const travel=clamp01((s-0.68)/0.32);
-    const own=clamp01(travel*1.25 - seed*0.25);
-    const r=lerp(9, 84, own*(0.55+0.45*seed));
-    const wob=Math.sin(ms/700+i)*1.6*own;
-    const d=lerp(1.4,3.6,seed)*(0.5+0.5*own);
-    const alpha=(0.18+0.72*own)*(phase==='out'?0.85:1);
-    dot(ctx,CX+Math.cos(a)*(r+wob),CY+Math.sin(a)*(r+wob),d,
-        own>0.8?'#BDEDE4':'#7FD8CB',alpha);
-  }
-  ctx.strokeStyle='rgba(127,216,203,.14)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.arc(CX,CY,92,0,6.2832); ctx.stroke();
-}
-
-const O=[];
-O.push(panel('orbRail','A · <em>ships today</em>',
-  'A blurred radial gradient that scales. Nothing in it belongs to the rest of the app.', orbGradient, CYCLE));
-O.push(panel('orbRail','B · lung',
-  'The app\'s phyllotaxis, with the expansion reaching the outside a beat after the inside, so the breath travels through it rather than resizing it.', orbLung, CYCLE));
-O.push(panel('orbRail','C · stream',
-  'Particles released from the middle on the inhale and drawn back on the exhale, each on its own loop so it never looks locked to a metronome.', orbStream, CYCLE));
-
-P.forEach(f=>f()); O.forEach(f=>f());
-setInterval(()=>P.forEach(f=>f()), 4600);
-setInterval(()=>O.forEach(f=>f()), CYCLE);
+requestAnimationFrame(tick);
 </script>
