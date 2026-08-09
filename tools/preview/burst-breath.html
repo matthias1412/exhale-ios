@@ -57,15 +57,17 @@ lives permanently, so a burst that just fades has thrown the meaning away.</p>
 <div class="grid" id="burstGrid"></div>
 
 <h2>2 · The breath — one orb, six timings</h2>
-<p class="sub">The visual is settled: <b>BB, the dot sphere</b>, now filling the ring to the brim at
-the top of the inhale. What differs below is the <b>pattern</b>, because that is the part with actual
-evidence behind it and we picked ours by feel. Each panel runs in real time on its own cycle, so you
-can breathe along with them and see which one you can actually keep up when agitated — which matters
-more than which is theoretically optimal.</p>
+<p class="sub">The visual is settled: <b>BB, the dot sphere</b>, filling the ring to the brim at the
+top of the inhale and carrying its instruction. What differs below is the <b>pattern</b> — and the
+<b>easing</b>, which turns out to matter just as much, because it decides how much of the prescribed
+timing you actually get. Each panel says how long it really holds you near full, so switching the
+easing shows the distortion directly. Everything runs in real time; breathe along with them.</p>
 <div class="rail">
+  <span class="lbl">Easing</span><span id="easeBar"></span>
   <button id="orbPlay" class="on">Pause</button>
   <span class="read" id="orbRead"></span>
 </div>
+<p class="sub" id="easeNote" style="margin:-6px 0 16px"></p>
 <div class="grid" id="orbGrid"></div>
 
 <script>
@@ -392,16 +394,36 @@ const RING=104;
 // Fills to the brim: at the top of the inhale the body's edge meets the ring.
 const orbR=f=>30+f*(RING-30);
 
+// How volume moves between empty and full. This is not decoration: it decides
+// how much of the prescribed timing you actually get. A hard ease-out into the
+// apex adds a pause nobody asked for, which is how 4-0-6 ends up holding you
+// near full for a second and a half.
+const EASES={
+  linear:{
+    name:"Linear",
+    note:"Constant rate, instant reversal. You get exactly the seconds written on the tin — and a turnaround no lung can follow.",
+    in:t=>t, out:t=>t},
+  sine:{
+    name:"Sine",
+    note:"A raised cosine, the standard choice for breath pacers. Smooth through the turnaround, symmetrical, and it barely distorts the prescribed timing.",
+    in:t=>0.5-0.5*Math.cos(Math.PI*t), out:t=>0.5-0.5*Math.cos(Math.PI*t)},
+  current:{
+    name:"What ships",
+    note:"Ease-out to the power 2.2 on the inhale, ease-in-out on the exhale. Most of the movement happens early, so the top is vague and the apex outstays the pattern.",
+    in:t=>1-Math.pow(1-t,2.2), out:t=>easeInOut(t)}
+};
+let EASE="current";
+
 function phaseOf(pat,ms){
-  const [i,h,e,r]=pat, cycle=(i+h+e+r)*1000;
+  const [i,h,e,r]=pat, cycle=(i+h+e+r)*1000, E=EASES[EASE];
   let t=((ms%cycle)+cycle)%cycle/1000;
-  if(t<i)        return {f:1-Math.pow(1-t/i,2.2),      name:"Breathe in", seg:t/i};
+  if(t<i)        return {f:E.in(t/i),                     name:"Breathe in", seg:t/i};
   t-=i;
-  if(t<h)        return {f:1+Math.sin(t/h*Math.PI)*0.008, name:"Hold it",   seg:t/h};
+  if(t<h)        return {f:1+Math.sin(t/h*Math.PI)*0.008, name:"Hold it",    seg:t/h};
   t-=h;
-  if(t<e)        return {f:1-easeInOut(t/e),           name:"Let it go",  seg:t/e};
+  if(t<e)        return {f:1-E.out(t/e),                  name:"Let it go",  seg:t/e};
   t-=e;
-  return {f:0.004*Math.sin(t/Math.max(r,0.001)*Math.PI), name:"Rest", seg:r?t/r:0};
+  return {f:0.004*Math.sin(t/Math.max(r,0.001)*Math.PI),  name:"Rest",       seg:r?t/r:0};
 }
 const bpm=pat=>60/(pat[0]+pat[1]+pat[2]+pat[3]);
 
@@ -467,10 +489,8 @@ function build(gridId,items){
   for(const v of items){
     const cell=document.createElement("div");
     cell.className="cell"+(v.now?" now":"");
-    const rate = v.pat ? ` · ${(Math.round(bpm(v.pat)*10)/10)} breaths/min` : "";
     cell.innerHTML=`<div class="cap"><span class="key${v.now?" now":""}">${v.key}</span>
-      <span class="ttl">${v.name}</span></div>
-      <div class="why">${v.why}${rate?`<br><b style="color:var(--accent)">${(v.pat[0]+v.pat[1]+v.pat[2]+v.pat[3])}s cycle${rate}</b>`:""}</div>`;
+      <span class="ttl">${v.name}</span></div><div class="why">${v.why}</div>`;
     const cv=document.createElement("canvas");
     cell.appendChild(cv); grid.appendChild(cell);
     out.push({v,cv,ctx:cv.getContext("2d"),sized:0});
@@ -523,6 +543,41 @@ for(const k of Object.keys(clocks)){
     cl.t=clamp01(e.target.value/1000);
   };
 }
+
+// Time spent above 97% of full, measured rather than assumed — this is the
+// number that shows easing quietly rewriting the pattern.
+function apexDwell(pat){
+  const cyc=pat.reduce((a,b)=>a+b,0)*1000; let n=0;
+  for(let t=0;t<cyc;t+=10) if(phaseOf(pat,t).f>=0.97) n++;
+  return (n*10/1000).toFixed(2);
+}
+function refreshCaptions(){
+  orbPanels.forEach(p=>{
+    const v=p.v, cyc=v.pat.reduce((a,b)=>a+b,0);
+    const held=apexDwell(v.pat);
+    const over=(held-v.pat[1]).toFixed(2);
+    p.cv.parentNode.querySelector(".why").innerHTML =
+      v.why + '<br><b style="color:var(--accent)">' + cyc + 's · ' +
+      (Math.round(bpm(v.pat)*10)/10) + ' breaths/min</b>' +
+      '<br><span style="color:var(--ink-3)">near full for ' + held + 's — ' +
+      (over > 0.05 ? over + 's more than the ' + v.pat[1] + 's asked for' : 'as prescribed') +
+      '</span>';
+  });
+}
+const easeBar=document.getElementById("easeBar");
+Object.keys(EASES).forEach(k=>{
+  const b=document.createElement("button");
+  b.textContent=EASES[k].name;
+  if(k===EASE) b.className="on";
+  b.onclick=()=>{ EASE=k;
+    [...easeBar.children].forEach(c=>c.className="");
+    b.className="on";
+    document.getElementById("easeNote").textContent=EASES[k].note;
+    refreshCaptions(); };
+  easeBar.appendChild(b);
+});
+document.getElementById("easeNote").textContent=EASES[EASE].note;
+refreshCaptions();
 
 const mileBar=document.getElementById("mileBar");
 MILES.forEach((m,i)=>{
