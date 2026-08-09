@@ -217,28 +217,32 @@ function bIgnite(c,p){
    cfg shifts the balance between the acts; the structure is the same.   */
 function bBlendMaker(cfg){
   return function(c,p){
-    const target=slot(), N=100;
+    const target=slot(), N=90;   // same count as G, so the lattice is identical
     const bloomP=clamp01((p-0.03)/(cfg.bloomEnd-0.03));
     const gather=clamp01((p-cfg.gatherAt)/(1-cfg.gatherAt));
     const g=easeInOut(gather);
 
     c.save(); c.globalCompositeOperation="lighter";
     for(let i=0;i<N;i++){
-      const t=i/(N-1), seed=hash(i);
-      // ignite: each particle leaves on its own schedule and at its own speed
-      const stagger=t*cfg.stagger+seed*cfg.scatter;
+      const t=i/(N-1);
+      // Ordered departure, exactly as in G: inner dots leave first and the
+      // outer ones follow, which is what draws the arms. Randomising this —
+      // or the radius — dissolves the golden-angle lattice and the result is
+      // a scatter on a bloom's schedule, which is what the first attempt was.
+      const stagger=t*cfg.stagger;
       const lp=clamp01((bloomP-stagger)/Math.max(0.001,1-stagger));
       if(lp<=0) continue;
       const e=easeOutQuint(lp);
-      // bloom: phyllotaxis outward, unwinding as it goes
-      let r=lerp(4,(26+72*Math.sqrt(t))*(0.82+seed*0.36),e);
+      // bloom: exact phyllotaxis, unwinding as it opens
+      let r=lerp(4,26+72*Math.sqrt(t),e);
       const a=i*GOLD-1.6-(1-e)*cfg.unwind;
-      // ignite: gravity pulls the field back slightly before the gather
+      // ignite's contribution is the flare and this: a pull applied to the
+      // whole field at once, so it breathes back without breaking the lattice
       r-=Math.pow(clamp01((p-0.40)/0.60),2)*cfg.gravity;
       const bx=CX+Math.cos(a)*r, by=CY+Math.sin(a)*r;
       // handoff: converge on the slot
       const x=lerp(bx,target.x,g), y=lerp(by,target.y,g);
-      const d=(2.1+t*3.2)*(0.45+0.55*lp)*(1-g*0.75);
+      const d=(2.2+t*3.4)*(0.5+0.5*lp)*(1-g*0.75);
       const heat=Math.pow(1-lp,1.4)*0.9;
       dot(c,x,y,d, p<0.09 ? "#F4FFFD" : mcol(heat),
           clamp01(lp*3)*(1-Math.pow(g,1.4))*0.95);
@@ -265,19 +269,16 @@ const BURSTS=[
    why:"One ring of dots expands and stops; the core never moves. Nothing for the eye to follow, and the dot that should become part of the spiral simply vanishes.",draw:bCurrent},
 
   {key:"J",name:"Blend — balanced",
-   why:"Flare, then the phyllotaxis opens with per-particle variance and a little gravity, then everything gathers onto this milestone's real slot and leaves a ring. All three acts given equal room.",
-   draw:bBlendMaker({bloomEnd:0.62, gatherAt:0.54, stagger:0.30, scatter:0.18,
-                     unwind:1.1, gravity:16})},
+   why:"Flare, then G's bloom exactly — same golden-angle lattice, same ordered departure — then everything gathers onto this milestone's real slot and leaves a ring. All three acts given equal room.",
+   draw:bBlendMaker({bloomEnd:0.62, gatherAt:0.54, stagger:0.35, unwind:1.1, gravity:14})},
 
   {key:"K",name:"Blend — bloom-led",
    why:"The opening holds longer and the gather is quick and late, so you read the shape of the bloom before it resolves. Calmest of the three, and the most obviously Exhale.",
-   draw:bBlendMaker({bloomEnd:0.78, gatherAt:0.70, stagger:0.38, scatter:0.12,
-                     unwind:1.5, gravity:10})},
+   draw:bBlendMaker({bloomEnd:0.78, gatherAt:0.70, stagger:0.42, unwind:1.7, gravity:8})},
 
   {key:"L",name:"Blend — ignite-led",
-   why:"More scatter and more gravity, so it leaves as a firework and is hauled back into place. The most physical; the flare and the gather dominate and the bloom is a fast middle.",
-   draw:bBlendMaker({bloomEnd:0.50, gatherAt:0.44, stagger:0.16, scatter:0.34,
-                     unwind:0.7, gravity:30})},
+   why:"A fast, tight bloom and heavy gravity, so it leaves like a firework and is hauled back into place. The most physical; flare and gather dominate and the bloom is a quick middle.",
+   draw:bBlendMaker({bloomEnd:0.50, gatherAt:0.44, stagger:0.26, unwind:0.7, gravity:30})},
 
   {key:"F",name:"Handoff (ingredient)",
    why:"The gather on its own: a plain ring goes out, then collapses onto the milestone's spiral position.",draw:bHandoff},
