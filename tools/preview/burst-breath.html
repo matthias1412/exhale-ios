@@ -56,16 +56,14 @@ lives permanently, so a burst that just fades has thrown the meaning away.</p>
 </div>
 <div class="grid" id="burstGrid"></div>
 
-<h2>2 · The breathing orb — an orb inside a ring</h2>
-<p class="sub">One concept, executed six ways: <b>a body inside a fixed ring</b>, so the gap between
-the two is what tells you how full the breath is. That is the whole point of having a ring — and the
-reason the original failed, since it had a ring but nothing that read against it. The orb runs 34pt
-empty to 94pt full against a ring pinned at 104. Every one keeps internal motion through the
-four-second hold, when someone is staring hardest. Scrub to <b>0.28</b> for the top of the inhale
-and <b>0.75</b> for the bottom of the exhale.</p>
+<h2>2 · The breath — one orb, six timings</h2>
+<p class="sub">The visual is settled: <b>BB, the dot sphere</b>, now filling the ring to the brim at
+the top of the inhale. What differs below is the <b>pattern</b>, because that is the part with actual
+evidence behind it and we picked ours by feel. Each panel runs in real time on its own cycle, so you
+can breathe along with them and see which one you can actually keep up when agitated — which matters
+more than which is theoretically optimal.</p>
 <div class="rail">
   <button id="orbPlay" class="on">Pause</button>
-  <input type="range" id="orbScrub" min="0" max="1000" value="0" aria-label="Breath progress">
   <span class="read" id="orbRead"></span>
 </div>
 <div class="grid" id="orbGrid"></div>
@@ -385,179 +383,78 @@ function oStream(c,p){
   ring(c,108,"rgba(127,216,203,.14)",1.5,1);
 }
 
-/* ---- orbs, third batch: an orb inside a ring -------------------------
-   One concept, executed six ways. The ring never moves, so the *gap*
-   between orb and ring is what tells you how full the breath is — that
-   is the whole reason to have a ring at all, and the reason the original
-   gradient blob failed: it had a ring but nothing that read against it.
-   Everything below also keeps some internal motion through the hold. */
+/* ---- the breath ------------------------------------------------------
+   One visual — the dot sphere, shaded by a real sphere normal — driven by
+   six different timings. `pattern` is [inhale, hold, exhale, rest] in
+   seconds; everything else derives from it.                            */
 
-// The breath as 0..1 (empty..full) rather than a scale factor, so a variant
-// can drive a radius, a fill level or an arc from the same number.
-function fullness(ms){
-  const b=breath(ms);
-  return {f:(b.s-0.68)/0.32, name:b.name, s:b.s};
+const RING=104;
+// Fills to the brim: at the top of the inhale the body's edge meets the ring.
+const orbR=f=>30+f*(RING-30);
+
+function phaseOf(pat,ms){
+  const [i,h,e,r]=pat, cycle=(i+h+e+r)*1000;
+  let t=((ms%cycle)+cycle)%cycle/1000;
+  if(t<i)        return {f:1-Math.pow(1-t/i,2.2),      name:"Breathe in", seg:t/i};
+  t-=i;
+  if(t<h)        return {f:1+Math.sin(t/h*Math.PI)*0.008, name:"Hold it",   seg:t/h};
+  t-=h;
+  if(t<e)        return {f:1-easeInOut(t/e),           name:"Let it go",  seg:t/e};
+  t-=e;
+  return {f:0.004*Math.sin(t/Math.max(r,0.001)*Math.PI), name:"Rest", seg:r?t/r:0};
 }
+const bpm=pat=>60/(pat[0]+pat[1]+pat[2]+pat[3]);
 
-const RING=104;                       // the fixed reference, never changes
-const orbR=f=>34+f*60;                // 34pt empty, 94pt full — a visible gap
-
-function guideRing(c,f,lit){
-  ring(c,RING,"rgba(127,216,203,.16)",1.5,1);
-  if(lit){                            // a quiet arc showing progress round it
-    c.save(); c.lineCap="round"; c.strokeStyle=AC; c.lineWidth=2.2;
-    c.globalAlpha=.75; c.beginPath();
-    c.arc(CX,CY,RING,-Math.PI/2,-Math.PI/2+f*6.2832); c.stroke(); c.restore();
-  }
-}
-function halo(c,r,strength){
+// the chosen visual, with the instruction it carries in the app
+function sphere(c,ms,pat,label){
+  const {f,name}=phaseOf(pat,ms), r=orbR(f), N=320;
+  // halo
   c.save(); c.globalCompositeOperation="lighter";
-  const g=c.createRadialGradient(CX,CY,r*0.75,CX,CY,r*1.75);
-  g.addColorStop(0,"rgba(127,216,203,"+(0.20*strength)+")");
-  g.addColorStop(1,"rgba(127,216,203,0)");
-  c.fillStyle=g; c.beginPath(); c.arc(CX,CY,r*1.75,0,6.2832); c.fill(); c.restore();
-}
-// brighter at the edge than the middle — what makes a disc read as a sphere
-function fresnel(c,r,strength){
-  c.save(); c.globalCompositeOperation="lighter";
-  const g=c.createRadialGradient(CX,CY,r*0.55,CX,CY,r);
-  g.addColorStop(0,"rgba(127,216,203,0)");
-  g.addColorStop(0.82,"rgba(160,232,220,"+(0.16*strength)+")");
-  g.addColorStop(1,"rgba(214,247,241,"+(0.42*strength)+")");
-  c.fillStyle=g; c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.fill(); c.restore();
-}
-
-// BA — a lit body: top-lit fill, bright rim, soft halo.
-function oBody(c,p){
-  const ms=p*14000, f=fullness(ms).f, r=orbR(f);
-  halo(c,r,0.55+0.45*f);
-  const g=c.createRadialGradient(CX-r*0.30,CY-r*0.34,r*0.05,CX,CY,r);
-  g.addColorStop(0,"rgba(206,246,239,.80)");
-  g.addColorStop(0.45,"rgba(127,216,203,.42)");
-  g.addColorStop(1,"rgba(52,142,132,.18)");
-  c.fillStyle=g; c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.fill();
-  fresnel(c,r,0.7+0.5*f);
-  guideRing(c,f,false);
-}
-
-// BB — the body is made of the app's dots, shaded as a sphere.
-function oDotSphere(c,p){
-  const ms=p*14000, f=fullness(ms).f, r=orbR(f), N=320;
-  halo(c,r,0.4+0.5*f);
-  c.save(); c.globalCompositeOperation="lighter";
-  // light from up and to the left, as if the phone were held under a window
+  const hg=c.createRadialGradient(CX,CY,r*0.75,CX,CY,r*1.6);
+  hg.addColorStop(0,"rgba(127,216,203,"+(0.10+0.14*f)+")");
+  hg.addColorStop(1,"rgba(127,216,203,0)");
+  c.fillStyle=hg; c.beginPath(); c.arc(CX,CY,r*1.6,0,6.2832); c.fill();
+  // the body
   const lx=-0.45, ly=-0.55, lz=0.70;
   for(let i=0;i<N;i++){
-    const t=i/(N-1);
-    const q=Math.sqrt(t);                       // even areal spread
-    const a=i*GOLD-1.6+ms*0.00004;              // the surface turns very slowly
+    const t=i/(N-1), q=Math.sqrt(t);
+    const a=i*GOLD-1.6+ms*0.00004;
     const dx=Math.cos(a)*q, dy=Math.sin(a)*q;
-    const z=Math.sqrt(Math.max(0,1-q*q));       // the sphere's normal
+    const z=Math.sqrt(Math.max(0,1-q*q));
     const nl=Math.max(0,dx*lx+dy*ly+z*lz);
     const shade=0.16+0.84*Math.pow(nl,0.9);
     dot(c,CX+dx*r,CY+dy*r,(0.9+1.9*(1-q*0.6))*(0.8+0.2*f),
         "hsl(170 52% "+Math.round(46+shade*44)+"%)", 0.30+0.62*shade);
   }
+  // rim
+  const fg=c.createRadialGradient(CX,CY,r*0.55,CX,CY,r);
+  fg.addColorStop(0,"rgba(127,216,203,0)");
+  fg.addColorStop(0.82,"rgba(160,232,220,"+(0.10+0.08*f)+")");
+  fg.addColorStop(1,"rgba(214,247,241,"+(0.26+0.20*f)+")");
+  c.fillStyle=fg; c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.fill();
   c.restore();
-  fresnel(c,r,0.5+0.4*f);
-  guideRing(c,f,false);
-}
-
-// BC — light moving inside the body, like sun through water.
-function oCaustic(c,p){
-  const ms=p*14000, f=fullness(ms).f, r=orbR(f);
-  halo(c,r,0.5+0.4*f);
-  c.save(); c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.clip();
-  const base=c.createRadialGradient(CX,CY,0,CX,CY,r);
-  base.addColorStop(0,"rgba(127,216,203,.34)");
-  base.addColorStop(1,"rgba(46,120,113,.20)");
-  c.fillStyle=base; c.fillRect(CX-r,CY-r,r*2,r*2);
-  c.globalCompositeOperation="lighter";
-  for(let k=0;k<5;k++){
-    const a=ms/(2600+k*900)+k*1.7;
-    const bx=CX+Math.cos(a)*r*0.36, by=CY+Math.sin(a*1.3)*r*0.32;
-    const bg=c.createRadialGradient(bx,by,0,bx,by,r*0.62);
-    bg.addColorStop(0,"rgba(198,244,236,"+(0.16+0.06*Math.sin(ms/1700+k))+")");
-    bg.addColorStop(1,"rgba(198,244,236,0)");
-    c.fillStyle=bg; c.fillRect(CX-r,CY-r,r*2,r*2);
+  ring(c,RING,"rgba(127,216,203,.16)",1.5,1);
+  // the instruction, which is the whole point of the pacer
+  if(label){
+    c.textAlign="center"; c.fillStyle="#F3FBF9";
+    c.font="500 17px system-ui,sans-serif";
+    c.fillText(name,CX,CY+6);
   }
-  c.restore();
-  fresnel(c,r,0.75+0.4*f);
-  guideRing(c,f,false);
 }
 
-// BD — nested shells, each lagging the one inside it.
-function oShells(c,p){
-  const ms=p*14000, f=fullness(ms).f;
-  halo(c,orbR(f),0.35+0.4*f);
-  c.save(); c.globalCompositeOperation="lighter";
-  const S=9;
-  for(let k=0;k<S;k++){
-    const t=k/(S-1);
-    const lag=t*620;                       // outer shells arrive after inner
-    const lf=fullness(ms-lag).f;
-    const r=orbR(lf)*(0.20+0.80*t);
-    const count=8+Math.round(t*40);
-    for(let i=0;i<count;i++){
-      const a=i/count*6.2832+ms*0.00006*(1-t)+k*0.5;
-      dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,1.3+t*2.2,AC,0.22+0.5*(1-t*0.5));
-    }
-  }
-  c.restore();
-  guideRing(c,f,false);
-}
-
-// BE — the body, plus the ring reading as a gauge.
-function oGauge(c,p){
-  const ms=p*14000, f=fullness(ms).f, r=orbR(f);
-  halo(c,r,0.45+0.45*f);
-  const g=c.createRadialGradient(CX-r*0.26,CY-r*0.30,r*0.05,CX,CY,r);
-  g.addColorStop(0,"rgba(206,246,239,.72)");
-  g.addColorStop(0.5,"rgba(127,216,203,.36)");
-  g.addColorStop(1,"rgba(52,142,132,.14)");
-  c.fillStyle=g; c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.fill();
-  fresnel(c,r,0.7+0.4*f);
-  guideRing(c,f,true);
-  const a=-Math.PI/2+f*6.2832;
-  dot(c,CX+Math.cos(a)*RING,CY+Math.sin(a)*RING,9,ACS,1);
-}
-
-// BF — a body with grain, and a halo that breathes a beat behind it.
-function oGrain(c,p){
-  const ms=p*14000, f=fullness(ms).f, r=orbR(f);
-  const lagF=fullness(ms-520).f;
-  halo(c,orbR(lagF),0.5+0.5*lagF);
-  const g=c.createRadialGradient(CX-r*0.22,CY-r*0.26,r*0.05,CX,CY,r);
-  g.addColorStop(0,"rgba(188,238,230,.62)");
-  g.addColorStop(0.6,"rgba(110,200,188,.30)");
-  g.addColorStop(1,"rgba(44,116,109,.12)");
-  c.fillStyle=g; c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.fill();
-  c.save(); c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.clip();
-  c.globalCompositeOperation="lighter";
-  for(let i=0;i<260;i++){
-    const t=i/259, q=Math.sqrt(t);
-    const a=i*GOLD-1.6+ms*0.00007;
-    const x=CX+Math.cos(a)*q*r, y=CY+Math.sin(a)*q*r;
-    dot(c,x,y,0.8+1.4*(1-q),ACS,(0.05+0.16*(1-q))*(0.6+0.4*f));
-  }
-  c.restore();
-  fresnel(c,r,0.85+0.35*f);
-  guideRing(c,f,false);
-}
-
-const ORBS=[
-  {key:"BA",name:"Body",
-   why:"A lit sphere inside the fixed ring: top-left light source, a rim brighter than the middle so it reads as curved rather than flat, and a halo that swells with the breath. The straight execution of the idea.",draw:oBody},
-  {key:"BB",name:"Dot sphere",
-   why:"The same body, built from 320 of the app's own dots shaded by a real sphere normal — lit from up and to the left, turning very slowly. Made of the app's material rather than painted to look like it.",draw:oDotSphere},
-  {key:"BC",name:"Caustic",
-   why:"A solid body with five slow light sources drifting inside it, like sun through water. Nothing about it ever stops moving, so the held breath has somewhere for the eye to go.",draw:oCaustic},
-  {key:"BD",name:"Shells",
-   why:"Nine nested rings of dots, each arriving a beat after the one inside it, so the breath visibly travels outward through the body instead of the whole thing resizing at once.",draw:oShells},
-  {key:"BE",name:"Body + gauge",
-   why:"The lit body, plus the ring itself reading as a gauge with a bead travelling round it. Two independent cues — how big, and how far round — so the breath is readable from the corner of your eye.",draw:oGauge},
-  {key:"BF",name:"Grain",
-   why:"A softer body with fine dot grain suspended in it, and a halo that breathes about half a second behind the orb. That lag gives the whole thing weight, as light would arriving late through something dense.",draw:oGrain}
+const PATTERNS=[
+  {key:"N1",name:"4–4–6 · what ships",pat:[4,4,6,0],now:true,
+   why:"14s, about 4.3 breaths a minute. Chosen by feel, not evidence. The four-second hold is the part worth questioning: holds raise CO2 and, for someone already agitated, can add to the panic rather than settle it."},
+  {key:"N2",name:"4–0–6 · resonance",pat:[4,0,6,0],
+   why:"10s, exactly 6 breaths a minute — the resonance frequency where baroreflex gain and heart-rate variability peak for most adults. The best-evidenced slow-breathing rate there is, and no hold to fight."},
+  {key:"N3",name:"4–0–8 · long exhale",pat:[4,0,8,0],
+   why:"12s, 5 breaths a minute. Exhale twice the inhale — the lengthened exhale is the actual vagal mechanism, so this leans hardest on it while staying easy to follow."},
+  {key:"N4",name:"4–7–8 · Weil",pat:[4,7,8,0],
+   why:"19s, about 3.2 breaths a minute. Widely popular, weak evidence base, and a seven-second hold is genuinely hard when you are craving — the pattern most likely to be abandoned mid-craving."},
+  {key:"N5",name:"4–4–4–4 · box",pat:[4,4,4,4],
+   why:"16s, 3.75 a minute. Two holds, equal everywhere. Developed for focus under pressure rather than for calming, and the hold on empty is the hardest beat in any of these."},
+  {key:"N6",name:"5–0–5 · even",pat:[5,0,5,0],
+   why:"10s, 6 a minute — resonance again, but symmetrical. Easiest of all to follow because there is nothing to remember, at the cost of the exhale bias."}
 ];
 
 /* --------------------------------------------------------------- engine */
@@ -566,8 +463,10 @@ function build(gridId,items){
   for(const v of items){
     const cell=document.createElement("div");
     cell.className="cell"+(v.now?" now":"");
+    const rate = v.pat ? ` · ${(Math.round(bpm(v.pat)*10)/10)} breaths/min` : "";
     cell.innerHTML=`<div class="cap"><span class="key${v.now?" now":""}">${v.key}</span>
-      <span class="ttl">${v.name}</span></div><div class="why">${v.why}</div>`;
+      <span class="ttl">${v.name}</span></div>
+      <div class="why">${v.why}${rate?`<br><b style="color:var(--accent)">${(v.pat[0]+v.pat[1]+v.pat[2]+v.pat[3])}s cycle${rate}</b>`:""}</div>`;
     const cv=document.createElement("canvas");
     cell.appendChild(cv); grid.appendChild(cell);
     out.push({v,cv,ctx:cv.getContext("2d"),sized:0});
@@ -581,18 +480,19 @@ function sizeUp(p){
   p.cv.width=w; p.cv.height=w; p.sized=w;
   p.ctx.setTransform(w/BOX,0,0,w/BOX,0,0);
 }
-function paint(panels,t){
+function paint(panels,t,ms){
   for(const p of panels){
     sizeUp(p);
     const c=p.ctx;
     c.save(); c.setTransform(1,0,0,1,0,0);
     c.fillStyle="#081A1D"; c.fillRect(0,0,p.cv.width,p.cv.height); c.restore();
-    p.v.draw(c,t);
+    if(p.v.pat) sphere(c,ms,p.v.pat,true);
+    else p.v.draw(c,t);
   }
 }
 
 const burstPanels=build("burstGrid",BURSTS);
-const orbPanels=build("orbGrid",ORBS);
+const orbPanels=build("orbGrid",PATTERNS);
 
 const clocks={
   burst:{t:0,playing:true,dur:2400,panels:burstPanels,
@@ -600,12 +500,11 @@ const clocks={
          scrub:document.getElementById("burstScrub"),
          read:document.getElementById("burstRead"),
          label:t=>`<b>${Math.round(t*100)}%</b>`},
-  orb:{t:0,playing:true,dur:14000,panels:orbPanels,
+  orb:{t:0,playing:true,dur:14000,panels:orbPanels,realtime:true,
        play:document.getElementById("orbPlay"),
-       scrub:document.getElementById("orbScrub"),
+       scrub:null,
        read:document.getElementById("orbRead"),
-       label:t=>{const b=breath(t*14000);
-         return `<b>${Math.round(t*14*10)/10}s</b> · ${b.name}`;}}
+       label:()=>"running in real time · breathe along"}
 };
 
 for(const k of Object.keys(clocks)){
@@ -615,7 +514,7 @@ for(const k of Object.keys(clocks)){
     cl.play.textContent=cl.playing?"Pause":"Play";
     cl.play.classList.toggle("on",cl.playing);
   };
-  cl.scrub.oninput=e=>{
+  if(cl.scrub) cl.scrub.oninput=e=>{
     cl.playing=false; cl.play.textContent="Play"; cl.play.classList.remove("on");
     cl.t=clamp01(e.target.value/1000);
   };
@@ -631,19 +530,20 @@ MILES.forEach((m,i)=>{
   mileBar.appendChild(b);
 });
 
-let last=null;
+let last=null, orbMs=0;
 function tick(now){
   if(last===null) last=now;
   const dt=now-last; last=now;
+  if(clocks.orb.playing) orbMs+=dt;
   for(const k of Object.keys(clocks)){
     const cl=clocks[k];
     if(cl.playing){
       cl.t+=dt/cl.dur;
       if(cl.t>=1) cl.t = k==="orb" ? 0 : (cl.t>1.25 ? 0 : 1);
     }
-    paint(cl.panels,cl.t);
+    paint(cl.panels,cl.t,orbMs);
     cl.read.innerHTML=cl.label(cl.t);
-    cl.scrub.value=Math.round(cl.t*1000);
+    if(cl.scrub) cl.scrub.value=Math.round(cl.t*1000);
   }
   requestAnimationFrame(tick);
 }
