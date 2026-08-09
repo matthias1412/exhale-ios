@@ -48,12 +48,17 @@ struct RootView: View {
                     .zIndex(25)
             }
 
-            if let milestone = model.pendingCelebration, let progress = model.progress {
+            // Waits for the arrival: the streak builds to one dot short, and
+            // only then does the burst appear to hand over the last one.
+            if let milestone = model.pendingCelebration, let progress = model.progress,
+               model.arrivalFinished {
                 MilestoneCelebration(
                     milestone: milestone,
                     dayNumber: progress.dayNumber
                 ) {
                     model.pendingCelebration = nil
+                    // Releases the held dot into the spiral.
+                    model.withheldDay = nil
                 }
                 .transition(.opacity)
                 .zIndex(35)

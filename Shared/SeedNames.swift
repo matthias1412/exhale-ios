@@ -82,7 +82,10 @@ enum SeedNames {
         "reveal-milestone-today-f60",
         "reveal-milestone-today",
         "reveal-milestone-dense-f60",
-        "reveal-milestone-dense"
+        "reveal-milestone-dense",
+        "withheld-today-f70",
+        "withheld-today",
+        "withheld-passed"
     ]
 
     /// Recorded as video rather than stills. A pinned frame proves the drawing

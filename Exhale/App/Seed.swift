@@ -334,6 +334,15 @@ enum Seed {
         case "handoff-1year":             return handoff("1 year")
         case "handoff-5years":            return handoff("5 years")
 
+        // The arrival with the milestone's dot held back, so the celebration
+        // has something to deliver. Day 8's dot is missing and the numeral
+        // stops at 7 — the burst hands over both.
+        case "withheld-today-f70":  return withheld(milestone: "1 week", day: 8, frame: 0.70)
+        case "withheld-today":      return withheld(milestone: "1 week", day: 8, frame: 1.0)
+        // Crossed three days ago: the held dot sits mid-spiral rather than at
+        // the end, and the count runs all the way to today regardless.
+        case "withheld-passed":     return withheld(milestone: "1 week", day: 11, frame: 1.0)
+
         case "debug-menu":
             return make(phase: .app, plan: plan(.cigarettes, day: 90)) { $0.debugMenuOpen = true }
 
@@ -370,9 +379,31 @@ enum Seed {
         }
     }
 
+    /// The spiral one dot short, waiting for the celebration to hand it over.
+    private static func withheld(milestone when: String, day: Int, frame: Double) -> AppModel? {
+        guard let mile = Milestones.forProduct(.cigarettes).first(where: { $0.when == when })
+        else { return nil }
+        return make(phase: .app, plan: plan(.cigarettes, day: day)) { model in
+            model.pendingCelebration = mile
+            model.withheldDay = Int((mile.hours / 24).rounded(.down)) + 1
+            model.spiralRevealFrame = frame
+        }
+    }
+
     /// What you get for tapping the notification: the burst for the milestone
     /// you just crossed, dismissing itself, and the spiral for that many days
     /// arriving behind it.
+    /// The spiral one dot short, waiting for the celebration to hand it over.
+    private static func withheld(milestone when: String, day: Int, frame: Double) -> AppModel? {
+        guard let mile = Milestones.forProduct(.cigarettes).first(where: { $0.when == when })
+        else { return nil }
+        return make(phase: .app, plan: plan(.cigarettes, day: day)) { model in
+            model.pendingCelebration = mile
+            model.withheldDay = Int((mile.hours / 24).rounded(.down)) + 1
+            model.spiralRevealFrame = frame
+        }
+    }
+
     private static func handoff(_ when: String) -> AppModel? {
         guard let milestone = Milestones.forProduct(.cigarettes).first(where: { $0.when == when })
         else { return nil }

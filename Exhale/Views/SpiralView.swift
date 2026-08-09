@@ -24,6 +24,8 @@ struct SpiralView: View {
     var milestoneDays: Set<Int> = []
     /// Spoken instead of the dots, which are meaningless one at a time.
     let accessibilitySummary: String
+    /// A day whose dot is being held back for a celebration to deliver.
+    var withheldDay: Int?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppModel.self) private var model
@@ -31,7 +33,15 @@ struct SpiralView: View {
     @State private var revealStart: Date?
     @State private var isRevealing = true
 
-    private var duration: Double { RevealRamp.duration(forDay: day) }
+    private var duration: Double { RevealRamp.duration(forDay: countTo) }
+
+    /// How far the numeral counts. One short when the held dot is today's, so
+    /// the celebration delivers both the dot and the number; otherwise the
+    /// full streak, because the held dot is somewhere in the middle and the
+    /// count has already passed it.
+    private var countTo: Int {
+        withheldDay == day ? max(1, day - 1) : day
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -42,14 +52,14 @@ struct SpiralView: View {
                 paused: !isRevealing || reduceMotion || model.spiralRevealFrame != nil
             )) { timeline in
                 let p = progress(at: timeline.date)
-                let counted = RevealRamp.countedDay(atProgress: p, totalDays: day)
+                let counted = RevealRamp.countedDay(atProgress: p, totalDays: countTo)
 
                 ZStack {
                     Canvas { context, _ in
                         draw(in: &context, scale: scale, counted: counted)
                     }
                     SpiralCentreLabel(
-                        day: RevealRamp.displayedDay(atProgress: p, totalDays: day),
+                        day: RevealRamp.displayedDay(atProgress: p, totalDays: countTo),
                         veilDay: day
                     )
                 }
@@ -69,12 +79,16 @@ struct SpiralView: View {
             // like a glitch.
             guard !reduceMotion, !model.hasRevealedSpiral else {
                 isRevealing = false
+                model.arrivalFinished = true
                 return
             }
             model.hasRevealedSpiral = true
             revealStart = .now
             try? await Task.sleep(for: .seconds(duration + 0.2))
             isRevealing = false
+            // Hands over to any queued celebration. Set unconditionally so a
+            // cancelled or interrupted arrival cannot strand one.
+            model.arrivalFinished = true
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilitySummary)
@@ -143,6 +157,8 @@ struct SpiralView: View {
         var inFlight: [(SpiralGeometry.Dot, Int, Double)] = []
 
         for (i, dot) in dots.enumerated() {
+            // Held back for the celebration to deliver.
+            if let withheldDay, i + 1 == withheldDay { continue }
             let born = Double(i)                       // dot i is day i+1
             guard counted >= born else { continue }
             let age = min(1, (counted - born) / window)

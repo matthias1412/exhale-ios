@@ -16,7 +16,8 @@ struct TodayScreen: View {
                 SpiralView(
                     day: progress.dayNumber,
                     milestoneDays: model.milestoneDays,
-                    accessibilitySummary: model.spiralAccessibilitySummary
+                    accessibilitySummary: model.spiralAccessibilitySummary,
+                    withheldDay: model.withheldDay
                 )
                 .frame(maxHeight: .infinity)
                 .padding(.horizontal, 24)

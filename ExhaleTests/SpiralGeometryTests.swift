@@ -511,3 +511,120 @@ final class ArrivalFlightTests: XCTestCase {
         XCTAssertGreaterThan(swept, 0.2, "the dot travels straight out instead of spiralling")
     }
 }
+
+
+/// Holding a dot back so the celebration can deliver it.
+///
+/// The sequence is: the spiral counts up one dot short, the burst appears, and
+/// the gather hands over the missing dot. Most of the risk is not in the happy
+/// path but in the cases where withholding must NOT happen — each of them
+/// would otherwise either strand the celebration forever or make a dot vanish
+/// off a spiral already on screen.
+@MainActor
+final class WithheldDotTests: XCTestCase {
+
+    private func model(day: Int, revealed: Bool = false) -> AppModel {
+        let m = AppModel(
+            state: PersistedState(),
+            clock: AppClock(frozen: Seed.referenceNow),
+            store: .ephemeral,
+            persistenceEnabled: false,
+            subscriptions: MockSubscriptionGate()
+        )
+        var state = m.state
+        state.phase = .app
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Seed.referenceNow)
+        let quit = calendar.date(byAdding: .day, value: -(day - 1), to: startOfToday)!
+        state.plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
+                              currencyCode: "EUR",
+                              quitDate: quit.addingTimeInterval(8 * 3600))
+        m.state = state
+        m.hasRevealedSpiral = revealed
+        return m
+    }
+
+    /// The ordinary case: crossed the mark today, so the newest dot is held.
+    func testTodaysMilestoneIsHeldBack() {
+        let m = model(day: 8)
+        m.claimPendingCelebration()
+        XCTAssertEqual(m.pendingCelebration?.when, "1 week")
+        XCTAssertEqual(m.withheldDay, 8)
+        XCTAssertFalse(m.arrivalFinished, "the celebration must wait for the arrival")
+    }
+
+    /// Crossed days ago: the held dot is mid-spiral, and the count still runs
+    /// all the way to today.
+    func testAMilestoneCrossedDaysAgoHoldsItsOwnDot() {
+        let m = model(day: 11)
+        m.claimPendingCelebration()
+        XCTAssertEqual(m.withheldDay, 8, "should hold the milestone's dot, not today's")
+    }
+
+    /// The spiral is already on screen, so removing a dot would read as one
+    /// vanishing. Nothing is held and the celebration is armed immediately —
+    /// otherwise it would wait for an arrival that is never going to play.
+    func testNothingIsHeldWhenTheSpiralHasAlreadyArrived() {
+        let m = model(day: 8, revealed: true)
+        m.claimPendingCelebration()
+        XCTAssertNotNil(m.pendingCelebration)
+        XCTAssertNil(m.withheldDay)
+        XCTAssertTrue(m.arrivalFinished, "the celebration would never appear")
+    }
+
+    /// Day one has marks at 20 minutes and 12 hours. Holding the only dot back
+    /// would leave an empty disc, so it is not held — and the celebration is
+    /// armed rather than stranded.
+    func testDayOneKeepsItsOnlyDot() {
+        let m = model(day: 1)
+        m.claimPendingCelebration()
+        XCTAssertNotNil(m.pendingCelebration, "day one still earns a celebration")
+        XCTAssertNil(m.withheldDay)
+        XCTAssertTrue(m.arrivalFinished)
+    }
+
+    /// Several crossed while away: one celebration, and it holds that one's dot.
+    func testSeveralCrossedCelebratesOnlyTheLatest() {
+        let m = model(day: 40)          // 1 week, 2 weeks and 1 month all passed
+        m.claimPendingCelebration()
+        XCTAssertEqual(m.pendingCelebration?.when, "1 month")
+        XCTAssertEqual(m.withheldDay, 31)
+
+        // ...and asking again yields nothing, so the burst cannot repeat.
+        m.pendingCelebration = nil
+        m.claimPendingCelebration()
+        XCTAssertNil(m.pendingCelebration)
+    }
+
+    /// Dismissing releases the dot. Without this the spiral is permanently one
+    /// short — a silent, permanent hole in the streak.
+    func testDismissingReleasesTheHeldDot() {
+        let m = model(day: 8)
+        m.claimPendingCelebration()
+        XCTAssertEqual(m.withheldDay, 8)
+        m.pendingCelebration = nil
+        m.withheldDay = nil
+        XCTAssertNil(m.withheldDay)
+        XCTAssertEqual(SpiralGeometry.dots(forDay: 8).count, 8)
+    }
+
+    /// Starting over must not leave a dot held or an arrival armed.
+    func testResetClearsTheHandoff() {
+        let m = model(day: 8)
+        m.claimPendingCelebration()
+        m.resetEverything()
+        XCTAssertNil(m.withheldDay)
+        XCTAssertFalse(m.arrivalFinished)
+        XCTAssertNil(m.pendingCelebration)
+    }
+
+    /// No plan, no celebration, and nothing held.
+    func testNoPlanHoldsNothing() {
+        let m = AppModel(state: PersistedState(), clock: AppClock(frozen: Seed.referenceNow),
+                         store: .ephemeral, persistenceEnabled: false,
+                         subscriptions: MockSubscriptionGate())
+        m.claimPendingCelebration()
+        XCTAssertNil(m.pendingCelebration)
+        XCTAssertNil(m.withheldDay)
+    }
+}

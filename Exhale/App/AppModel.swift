@@ -95,6 +95,18 @@ final class AppModel {
     /// Screenshot-harness only: dismisses the celebration on a timer, because
     /// the recorder cannot tap.
     var celebrationAutoDismissAfter: TimeInterval?
+    /// The day whose dot the spiral is holding back so the celebration can
+    /// deliver it. Nil unless a celebration is queued *and* the arrival is
+    /// going to play — withholding a dot from a spiral already on screen would
+    /// just look like one vanishing.
+    var withheldDay: Int?
+    /// The arrival has finished, so a queued celebration may appear.
+    ///
+    /// Without this the celebration opens on top of the arrival and the whole
+    /// point — watching the streak build to one dot short, then being handed
+    /// the last one — never happens. It is armed rather than timed, because
+    /// the arrival's length depends on the streak.
+    var arrivalFinished = false
     /// Screenshot-harness only: run animations in real time even though the
     /// clock is frozen. A frozen clock is what makes stills reproducible, but
     /// it is also what stops anything time-driven from moving — so a recording
@@ -155,6 +167,8 @@ final class AppModel {
         tab = .today
         hasRevealedSpiral = false
         pendingCelebration = nil
+        withheldDay = nil
+        arrivalFinished = false
         cloud.clear()
         persist()
     }
@@ -186,9 +200,41 @@ final class AppModel {
             lastSeenHours: state.lastCelebratedHours,
             now: clock.now
         )
+        // Only the most recent is celebrated even when several were crossed —
+        // four bursts in a row after a fortnight away would cheapen all of
+        // them. The rest are still marked in the spiral.
         guard let latest = unseen.last else { return }
         pendingCelebration = latest
         state.lastCelebratedHours = latest.hours
+        tab = .today
+        withheldDay = withholdable(latest)
+        // If the arrival is not going to play — the spiral is already on
+        // screen, or motion is off — there is nothing to wait for, so arm the
+        // celebration now. Missing this is how the celebration would never
+        // appear at all for someone who crossed a milestone mid-session.
+        arrivalFinished = (withheldDay == nil)
+    }
+
+    /// Which dot, if any, the spiral should hold back for this celebration.
+    ///
+    /// Nil in every case where withholding would misfire:
+    ///
+    /// - the arrival has already played this session, so the spiral is on
+    ///   screen and a dot would visibly disappear;
+    /// - the milestone lands on day 1 of a one-day streak, where holding the
+    ///   only dot back leaves an empty disc;
+    /// - the day is somehow outside the streak, which should not happen but
+    ///   would otherwise silently withhold nothing and never re-appear.
+    ///
+    /// A milestone crossed days ago is fine: its dot sits mid-spiral rather
+    /// than at the end, the arrival draws every dot except that one, and the
+    /// burst delivers it into the gap it left.
+    private func withholdable(_ milestone: Milestone) -> Int? {
+        guard !hasRevealedSpiral, let progress else { return nil }
+        let day = Int((milestone.hours / 24).rounded(.down)) + 1
+        guard day >= 1, day <= progress.dayNumber else { return nil }
+        guard progress.dayNumber > 1 else { return nil }
+        return day
     }
 
     /// Days carrying a milestone, for marking them in the spiral.
