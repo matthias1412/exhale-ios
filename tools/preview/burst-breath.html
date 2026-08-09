@@ -1,0 +1,424 @@
+<meta charset="utf-8">
+<title>Exhale — the burst and the breath</title>
+<style>
+  :root{
+    --ground:#0A1012; --panel:#081A1D; --line:rgba(233,245,243,.10);
+    --ink:#E9F5F3; --ink-2:rgba(233,245,243,.62); --ink-3:rgba(233,245,243,.40);
+    --accent:#7FD8CB; --ember:#E8A87F;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;
+       padding:26px 26px 90px}
+  h1{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:12px;margin:38px 0 4px;letter-spacing:.16em;text-transform:uppercase;
+     color:var(--accent)}
+  .sub{font-size:13px;color:var(--ink-2);max-width:72ch;margin:0 0 18px}
+  .sub b{color:var(--ink)}
+  .rail{display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+        border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:18px}
+  .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+  button{font:inherit;font-size:12.5px;background:none;color:var(--ink-2);
+         border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer;
+         transition:background .12s,color .12s,border-color .12s}
+  button:hover{color:var(--ink);border-color:rgba(233,245,243,.28)}
+  button.on{background:var(--accent);color:#06181B;border-color:transparent;font-weight:600}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  input[type=range]{accent-color:var(--accent);width:min(320px,40vw);cursor:pointer}
+  .read{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink-2);min-width:9ch}
+  .read b{color:var(--accent);font-weight:600}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(258px,1fr))}
+  .cell{background:var(--panel);border:1px solid var(--line);border-radius:20px;
+        padding:14px;display:flex;flex-direction:column;gap:8px}
+  .cell.now{border-color:rgba(232,168,127,.42)}
+  .cap{display:flex;align-items:baseline;gap:8px}
+  .key{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+  .key.now{color:var(--ember)}
+  .ttl{font-size:13.5px;font-weight:600}
+  .why{font-size:11.5px;color:var(--ink-2);line-height:1.5;min-height:5.4em}
+  canvas{display:block;width:100%;aspect-ratio:1;border-radius:12px;background:#081A1D}
+</style>
+
+<h1>Exhale — the burst and the breath</h1>
+<p class="sub">Two animations, same method as the arrival: every panel in a section runs off
+<b>one clock</b>, so freezing the scrubber compares them at the identical instant. The panel
+outlined in amber is what ships today.</p>
+
+<h2>1 · The milestone burst</h2>
+<p class="sub">What you see when you open the app on the day you cross a mark. It has to feel like a
+reward and then <b>hand off to the spiral behind it</b> — the dot it leaves is where that moment
+lives permanently, so a burst that just fades has thrown the meaning away.</p>
+<div class="rail">
+  <span class="lbl">Milestone</span><span id="mileBar"></span>
+  <button id="burstPlay" class="on">Pause</button>
+  <input type="range" id="burstScrub" min="0" max="1000" value="0" aria-label="Burst progress">
+  <span class="read" id="burstRead"></span>
+</div>
+<div class="grid" id="burstGrid"></div>
+
+<h2>2 · The breathing orb</h2>
+<p class="sub">Four seconds in, four held, six out. It is on screen for minutes at a time while
+someone waits out a craving, so it has to bear staring at — <b>the failure mode here is irritation,
+not boredom</b>. Scrub to 0.30 for the top of the inhale and 0.75 for the bottom of the exhale.</p>
+<div class="rail">
+  <button id="orbPlay" class="on">Pause</button>
+  <input type="range" id="orbScrub" min="0" max="1000" value="0" aria-label="Breath progress">
+  <span class="read" id="orbRead"></span>
+</div>
+<div class="grid" id="orbGrid"></div>
+
+<script>
+"use strict";
+const GOLD=2.399963, BOX=302, CX=151, CY=151;
+const clamp01=t=>t<0?0:t>1?1:t, lerp=(a,b,t)=>a+(b-a)*t;
+const easeOut=t=>1-Math.pow(1-t,3);
+const easeOutQuint=t=>1-Math.pow(1-t,5);
+const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const backOut=(t,s=2.0)=>1+(s+1)*Math.pow(t-1,3)+s*Math.pow(t-1,2);
+const hash=i=>{const x=Math.sin(i*127.1)*43758.5453;return x-Math.floor(x);};
+function dot(c,x,y,d,col,a){
+  if(a<=0.004||d<=0) return;
+  c.globalAlpha=a; c.fillStyle=col;
+  c.beginPath(); c.arc(x,y,d/2,0,6.2832); c.fill(); c.globalAlpha=1;
+}
+function ring(c,r,col,w,a){
+  if(a<=0.004||r<=0) return;
+  c.globalAlpha=a; c.strokeStyle=col; c.lineWidth=w;
+  c.beginPath(); c.arc(CX,CY,r,0,6.2832); c.stroke(); c.globalAlpha=1;
+}
+
+/* ---------------------------------------------------------------- burst */
+// Each milestone owns a colour off the same ember -> sea-glass ramp as the
+// spiral, so the burst is recognisably about *that* mark.
+const MILES=[
+  {name:"72 h",     day:4,    t:0.03},
+  {name:"1 week",   day:8,    t:0.10},
+  {name:"1 month",  day:31,   t:0.28},
+  {name:"1 year",   day:366,  t:0.62},
+  {name:"5 years",  day:1826, t:0.95}
+];
+let MILE=1;
+const mcol=(l=0)=>{const t=MILES[MILE].t;
+  return `hsl(${18+t*154} ${85-t*25}% ${Math.min(96,(54+t*8)+l*46)}%)`;};
+// where the milestone's own dot sits in the spiral it belongs to
+function slot(){
+  const d=MILES[MILE].day, n=Math.min(d,3650);
+  const t=n>1?(n-1)/(n-1):1;
+  const a=(n-1)*GOLD-1.6, r=44+97*Math.sqrt(t);
+  return {x:CX+Math.cos(a)*r, y:CY+Math.sin(a)*r};
+}
+
+function bCurrent(c,p){
+  const r=20+easeOut(p)*66;
+  for(let i=0;i<64;i++){
+    const a=i/64*6.2832;
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,5,mcol(),1-p*0.15);
+  }
+  dot(c,CX,CY,26,mcol(),1);
+}
+
+function bShock(c,p){
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let k=0;k<3;k++){
+    const off=k*0.13, lp=clamp01((p-off)/(1-off));
+    if(lp<=0) continue;
+    const r=18+easeOut(lp)*(74-k*10), a=(1-lp)*(1-k*0.24), count=52-k*10;
+    for(let i=0;i<count;i++){
+      const ang=i/count*6.2832+k*0.4+lp*0.30;
+      dot(c,CX+Math.cos(ang)*r,CY+Math.sin(ang)*r,5.2*(1-lp*0.55),mcol(0.3),a);
+    }
+  }
+  c.restore();
+  const punch=p<0.18?backOut(p/0.18):1-(p-0.18)/0.82*0.28;
+  dot(c,CX,CY,26*punch,mcol(),1);
+}
+
+function bHandoff(c,p){
+  const target=slot();
+  const out=clamp01(p/0.55), back=clamp01((p-0.5)/0.5);
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<56;i++){
+    const a=i/56*6.2832, r=18+easeOut(out)*70;
+    const x=lerp(CX+Math.cos(a)*r,target.x,easeInOut(back));
+    const y=lerp(CY+Math.sin(a)*r,target.y,easeInOut(back));
+    dot(c,x,y,5*(1-back*0.7),mcol(0.2),(1-back)*(1-out*0.2));
+  }
+  c.restore();
+  const cx=lerp(CX,target.x,easeInOut(back)), cy=lerp(CY,target.y,easeInOut(back));
+  dot(c,cx,cy,lerp(26,9,easeInOut(back)),mcol(),1);
+  if(back>0.6) ring(c,0,"",0,0);
+  if(back>0.6){
+    c.globalAlpha=(back-0.6)/0.4*0.5; c.strokeStyle=mcol(); c.lineWidth=1;
+    c.beginPath(); c.arc(target.x,target.y,16,0,6.2832); c.stroke(); c.globalAlpha=1;
+  }
+}
+
+// the app's own phyllotaxis, blooming outward — same language as everything else
+function bBloom(c,p){
+  const N=90;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<N;i++){
+    const t=i/(N-1), stagger=t*0.35;
+    const lp=clamp01((p-stagger)/(1-stagger));
+    if(lp<=0) continue;
+    const r=lerp(4,26+72*Math.sqrt(t),easeOutQuint(lp));
+    const a=i*GOLD-1.6-(1-easeOutQuint(lp))*1.1;
+    const d=(2.2+t*3.4)*(0.5+0.5*lp);
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,d,mcol(Math.pow(1-lp,1.4)*0.9),
+        clamp01(lp*3)*(1-Math.pow(p,3)*0.35));
+  }
+  c.restore();
+  dot(c,CX,CY,lerp(30,10,easeOut(p)),mcol(0.4),1);
+}
+
+function bRipple(c,p){
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let k=0;k<4;k++){
+    const lp=clamp01((p-k*0.16)/0.62);
+    if(lp<=0||lp>=1) continue;
+    ring(c,10+lp*104,mcol(0.2),2.4*(1-lp),0.42*(1-lp));
+  }
+  c.restore();
+  const pulse=1+Math.sin(p*Math.PI*3)*0.06*(1-p);
+  dot(c,CX,CY,24*pulse,mcol(),1);
+}
+
+function bIgnite(c,p){
+  const N=64;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<N;i++){
+    const seed=hash(i);
+    const speed=0.55+seed*0.65;
+    const lp=clamp01(p*speed*1.6);
+    // out fast, then drawn back a little — gravity, not confetti
+    const r=(18+easeOut(lp)*82) - Math.pow(clamp01((p-0.5)/0.5),2)*22;
+    const a=i/N*6.2832+seed*0.25;
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,
+        (3.2+seed*3)*(1-lp*0.5), p<0.12?"#F4FFFD":mcol(Math.pow(1-lp,1.5)*0.8),
+        (1-Math.pow(lp,2.2))*0.95);
+  }
+  c.restore();
+  const flare=p<0.10?backOut(p/0.10,3.4):1-(p-0.10)/0.90*0.55;
+  dot(c,CX,CY,30*Math.max(0.1,flare),p<0.12?"#F4FFFD":mcol(0.5),1);
+}
+
+const BURSTS=[
+  {key:"A",now:true,name:"What ships today",
+   why:"One ring of dots expands and stops; the core never moves. Nothing for the eye to follow, and the dot that is supposed to become part of the spiral simply vanishes.",draw:bCurrent},
+  {key:"E",name:"Shockwave",
+   why:"Three rings leave at different speeds with a slight swirl, thinning as they go. The core punches on impact then settles. Reads as force.",draw:bShock},
+  {key:"F",name:"Handoff",
+   why:"The ring goes out, then everything collapses onto this milestone's actual position in the spiral. The burst becomes the dot it is about — the only one that explains where the moment goes.",draw:bHandoff},
+  {key:"G",name:"Bloom",
+   why:"The same phyllotaxis as the spiral, the logo and the orb, opening outward from the core with a slight unwind. The most native to the app's own language.",draw:bBloom},
+  {key:"H",name:"Ripple",
+   why:"Four concentric rings leaving in sequence, core pulsing three times. The quietest — dignified rather than celebratory, which may suit 20 minutes better than five years.",draw:bRipple},
+  {key:"I",name:"Ignite",
+   why:"A white flare, then particles thrown out at varying speeds and drawn slightly back in. Physical and firework-like; the most obviously a reward.",draw:bIgnite}
+];
+
+/* ------------------------------------------------------------------ orb */
+function breath(ms){
+  const t=((ms/1000)%14+14)%14;
+  if(t<4)  return {s:0.68+0.32*(1-Math.pow(1-t/4,2.2)), name:"in"};
+  if(t<8)  return {s:1.0+Math.sin((t-4)/4*Math.PI)*0.012, name:"hold"};
+  return {s:1.0-0.32*easeInOut((t-8)/6), name:"out"};
+}
+const AC="#7FD8CB", ACS="#BDEDE4";
+
+function oGradient(c,p){
+  const {s}=breath(p*14000), R=66*s;
+  const g=c.createRadialGradient(CX,CY-8,0,CX,CY,R);
+  g.addColorStop(0,"rgba(127,216,203,.50)"); g.addColorStop(1,"rgba(127,216,203,.12)");
+  c.fillStyle=g; c.beginPath(); c.arc(CX,CY,R,0,6.2832); c.fill();
+  ring(c,80,"rgba(127,216,203,.25)",1.5,1);
+}
+
+function oLung(c,p){                      // what ships today
+  const ms=p*14000, N=150;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    const {s}=breath(ms-t*900);
+    const r=(13+84*Math.sqrt(t))*s;
+    const a=i*GOLD-1.6+(s-0.84)*0.5;
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,(1.7+t*2.5)*(0.86+0.14*s),AC,0.26+0.60*t);
+  }
+  c.restore();
+  ring(c,108,"rgba(127,216,203,.16)",1.5,1);
+  const {s}=breath(ms); dot(c,CX,CY,10*s,ACS,0.9);
+}
+
+function oDenser(c,p){
+  const ms=p*14000, N=340;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    const {s}=breath(ms-t*1200);
+    const r=(11+90*Math.sqrt(t))*s;
+    const a=i*GOLD-1.6+(s-0.84)*0.35;
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,(1.1+t*1.8)*(0.9+0.1*s),AC,0.18+0.52*t);
+  }
+  c.restore();
+  ring(c,108,"rgba(127,216,203,.14)",1.5,1);
+}
+
+function oRings(c,p){
+  const ms=p*14000, {s,name}=breath(ms);
+  const drift=((ms/1000)%14)/14;
+  for(let k=0;k<5;k++){
+    const base=22+k*15;
+    const r=base*s+(name==="out"?-6:6)*Math.sin(drift*6.2832+k);
+    ring(c,Math.max(4,r),AC,2.2-k*0.28,0.46-k*0.06);
+  }
+  dot(c,CX,CY,14*s,ACS,1);
+}
+
+function oTide(c,p){
+  // dots hold their angle but the whole field swells and a bright band travels
+  // outward through it — the breath visibly moves through the lung
+  const ms=p*14000, N=170, {s}=breath(ms);
+  const frontT=((ms/1000)%14)/14;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    const r=(13+86*Math.sqrt(t))*s;
+    const a=i*GOLD-1.6;
+    const near=1-Math.min(1,Math.abs(t-frontT)*6);       // distance to the band
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,
+        (1.6+t*2.4)*(0.9+0.35*near),
+        near>0?`hsl(170 55% ${Math.round(66+near*28)}%)`:AC,
+        0.24+0.55*t+near*0.3);
+  }
+  c.restore();
+  ring(c,108,"rgba(127,216,203,.16)",1.5,1);
+}
+
+function oStream(c,p){
+  const ms=p*14000, {s,name}=breath(ms), N=110;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<N;i++){
+    const seed=hash(i), a=i*GOLD-1.6;
+    const travel=clamp01((s-0.68)/0.32);
+    const own=clamp01(travel*1.3-seed*0.3);
+    const r=lerp(8,96,own*(0.55+0.45*seed));
+    const wob=Math.sin(ms/700+i)*1.8*own;
+    dot(c,CX+Math.cos(a)*(r+wob),CY+Math.sin(a)*(r+wob),
+        lerp(1.3,3.6,seed)*(0.5+0.5*own), own>0.8?ACS:AC,
+        (0.16+0.74*own)*(name==="out"?0.85:1));
+  }
+  c.restore();
+  ring(c,108,"rgba(127,216,203,.14)",1.5,1);
+}
+
+const ORBS=[
+  {key:"P",name:"The old gradient",
+   why:"A blurred radial gradient that scales. Kept for reference: it is the only object in the app not made of dots, which is why it read as a smudge.",draw:oGradient},
+  {key:"Q",now:true,name:"Lung — what ships today",
+   why:"150 dots on the app's phyllotaxis, the expansion reaching the rim about 0.9s after the centre so the breath travels through it rather than resizing it.",draw:oLung},
+  {key:"R",name:"Lung, dense",
+   why:"The same, at 340 smaller dots and a longer lag. Closer to a surface than a constellation — more to stare at without becoming busy.",draw:oDenser},
+  {key:"S",name:"Tide",
+   why:"Dots hold their angle while a bright band travels outward through the field on each inhale. The breath is visible as something passing through, not just size.",draw:oTide},
+  {key:"T",name:"Rings",
+   why:"Five concentric rings expanding and contracting with a little independent drift, so a held breath is not a frozen one. The most abstract and the calmest.",draw:oRings},
+  {key:"U",name:"Stream",
+   why:"Particles released from the middle on the inhale and drawn back on the exhale, each on its own loop so it never locks to a metronome. The most alive; possibly too busy at three minutes.",draw:oStream}
+];
+
+/* --------------------------------------------------------------- engine */
+function build(gridId,items){
+  const grid=document.getElementById(gridId), out=[];
+  for(const v of items){
+    const cell=document.createElement("div");
+    cell.className="cell"+(v.now?" now":"");
+    cell.innerHTML=`<div class="cap"><span class="key${v.now?" now":""}">${v.key}</span>
+      <span class="ttl">${v.name}</span></div><div class="why">${v.why}</div>`;
+    const cv=document.createElement("canvas");
+    cell.appendChild(cv); grid.appendChild(cell);
+    out.push({v,cv,ctx:cv.getContext("2d"),sized:0});
+  }
+  return out;
+}
+function sizeUp(p){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=Math.round(p.cv.clientWidth*dpr);
+  if(w===p.sized||w===0) return;
+  p.cv.width=w; p.cv.height=w; p.sized=w;
+  p.ctx.setTransform(w/BOX,0,0,w/BOX,0,0);
+}
+function paint(panels,t){
+  for(const p of panels){
+    sizeUp(p);
+    const c=p.ctx;
+    c.save(); c.setTransform(1,0,0,1,0,0);
+    c.fillStyle="#081A1D"; c.fillRect(0,0,p.cv.width,p.cv.height); c.restore();
+    p.v.draw(c,t);
+  }
+}
+
+const burstPanels=build("burstGrid",BURSTS);
+const orbPanels=build("orbGrid",ORBS);
+
+const clocks={
+  burst:{t:0,playing:true,dur:2400,panels:burstPanels,
+         play:document.getElementById("burstPlay"),
+         scrub:document.getElementById("burstScrub"),
+         read:document.getElementById("burstRead"),
+         label:t=>`<b>${Math.round(t*100)}%</b>`},
+  orb:{t:0,playing:true,dur:14000,panels:orbPanels,
+       play:document.getElementById("orbPlay"),
+       scrub:document.getElementById("orbScrub"),
+       read:document.getElementById("orbRead"),
+       label:t=>{const b=breath(t*14000);
+         return `<b>${Math.round(t*14*10)/10}s</b> · ${b.name}`;}}
+};
+
+for(const k of Object.keys(clocks)){
+  const cl=clocks[k];
+  cl.play.onclick=()=>{
+    cl.playing=!cl.playing;
+    cl.play.textContent=cl.playing?"Pause":"Play";
+    cl.play.classList.toggle("on",cl.playing);
+  };
+  cl.scrub.oninput=e=>{
+    cl.playing=false; cl.play.textContent="Play"; cl.play.classList.remove("on");
+    cl.t=clamp01(e.target.value/1000);
+  };
+}
+
+const mileBar=document.getElementById("mileBar");
+MILES.forEach((m,i)=>{
+  const b=document.createElement("button");
+  b.textContent=m.name;
+  if(i===MILE) b.className="on";
+  b.onclick=()=>{ MILE=i; clocks.burst.t=0;
+    [...mileBar.children].forEach(c=>c.className=""); b.className="on"; };
+  mileBar.appendChild(b);
+});
+
+let last=null;
+function tick(now){
+  if(last===null) last=now;
+  const dt=now-last; last=now;
+  for(const k of Object.keys(clocks)){
+    const cl=clocks[k];
+    if(cl.playing){
+      cl.t+=dt/cl.dur;
+      if(cl.t>=1) cl.t = k==="orb" ? 0 : (cl.t>1.25 ? 0 : 1);
+    }
+    paint(cl.panels,cl.t);
+    cl.read.innerHTML=cl.label(cl.t);
+    cl.scrub.value=Math.round(cl.t*1000);
+  }
+  requestAnimationFrame(tick);
+}
+if(window.matchMedia("(prefers-reduced-motion:reduce)").matches){
+  for(const k of Object.keys(clocks)){
+    const cl=clocks[k];
+    cl.playing=false; cl.play.textContent="Play"; cl.play.classList.remove("on");
+    cl.t=0.4;
+  }
+}
+requestAnimationFrame(tick);
+</script>

@@ -56,11 +56,10 @@
 </style>
 
 <h1>Exhale — how a day arrives</h1>
-<p class="sub">Seven takes on the one you picked: a day is <b>born at the numeral and travels out
-to its slot</b>. Each changes one property of that — where it starts, how far it unwinds, how it
-paces, how much comet it drags. All run off <b>one shared clock</b>, so drag the scrubber to freeze
-the same instant across every panel; that is where they separate. Try it at <b>5y</b>, where three
-of them fall apart.</p>
+<p class="sub">The chosen arrival, kept as the record of the decision. A day is <b>born at the
+numeral and travels out to its slot</b>, unwinding the last 50° as it goes. <b>Milestone days now
+show the bright core</b> the app actually gives them, and today's dot its halo — both were missing
+from the versions you judged earlier. Scrub to compare any instant; try <b>1y</b> and <b>5y</b>.</p>
 
 <div class="rail">
   <div class="grp"><span class="lbl">Streak</span><span id="days"></span></div>
@@ -89,6 +88,10 @@ const band=d=>{const p=clamp01(d/BLOOM);return{inner:lerp(92,HOLE,p),outer:lerp(
 const dotD=n=>Math.max(3,Math.min(13,Math.sqrt(Math.PI*(MAXR*MAXR-HOLE*HOLE)/Math.max(n,40))*0.62));
 const lift=(t,l)=>`hsl(${18+t*154} ${85-t*25}% ${Math.min(96,(54+t*8)+l*46)}%)`;
 
+// Day numbers a milestone lands on, derived the same way the app does it:
+// floor(hours / 24) + 1 over Milestone.swift's hour list, cigarettes.
+const MILESTONE_DAYS = new Set([1,3,4,8,15,31,91,181,366,731,1096,1461]);
+
 const cache={};
 function dots(day){
   if(cache[day]) return cache[day];
@@ -96,7 +99,8 @@ function dots(day){
   const span=Math.max(0,outer-inner-size/2), out=[];
   for(let i=0;i<n;i++){
     const t=n>1?i/(n-1):1, r=inner+span*(n>1?Math.sqrt(t):0), a=i*GOLD-1.6;
-    out.push({x:CX+r*Math.cos(a), y:CY+r*Math.sin(a), d:size, t, i, ang:a, rad:r});
+    out.push({x:CX+r*Math.cos(a), y:CY+r*Math.sin(a), d:size, t, i, ang:a, rad:r,
+              mile:MILESTONE_DAYS.has(i+1), newest:i===n-1});
   }
   return cache[day]=out;
 }
@@ -171,8 +175,13 @@ function core(cfg){
       }
       const [x,y]=pos(ease,rEase);
       const heat=Math.pow(1-age,cfg.cool)*cfg.heat;
-      dot(c,x,y,o.d*Math.min(1.2,Math.max(0.12,backOut(Math.min(1,age*1.1)))),
-          cfg.white && age<0.25 ? "#F4FFFD" : lift(o.t,heat), clamp01(age*4));
+      const size=o.d*Math.min(1.2,Math.max(0.12,backOut(Math.min(1,age*1.1))));
+      dot(c,x,y,size, cfg.white && age<0.25 ? "#F4FFFD" : lift(o.t,heat), clamp01(age*4));
+      // A milestone reads as a bright core inside its own dot — size cannot do
+      // the job, since below about day 174 every dot is already at the clamp.
+      if(o.mile) dot(c,x,y,size*0.42,lift(o.t,0.30+heat),clamp01(age*4));
+      // today's dot carries a halo
+      if(o.newest && age>0.4) dot(c,x,y,size*2.6,lift(o.t,0.5),0.13*clamp01((age-0.4)/0.6));
     }
     c.restore();
     // a faint ring leaving the core each time the count ticks a whole day
@@ -191,40 +200,10 @@ function core(cfg){
 }
 
 const VARIANTS=[
-  {key:"B", name:"As you saw it", pick:true,
-   why:"Born dead centre, quintic ease outward, unwinding the last 50°, four ghosts. The reference — everything else is a change to one property of this.",
+  {key:"B", name:"Chosen", pick:true,
+   why:"Born dead centre, quintic ease outward, unwinding the last 50°, four ghosts. Milestone days now carry the bright core the app gives them, and today's dot its halo — both were missing from earlier previews.",
    draw:core({ease:easeOutQuint, unwind:0.9, ghosts:4, ghostGap:0.10, ghostSize:0.7,
-              ghostAlpha:0.30, ghostHeat:0.75, heat:0.9, cool:1.3})},
-
-  {key:"B1", name:"From the number's edge",
-   why:"Starts at the rim of the numeral rather than its centre, so nothing is hidden under the veil and the travel is shorter. Calmest of the family at high day counts.",
-   draw:core({ease:easeOutQuint, unwind:0.55, fromVeil:true, ghosts:3, ghostGap:0.11,
-              ghostSize:0.7, ghostAlpha:0.28, ghostHeat:0.7, heat:0.85, cool:1.4})},
-
-  {key:"B2", name:"Full turn",
-   why:"Unwinds a turn and a half instead of 50°, with six ghosts, so each day visibly spirals out rather than drifting. The most obviously phyllotactic — and the busiest.",
-   draw:core({ease:easeOutQuint, unwind:9.0, ghosts:6, ghostGap:0.075, ghostSize:0.8,
-              ghostAlpha:0.34, ghostHeat:0.85, heat:0.95, cool:1.2})},
-
-  {key:"B3", name:"Thrown",
-   why:"Accelerates out of the numeral and decelerates hard into the slot, overshooting slightly past its position before settling back. Reads as thrown rather than released.",
-   draw:core({ease:smoother, unwind:0.7, overshoot:2.6, ghosts:4, ghostGap:0.09,
-              ghostSize:0.75, ghostAlpha:0.30, ghostHeat:0.8, heat:0.9, cool:1.3})},
-
-  {key:"B4", name:"Jet",
-   why:"A third of the flight time, so days leave the core in a continuous stream rather than as separate arcs, with a long bright comet behind each. Most energetic; closest to a firework.",
-   draw:core({ease:easeOut, unwind:1.3, windowScale:0.35, ghosts:8, ghostGap:0.055,
-              ghostSize:0.85, ghostAlpha:0.40, ghostHeat:0.95, heat:1.0, cool:1.1, white:true})},
-
-  {key:"B5", name:"Scattered",
-   why:"Each day leaves at a slightly different angle — deterministic, so a replay is identical — and starts white before cooling into its ramp colour. Organic rather than mechanical.",
-   draw:core({ease:easeOutQuint, unwind:0.8, jitter:1.5, ghosts:4, ghostGap:0.10,
-              ghostSize:0.7, ghostAlpha:0.30, ghostHeat:0.8, heat:0.95, cool:1.25, white:true})},
-
-  {key:"B6", name:"With a pulse",
-   why:"The reference, plus a faint ring leaving the numeral on each whole day counted. Ties the number to the dots so the count reads as the cause rather than a caption.",
-   draw:core({ease:easeOutQuint, unwind:0.9, ghosts:4, ghostGap:0.10, ghostSize:0.7,
-              ghostAlpha:0.30, ghostHeat:0.75, heat:0.9, cool:1.3, pulse:true})}
+              ghostAlpha:0.30, ghostHeat:0.75, heat:0.9, cool:1.3})}
 ];
 
 let DAY=90, t=0, playing=true, last=null;
