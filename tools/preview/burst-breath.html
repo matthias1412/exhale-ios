@@ -56,10 +56,12 @@ lives permanently, so a burst that just fades has thrown the meaning away.</p>
 </div>
 <div class="grid" id="burstGrid"></div>
 
-<h2>2 · The breathing orb</h2>
-<p class="sub">Four seconds in, four held, six out. It is on screen for minutes at a time while
-someone waits out a craving, so it has to bear staring at — <b>the failure mode here is irritation,
-not boredom</b>. Scrub to 0.30 for the top of the inhale and 0.75 for the bottom of the exhale.</p>
+<h2>2 · The breathing orb — second batch</h2>
+<p class="sub">The first six were one idea in six textures: a ring of dots that scales.
+<b>These are six different mechanisms.</b> Scale is only one way to show a breath and probably the
+weakest — it is hard to read at a glance, and it leaves the four-second hold visually dead, which is
+exactly when someone is staring hardest. Every one of these keeps something moving through the hold.
+Scrub to <b>0.28</b> for the top of the inhale and <b>0.75</b> for the bottom of the exhale.</p>
 <div class="rail">
   <button id="orbPlay" class="on">Pause</button>
   <input type="range" id="orbScrub" min="0" max="1000" value="0" aria-label="Breath progress">
@@ -382,19 +384,154 @@ function oStream(c,p){
   ring(c,108,"rgba(127,216,203,.14)",1.5,1);
 }
 
+/* ---- orbs, second batch ---------------------------------------------
+   The first six were one idea — a ring of dots that scales — in six
+   textures. These are six different *mechanisms*, because scale is only
+   one way to show a breath, and arguably the weakest: it is the hardest
+   to read at a glance and it leaves the four-second hold visually dead.
+   `f` is the breath as 0..1 (empty..full) rather than a scale factor.  */
+function fullness(ms){
+  const b=breath(ms);
+  return {f:(b.s-0.68)/0.32, name:b.name, s:b.s};
+}
+
+// V — a vessel filling and emptying. Size never changes; the level does.
+function oFill(c,p){
+  const ms=p*14000, {f,name}=fullness(ms), R=100;
+  const level=CY+R-2*R*f;
+  c.save();
+  c.beginPath(); c.arc(CX,CY,R,0,6.2832); c.clip();
+  // the liquid, with a surface that keeps moving through the hold
+  c.beginPath(); c.moveTo(CX-R,BOX);
+  for(let x=-R;x<=R;x+=4){
+    const y=level+Math.sin((x/26)+ms/900)*2.6+Math.sin((x/11)-ms/1400)*1.3;
+    c.lineTo(CX+x,y);
+  }
+  c.lineTo(CX+R,BOX); c.closePath();
+  const g=c.createLinearGradient(0,level-40,0,CY+R);
+  g.addColorStop(0,"rgba(127,216,203,.55)"); g.addColorStop(1,"rgba(127,216,203,.16)");
+  c.fillStyle=g; c.fill();
+  // dots suspended in it, so it is still made of the app's material
+  c.globalCompositeOperation="lighter";
+  for(let i=0;i<70;i++){
+    const t=i/69, a=i*GOLD-1.6, r=R*0.94*Math.sqrt(t);
+    const x=CX+Math.cos(a)*r, y=CY+Math.sin(a)*r;
+    if(y<level) continue;
+    dot(c,x,y+Math.sin(ms/1100+i)*1.2,1.6+t*2.2,ACS,0.30+0.45*t);
+  }
+  c.restore();
+  ring(c,R,"rgba(127,216,203,.30)",1.6,1);
+}
+
+// W — an arc that draws round on the inhale and retreats on the exhale.
+function oArc(c,p){
+  const ms=p*14000, {f,name}=fullness(ms), R=94;
+  ring(c,R,"rgba(127,216,203,.13)",3,1);
+  const start=-Math.PI/2, end=start+f*6.2832;
+  c.save(); c.lineCap="round";
+  c.strokeStyle=AC; c.lineWidth=3.4; c.globalAlpha=0.95;
+  c.beginPath(); c.arc(CX,CY,R,start,end); c.stroke();
+  c.restore();
+  // the head of the arc, which sits still but pulses through the hold
+  const hx=CX+Math.cos(end)*R, hy=CY+Math.sin(end)*R;
+  const pulse=name==="hold"?1+Math.sin(ms/420)*0.18:1;
+  dot(c,hx,hy,11*pulse,ACS,1);
+  c.save(); c.globalCompositeOperation="lighter";
+  dot(c,hx,hy,26*pulse,AC,0.16); c.restore();
+  dot(c,CX,CY,7+f*5,ACS,0.55);
+}
+
+// X — an aperture: the hole opens as the lungs fill.
+function oIris(c,p){
+  const ms=p*14000, {f}=fullness(ms), N=210;
+  const hole=10+f*46, rim=104;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    const r=hole+(rim-hole)*Math.sqrt(t);
+    const a=i*GOLD-1.6+f*0.35;              // the blades turn a little as they open
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,(1.0+t*2.0),AC,0.20+0.55*(1-t));
+  }
+  c.restore();
+  ring(c,rim,"rgba(127,216,203,.14)",1.5,1);
+  ring(c,hole,"rgba(189,237,228,.45)",1.4,1);
+}
+
+// Y — a tide. A surface that rises and falls, with the dots riding it.
+function oTide2(c,p){
+  const ms=p*14000, {f}=fullness(ms), R=102;
+  const level=CY+R*0.82-2*R*0.82*f;
+  c.save(); c.beginPath(); c.arc(CX,CY,R,0,6.2832); c.clip();
+  c.globalCompositeOperation="lighter";
+  for(let k=0;k<3;k++){
+    c.beginPath(); c.moveTo(CX-R,BOX);
+    for(let x=-R;x<=R;x+=3){
+      const y=level+k*7+Math.sin(x/(30-k*6)+ms/(1100+k*380))*(3.4-k*0.8);
+      c.lineTo(CX+x,y);
+    }
+    c.lineTo(CX+R,BOX); c.closePath();
+    c.globalAlpha=0.13; c.fillStyle=AC; c.fill();
+  }
+  c.globalAlpha=1;
+  for(let i=0;i<44;i++){
+    const t=i/43, x=CX-R+2*R*((i*0.618)%1);
+    const y=level+Math.sin(x/26+ms/900)*3.2-2;
+    dot(c,x,y,1.8+t*1.6,ACS,0.5);
+  }
+  c.restore();
+  ring(c,R,"rgba(127,216,203,.26)",1.6,1);
+}
+
+// Z — orbits. Always turning, so the hold is never dead.
+function oOrbit(c,p){
+  const ms=p*14000, {f}=fullness(ms), N=8;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let k=0;k<N;k++){
+    const t=k/(N-1);
+    const r=(16+82*Math.sqrt(t))*(0.72+0.28*f);
+    // inner orbits turn faster, as they would under gravity
+    const speed=0.00050/(0.35+t);
+    const count=4+Math.round(t*9);
+    for(let i=0;i<count;i++){
+      const a=i/count*6.2832+ms*speed+k*0.7;
+      dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,1.5+t*2.4,AC,0.28+0.5*t);
+    }
+    ring(c,r,"rgba(127,216,203,.05)",1,1);
+  }
+  c.restore();
+  dot(c,CX,CY,7+f*6,ACS,0.8);
+}
+
+// AA — your own streak, breathing with you.
+function oStreak(c,p){
+  const ms=p*14000, {f}=fullness(ms), n=90;
+  const inner=64, outer=145, size=8;
+  const span=outer-inner-size/2;
+  c.save(); c.globalCompositeOperation="lighter";
+  for(let i=0;i<n;i++){
+    const t=i/(n-1);
+    const r=(inner+span*Math.sqrt(t))*0.62*(0.80+0.20*f);
+    const a=i*GOLD-1.6+ms*0.000035;          // the whole disc turns very slowly
+    const ramp=`hsl(${18+t*154} ${85-t*25}% ${Math.round((54+t*8)+f*10)}%)`;
+    dot(c,CX+Math.cos(a)*r,CY+Math.sin(a)*r,(2.0+t*2.2)*(0.88+0.12*f),ramp,0.42+0.5*t);
+  }
+  c.restore();
+  ring(c,104,"rgba(127,216,203,.12)",1.5,1);
+}
+
 const ORBS=[
-  {key:"P",name:"The old gradient",
-   why:"A blurred radial gradient that scales. Kept for reference: it is the only object in the app not made of dots, which is why it read as a smudge.",draw:oGradient},
-  {key:"Q",now:true,name:"Lung — what ships today",
-   why:"150 dots on the app's phyllotaxis, the expansion reaching the rim about 0.9s after the centre so the breath travels through it rather than resizing it.",draw:oLung},
-  {key:"R",name:"Lung, dense",
-   why:"The same, at 340 smaller dots and a longer lag. Closer to a surface than a constellation — more to stare at without becoming busy.",draw:oDenser},
-  {key:"S",name:"Tide",
-   why:"Dots hold their angle while a bright band travels outward through the field on each inhale. The breath is visible as something passing through, not just size.",draw:oTide},
-  {key:"T",name:"Rings",
-   why:"Five concentric rings expanding and contracting with a little independent drift, so a held breath is not a frozen one. The most abstract and the calmest.",draw:oRings},
-  {key:"U",name:"Stream",
-   why:"Particles released from the middle on the inhale and drawn back on the exhale, each on its own loop so it never locks to a metronome. The most alive; possibly too busy at three minutes.",draw:oStream}
+  {key:"V",name:"Vessel",
+   why:"Nothing scales. A fixed bowl fills with light from the bottom as you breathe in and drains as you breathe out, its surface rippling throughout — so the four-second hold still has something moving in it.",draw:oFill},
+  {key:"W",name:"Arc",
+   why:"A single stroke draws clockwise around the rim over the inhale, holds with a pulsing head, and retreats on the exhale. The most legible at a glance and the least decorated — you know where you are without reading the word.",draw:oArc},
+  {key:"X",name:"Aperture",
+   why:"The app's phyllotaxis with a hole in the middle that opens as the lungs fill and closes as they empty. The dots stay put; only the opening moves, and the field turns slightly as it goes.",draw:oIris},
+  {key:"Y",name:"Tide",
+   why:"Three layered surfaces rise and fall inside the circle with dots riding them. The calmest of the six, and the only one that reads as something other than a machine.",draw:oTide2},
+  {key:"Z",name:"Orbits",
+   why:"Eight rings of dots, inner ones turning faster than outer. The orbits widen on the inhale and tighten on the exhale, but the turning never stops — so the hold is alive rather than frozen.",draw:oOrbit},
+  {key:"AA",name:"Your streak",
+   why:"The actual quit spiral, in its own ember-to-sea-glass colours, breathing with you and turning very slowly. Breathe with the thing you have built — the strongest tie to the app, and the biggest risk of muddling what the spiral means.",draw:oStreak}
 ];
 
 /* --------------------------------------------------------------- engine */
