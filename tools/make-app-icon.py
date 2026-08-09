@@ -18,7 +18,7 @@ GOLDEN = 2.399963
 # header. See tools/lint-logo.py, which now fails the build if they diverge.
 DOTS = 55
 # Must equal LogoGeometry.dotDiameter.
-DOT_DIAMETER = 2.0
+DOT_DIAMETER = 1.85
 SIZE = 1024
 SUPERSAMPLE = 4          # render big, downsample — Pillow has no AA for ellipses
 MARK_FRACTION = 0.72     # the mark occupies ~72% of the tile
@@ -30,11 +30,11 @@ MARK_FRACTION = 0.72     # the mark occupies ~72% of the tile
 # by a third tipped 26 dots into genuine overlap. The icon on the home screen
 # was a solid ring with the spiral arms filled in.
 #
-# The dots are an even 2.0 now, which is fatter at the core than the old 1.3
-# and thinner at the rim than the old 2.5 — so the mark keeps its weight small
-# without anything overlapping, and the icon is pixel-for-pixel the drawing the
-# app shows in its own header. Anything other than 1.0 here reintroduces the
-# bug; tools/lint-logo.py fails the build if it changes.
+# The dots are an even 1.85 now, which is fatter at the core than the old 1.3
+# and much thinner at the rim than the old 2.5 — so the mark keeps its weight
+# small without anything overlapping, and the icon is pixel-for-pixel the
+# drawing the app shows in its own header. Anything other than 1.0 here
+# reintroduces the bug; tools/lint-logo.py fails the build if it changes.
 DOT_SCALE = 1.0
 TILE_BG = (0x0C, 0x22, 0x25)
 

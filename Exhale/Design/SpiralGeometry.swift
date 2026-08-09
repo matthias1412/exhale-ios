@@ -177,11 +177,12 @@ enum LogoGeometry {
     /// fused into a solid ring, and a bloom is only legible through the spiral
     /// arms that ring was covering.
     ///
-    /// 2.0 everywhere: 36% ink coverage, so it keeps its weight down to 40px
-    /// without the icon needing to fatten anything, and a 31% clear gap at the
-    /// rim, so the arms read. Growth is the colour ramp's job — ember at the
-    /// core to sea-glass at the edge — and it was always doing that already.
-    static let dotDiameter: Double = 2.0
+    /// 1.85 everywhere: 31% ink coverage, a 42% clear gap at the rim, and a
+    /// tightest gap anywhere of 0.68 units. Chosen on a phone against 2.0,
+    /// which measured better on paper but read as heavier than the mark wants
+    /// to be. Growth is the colour ramp's job — ember at the core to sea-glass
+    /// at the edge — and it was always doing that already.
+    static let dotDiameter: Double = 1.85
 
     struct Dot: Equatable, Sendable {
         let position: CGPoint
