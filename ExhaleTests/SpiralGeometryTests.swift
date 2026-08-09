@@ -455,3 +455,59 @@ final class BreathPatternTests: XCTestCase {
         XCTAssertEqual(pattern.instructionOpacity(at: pattern.inhale / 2), 1, accuracy: 0.001)
     }
 }
+
+
+/// The arrival's flight path.
+///
+/// The first version launched dots from x = -90 and x = +392 inside a canvas
+/// spanning 0...302, on the assumption that "off-screen" meant off the phone.
+/// Canvas clips to its own bounds, so the whole flight happened where nobody
+/// could see it. That shipped, and looked like a rendering fault.
+final class ArrivalFlightTests: XCTestCase {
+
+    /// Every dot, at every point of its travel, at every streak length, has to
+    /// be inside the box. This is the test that would have caught it.
+    func testTheFlightNeverLeavesTheCanvas() {
+        let limit = Double(SpiralGeometry.box)
+        for day in [1, 8, 90, 365, 1825] {
+            for dot in SpiralGeometry.dots(forDay: day) {
+                for step in stride(from: 0.0, through: 1.0, by: 0.05) {
+                    let p = SpiralView.flightPoint(for: dot, t: step)
+                    XCTAssertTrue(
+                        p.x >= 0 && p.x <= limit && p.y >= 0 && p.y <= limit,
+                        "day \(day): a dot flies to (\(p.x), \(p.y)), outside 0...\(limit)"
+                    )
+                }
+            }
+        }
+    }
+
+    /// It starts at the numeral and finishes on its slot — the whole premise
+    /// of the chosen variant.
+    func testItLeavesTheNumeralAndLandsOnItsSlot() {
+        let dot = SpiralGeometry.dots(forDay: 90).last!
+        let centre = SpiralGeometry.centre
+
+        let birth = SpiralView.flightPoint(for: dot, t: 0)
+        let birthRadius = hypot(birth.x - centre.x, birth.y - centre.y)
+        XCTAssertLessThan(birthRadius, 8, "the dot is not born at the numeral")
+
+        let landing = SpiralView.flightPoint(for: dot, t: 1)
+        XCTAssertEqual(landing.x, dot.position.x, accuracy: 0.001)
+        XCTAssertEqual(landing.y, dot.position.y, accuracy: 0.001)
+    }
+
+    /// ...and it spirals rather than travelling straight out.
+    func testItUnwindsOnTheWay() {
+        let dot = SpiralGeometry.dots(forDay: 90).last!
+        let centre = SpiralGeometry.centre
+        let slotAngle = atan2(dot.position.y - centre.y, dot.position.x - centre.x)
+
+        let mid = SpiralView.flightPoint(for: dot, t: 0.5)
+        let midAngle = atan2(mid.y - centre.y, mid.x - centre.x)
+
+        var swept = abs(slotAngle - midAngle)
+        if swept > .pi { swept = 2 * .pi - swept }
+        XCTAssertGreaterThan(swept, 0.2, "the dot travels straight out instead of spiralling")
+    }
+}

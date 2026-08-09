@@ -90,33 +90,42 @@ struct SpiralView: View {
 
     // MARK: - Flight
 
-    /// Where a dot comes from. Off the left or right edge, alternating, so the
-    /// stream weaves instead of marching. Anything beyond `box` is outside the
-    /// phone, so the dot genuinely enters frame rather than materialising.
-    private func origin(for dot: SpiralGeometry.Dot, index: Int) -> CGPoint {
-        let box = SpiralGeometry.box
-        let fromLeft = index.isMultiple(of: 2)
-        return CGPoint(
-            x: fromLeft ? -box * 0.30 : box * 1.30,
-            y: dot.position.y + (SpiralGeometry.centre.y - dot.position.y) * 0.35
-        )
+    /// Each day is born at the numeral and travels out to its slot, unwinding
+    /// the last fifty degrees as it goes: the counter makes the day, the day
+    /// takes its place.
+    ///
+    /// The first attempt launched dots from outside the canvas — x = −90 and
+    /// x = +392 in a box spanning 0…302 — on the assumption that "off-screen"
+    /// meant off the phone. It does not: `Canvas` clips to its own bounds, so
+    /// the entire flight happened where nobody could see it and dots appeared
+    /// at the edge of an invisible box. Everything here stays inside the frame
+    /// by construction, because it never leaves the disc.
+    private static let birthRadius: Double = 6
+    /// Radians of unwind. Roughly fifty degrees, which reads as spiralling out
+    /// rather than drifting out.
+    private static let unwind: Double = 0.9
+
+    /// Position of `dot` when it is `t` of the way from the numeral to its slot.
+    ///
+    /// Static so it can be tested without standing up a view — the defect it
+    /// guards against was a coordinate mistake, which is exactly the kind of
+    /// thing a unit test catches and a screenshot does not.
+    static func flightPoint(for dot: SpiralGeometry.Dot, t: Double) -> CGPoint {
+        let centre = SpiralGeometry.centre
+        let dx = dot.position.x - centre.x
+        let dy = dot.position.y - centre.y
+        let slotRadius = (dx * dx + dy * dy).squareRoot()
+        let slotAngle = atan2(dy, dx)
+
+        let radius = birthRadius + (slotRadius - birthRadius) * t
+        let angle = slotAngle - (1 - t) * unwind
+        return CGPoint(x: centre.x + cos(angle) * radius,
+                       y: centre.y + sin(angle) * radius)
     }
 
-    /// Quadratic bezier with the control point pushed off the straight line.
-    /// A dot that travels in a straight line reads as dragged; an arc reads as
-    /// thrown, which is the difference between a transition and an arrival.
-    private func flight(from: CGPoint, to: CGPoint, t: Double, bow: Double) -> CGPoint {
-        let dx = to.x - from.x, dy = to.y - from.y
-        let cx = (from.x + to.x) / 2 - dy * bow
-        let cy = (from.y + to.y) / 2 + dx * bow
-        let u = 1 - t
-        return CGPoint(
-            x: u * u * from.x + 2 * u * t * cx + t * t * to.x,
-            y: u * u * from.y + 2 * u * t * cy + t * t * to.y
-        )
-    }
-
-    private func easeOut(_ t: Double) -> Double { 1 - pow(1 - t, 3) }
+    /// Quintic. Leaves the numeral quickly and settles a long way out, which is
+    /// what gives the travel a sense of distance covered.
+    private func easeOutQuint(_ t: Double) -> Double { 1 - pow(1 - t, 5) }
 
     /// Overshoots slightly and settles. A dot that stops dead on its mark has
     /// no weight.
@@ -189,7 +198,8 @@ struct SpiralView: View {
         }
     }
 
-    /// A dot on its way in: trail, then the dot itself, hot and cooling.
+    /// A dot on its way out: four ghosts along the path behind it, then the
+    /// dot itself, hot and cooling as the count leaves it behind.
     private func flying(
         _ dot: SpiralGeometry.Dot,
         index: Int,
@@ -197,39 +207,44 @@ struct SpiralView: View {
         in context: inout GraphicsContext,
         scale: CGFloat
     ) {
-        let from = origin(for: dot, index: index)
-        let to = dot.position
-        let bow = 0.16
-        let eased = easeOut(age)
-
-        // Three ghosts along the path behind it. Additive, so where several
-        // trails cross they brighten.
-        for ghost in 1...3 {
-            let back = age - Double(ghost) * 0.13
+        for ghost in 1...4 {
+            let back = age - Double(ghost) * 0.10
             guard back > 0 else { continue }
-            let q = flight(from: from, to: to, t: easeOut(back), bow: bow)
-            let d = dot.diameter * scale * 0.62 * (1 - Double(ghost) / 4)
+            let q = Self.flightPoint(for: dot, t: easeOutQuint(back))
+            let d = dot.diameter * scale * 0.7 * (1 - Double(ghost) / 5)
             let rect = CGRect(x: q.x * scale - d / 2, y: q.y * scale - d / 2,
                               width: d, height: d)
             context.fill(
                 Path(ellipseIn: rect),
-                with: .color(Palette.spiralDot(ramp: dot.ramp, lift: 0.5)
-                    .opacity(0.16 * (1 - Double(ghost) / 4) * (1 - age)))
+                with: .color(Palette.spiralDot(ramp: dot.ramp, lift: 0.75)
+                    .opacity(0.30 * (1 - Double(ghost) / 5) * (1 - age)))
             )
         }
 
-        let q = flight(from: from, to: to, t: eased, bow: bow)
-        // Overshoot on the size as it lands.
-        let settle = min(1.2, max(0.1, backOut(min(1, age * 1.05))))
+        let q = Self.flightPoint(for: dot, t: easeOutQuint(age))
+        let settle = min(1.15, max(0.15, backOut(min(1, age * 1.1))))
         let d = dot.diameter * scale * settle
-        let rect = CGRect(x: q.x * scale - d / 2, y: q.y * scale - d / 2, width: d, height: d)
-        // Fresh dots burn brighter and cool as the count leaves them behind.
-        let heat = pow(1 - age, 1.5) * 0.85
+        let rect = CGRect(x: q.x * scale - d / 2, y: q.y * scale - d / 2,
+                          width: d, height: d)
+        let heat = pow(1 - age, 1.3) * 0.9
         context.fill(
             Path(ellipseIn: rect),
             with: .color(Palette.spiralDot(ramp: dot.ramp, lift: heat)
-                .opacity(min(1, age * 3)))
+                .opacity(min(1, age * 4)))
         )
+
+        // A milestone keeps its bright core the whole way in, so the day it
+        // marks is recognisable before it has even landed.
+        if dot.isMilestone && !dot.isYearMarker {
+            let inner = d * 0.42
+            let core = CGRect(x: q.x * scale - inner / 2, y: q.y * scale - inner / 2,
+                              width: inner, height: inner)
+            context.fill(
+                Path(ellipseIn: core),
+                with: .color(Palette.spiralDot(ramp: dot.ramp, lift: 0.30 + heat)
+                    .opacity(min(1, age * 4)))
+            )
+        }
     }
 }
 
