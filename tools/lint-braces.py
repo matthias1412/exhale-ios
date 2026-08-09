@@ -1,25 +1,36 @@
 #!/usr/bin/env python3
 """
-Checks every Swift file's braces balance.
+Structural checks on Swift sources that the compiler only reports after a
+ten-minute macOS run at 10x billing.
 
-Twice now a scripted edit has spliced a method into the middle of another one,
-leaving a body unclosed. Both times the compiler caught it — after a ten-minute
-macOS run at 10x billing, reporting something unhelpful like "attribute
-'private' can only be used in a non-local scope", which points at the symptom
-rather than the missing brace. This catches it in milliseconds.
+Two failures, both caused by scripted edits, both of which shipped a red build:
 
-Deliberately crude: it tracks strings and comments well enough not to produce
-false alarms, and says nothing about whether the code is correct — only that
-every block someone opened was closed.
+  * a method spliced in ahead of a body's closing brace, so `body` never
+    closed. The compiler said "attribute 'private' can only be used in a
+    non-local scope", which points three lines away from the real problem.
+  * a helper inserted twice, giving "invalid redeclaration".
+
+Neither needs a compiler to find. Both are caught here in milliseconds.
+
+Deliberately crude: it tracks strings and comments well enough not to cry
+wolf, and says nothing about whether the code is correct — only that every
+block someone opened was closed, and that nothing was declared twice inside
+the same type.
 """
 import pathlib
+import re
 import sys
 
 NORMAL, LINE_COMMENT, BLOCK_COMMENT, STRING, MULTILINE_STRING = range(5)
 
+TYPE_RE = re.compile(
+    r"\b(?:struct|class|enum|actor|protocol|extension)\s+([A-Za-z_]\w*)"
+)
+FUNC_RE = re.compile(r"\bfunc\s+([A-Za-z_]\w*)\s*\(([^)]*)\)")
+
 
 def imbalance(source: str):
-    """Returns (depth, line_of_first_unmatched_close) — depth 0 means balanced."""
+    """Returns (depth, line_of_first_unmatched_close). Depth 0 means balanced."""
     state = NORMAL
     depth = 0
     block_depth = 0
@@ -77,21 +88,71 @@ def imbalance(source: str):
     return depth, stray_close
 
 
+def duplicate_declarations(source: str):
+    """Function signatures declared twice inside the same type.
+
+    Scoped by enclosing type, because the same signature legitimately appears
+    in a protocol and again in every type conforming to it, and a test helper
+    of the same name may live in several test classes. An unscoped version of
+    this check reported six such false alarms on the first run.
+
+    Signature means name plus argument labels, which is what Swift overloads
+    on, so genuine overloads are not flagged.
+    """
+    seen, dupes = {}, []
+    scope = []            # (type name, brace depth it opened at)
+    depth = 0
+
+    for number, raw in enumerate(source.splitlines(), 1):
+        code = raw.split("//")[0]
+
+        func_match = FUNC_RE.search(code)
+        type_match = TYPE_RE.search(code)
+
+        if func_match:
+            labels = ":".join(
+                part.strip().split(":")[0].split()[0]
+                for part in func_match.group(2).split(",")
+                if part.strip()
+            )
+            path = ".".join(name for name, _ in scope)
+            key = f"{path}|{func_match.group(1)}({labels})"
+            if key in seen:
+                dupes.append((key.split("|", 1)[1], seen[key], number))
+            else:
+                seen[key] = number
+        elif type_match:
+            scope.append((type_match.group(1), depth))
+
+        depth += code.count("{") - code.count("}")
+        while scope and depth <= scope[-1][1]:
+            scope.pop()
+
+    return dupes
+
+
 problems = []
 checked = 0
 for path in sorted(pathlib.Path(".").rglob("*.swift")):
     if any(part in {"build", ".build", "artifacts", "DerivedData"} for part in path.parts):
         continue
     checked += 1
-    depth, stray = imbalance(path.read_text(encoding="utf-8"))
+    source = path.read_text(encoding="utf-8")
+
+    for signature, first, again in duplicate_declarations(source):
+        problems.append(
+            f"  {path}: {signature} declared at line {first} and again at {again}"
+        )
+
+    depth, stray = imbalance(source)
     if depth > 0:
         problems.append(f"  {path}: {depth} unclosed '{{' — a body was left open")
     elif depth < 0:
         problems.append(f"  {path}: {-depth} extra '}}' (first unmatched near line {stray})")
 
 if problems:
-    print("Swift files with unbalanced braces:")
+    print("Swift files with structural problems:")
     print("\n".join(problems))
     sys.exit(1)
 
-print(f"braces OK — {checked} Swift files balanced")
+print(f"structure OK — {checked} Swift files balanced, no duplicate declarations")

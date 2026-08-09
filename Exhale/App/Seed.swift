@@ -393,17 +393,6 @@ enum Seed {
     /// What you get for tapping the notification: the burst for the milestone
     /// you just crossed, dismissing itself, and the spiral for that many days
     /// arriving behind it.
-    /// The spiral one dot short, waiting for the celebration to hand it over.
-    private static func withheld(milestone when: String, day: Int, frame: Double) -> AppModel? {
-        guard let mile = Milestones.forProduct(.cigarettes).first(where: { $0.when == when })
-        else { return nil }
-        return make(phase: .app, plan: plan(.cigarettes, day: day)) { model in
-            model.pendingCelebration = mile
-            model.withheldDay = Int((mile.hours / 24).rounded(.down)) + 1
-            model.spiralRevealFrame = frame
-        }
-    }
-
     private static func handoff(_ when: String) -> AppModel? {
         guard let milestone = Milestones.forProduct(.cigarettes).first(where: { $0.when == when })
         else { return nil }
