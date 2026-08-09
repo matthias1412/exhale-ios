@@ -164,6 +164,25 @@ enum LogoGeometry {
     /// the icon on the home screen were visibly different marks.
     static let dotCount = 55
 
+    /// One diameter for every dot, in the 26-unit design space.
+    ///
+    /// It used to grow outward, 1.3 at the core to 2.5 at the rim, on the idea
+    /// that swelling dots would read as growth. Measured, that was the whole
+    /// problem. Phyllotaxis places dots an even 2.6 units apart at every
+    /// radius, so a diameter that grows is a gap that shrinks: clear space
+    /// between neighbours fell from 101% of a dot at the centre to 11% at the
+    /// rim. Worse, the icon generator multiplied every dot by a further 1.35
+    /// to keep the mark weighty when downsampled — which tipped it over, and
+    /// **26 dots on the home-screen icon genuinely overlapped**. The rim
+    /// fused into a solid ring, and a bloom is only legible through the spiral
+    /// arms that ring was covering.
+    ///
+    /// 2.0 everywhere: 36% ink coverage, so it keeps its weight down to 40px
+    /// without the icon needing to fatten anything, and a 31% clear gap at the
+    /// rim, so the arms read. Growth is the colour ramp's job — ember at the
+    /// core to sea-glass at the edge — and it was always doing that already.
+    static let dotDiameter: Double = 2.0
+
     struct Dot: Equatable, Sendable {
         let position: CGPoint
         let diameter: Double
@@ -185,7 +204,7 @@ enum LogoGeometry {
                     x: centre + radius * cos(angle),
                     y: centre + radius * sin(angle)
                 ),
-                diameter: (1.3 + ramp * 1.2) * scale,
+                diameter: dotDiameter * scale,
                 ramp: ramp
             )
         }

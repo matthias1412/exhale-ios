@@ -17,15 +17,25 @@ GOLDEN = 2.399963
 # a home-screen icon that was visibly a different logo from the one in the
 # header. See tools/lint-logo.py, which now fails the build if they diverge.
 DOTS = 55
+# Must equal LogoGeometry.dotDiameter.
+DOT_DIAMETER = 2.0
 SIZE = 1024
 SUPERSAMPLE = 4          # render big, downsample — Pillow has no AA for ellipses
 MARK_FRACTION = 0.72     # the mark occupies ~72% of the tile
-# Icon art is downsampled to 40-60px on a home screen, where LogoGeometry's
-# native dot size turns the mark to mush. Verified by rendering at 180/87/60/
-# 40/29: at 1.0 the ember core is gone by 40px; at 1.35 the rosette still reads
-# at 29px. This is a rendering parameter for the icon only — the in-app mark is
-# drawn natively at 26pt and needs no such compensation.
-DOT_SCALE = 1.35
+# No compensation any more, and this is the important line in the file.
+#
+# It used to be 1.35, to keep the mark weighty once downsampled to 40-60px on a
+# home screen. That was papering over the real defect: dots grew outward while
+# spacing stayed even, so the rim was already crowded, and fattening everything
+# by a third tipped 26 dots into genuine overlap. The icon on the home screen
+# was a solid ring with the spiral arms filled in.
+#
+# The dots are an even 2.0 now, which is fatter at the core than the old 1.3
+# and thinner at the rim than the old 2.5 — so the mark keeps its weight small
+# without anything overlapping, and the icon is pixel-for-pixel the drawing the
+# app shows in its own header. Anything other than 1.0 here reintroduces the
+# bug; tools/lint-logo.py fails the build if it changes.
+DOT_SCALE = 1.0
 TILE_BG = (0x0C, 0x22, 0x25)
 
 from PIL import Image, ImageDraw
@@ -51,7 +61,7 @@ def render(size=SIZE):
         t = i / (DOTS - 1)
         radius = hole + (max_r - hole) * math.sqrt(t)
         angle = i * GOLDEN - 1.6
-        diameter = (1.3 + t * 1.2) * scale * DOT_SCALE
+        diameter = DOT_DIAMETER * scale * DOT_SCALE
 
         x = centre + radius * math.cos(angle)
         y = centre + radius * math.sin(angle)

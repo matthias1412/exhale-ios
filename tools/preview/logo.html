@@ -1,0 +1,192 @@
+<meta charset="utf-8">
+<title>Exhale — the mark</title>
+<style>
+  :root{
+    --ground:#0A1012; --panel:#081A1D; --line:rgba(233,245,243,.10);
+    --ink:#E9F5F3; --ink-2:rgba(233,245,243,.62); --ink-3:rgba(233,245,243,.40);
+    --accent:#7FD8CB; --ember:#E8A87F; --bad:#E8743B;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;
+       padding:26px 26px 90px}
+  h1{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{font-size:13px;color:var(--ink-2);max-width:74ch;margin:0 0 18px}
+  .sub b{color:var(--ink)}
+  .rail{display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+        border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:20px}
+  .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+  button{font:inherit;font-size:12.5px;background:none;color:var(--ink-2);
+         border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+  button:hover{color:var(--ink);border-color:rgba(233,245,243,.28)}
+  button.on{background:var(--accent);color:#06181B;border-color:transparent;font-weight:600}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(268px,1fr))}
+  .cell{background:var(--panel);border:1px solid var(--line);border-radius:20px;
+        padding:14px;display:flex;flex-direction:column;gap:9px}
+  .cell.now{border-color:rgba(232,116,59,.45)}
+  .cell.pick{border-color:rgba(127,216,203,.55)}
+  .cap{display:flex;align-items:baseline;gap:8px}
+  .key{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+  .key.now{color:var(--bad)}
+  .ttl{font-size:13.5px;font-weight:600}
+  .why{font-size:11.5px;color:var(--ink-2);line-height:1.5;min-height:5em}
+  .art{display:flex;gap:14px;align-items:flex-end;justify-content:center;
+       padding:10px 0 4px;min-height:132px}
+  .art canvas{display:block;image-rendering:auto}
+  .cap2{font-size:9.5px;color:var(--ink-3);text-align:center;letter-spacing:.06em}
+  .stat{font-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-2);
+        border-top:1px solid var(--line);padding-top:8px;line-height:1.7}
+  .stat b{color:var(--accent)}
+  .stat b.warn{color:var(--bad)}
+</style>
+
+<h1>Exhale — the mark</h1>
+<p class="sub">The spacing is right and the sizing is not. Dots sit an even 2.6–2.9 units apart all
+the way out, which is correct phyllotaxis — but the diameter <b>grows</b> outward, so the clear space
+between neighbours falls from 101% of a dot at the centre to <b>11% at the rim</b>, with the tightest
+pairs 0.03 units apart. A bloom reads through its spiral arms, and the arms are choked exactly where
+they would be most visible. Every variant below is measured, not guessed.</p>
+
+<div class="rail">
+  <span class="lbl">Shown at</span><span id="sizeBar"></span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+"use strict";
+const GOLD = 2.399963;
+
+// Every variant is a recipe in the mark's own 26-unit design space.
+const MARKS = [
+  {key:"A", now:true, name:"Current",
+   why:"55 dots, radius from 3.1 to 12.4, diameter growing 1.3 to 2.5. The growth was meant to read as the streak expanding — but the colour ramp already says that, and the size ramp costs the arms.",
+   n:55, hole:3.1, rim:12.4, d0:1.3, d1:2.5},
+
+  {key:"B", name:"Even dots", pick:true,
+   why:"Identical geometry, one diameter throughout. Spacing is already uniform, so a uniform dot gives uniform gaps and the parastichy shows across the whole disc rather than only near the middle.",
+   n:55, hole:3.1, rim:12.4, d0:1.85, d1:1.85},
+
+  {key:"C", name:"Tapered",
+   why:"The ramp inverted: 2.4 at the core falling to 1.5 at the rim. Deliberately opens the outside up, which throws the arms into relief and reads as opening outward rather than thickening.",
+   n:55, hole:3.1, rim:12.4, d0:2.4, d1:1.5},
+
+  {key:"D", name:"True Vogel",
+   why:"The textbook sunflower: radius as the square root of the index, no hole, even dots. Botanically the most correct and the only one with no empty middle — but measurably the worst here, because without a hole the first few dots land on top of each other. It is the only variant that actually overlaps.",
+   n:55, hole:0, rim:12.4, d0:1.85, d1:1.85},
+
+  {key:"E", name:"Finer, 89",
+   why:"Fibonacci again one term up, with smaller dots. More arms, more clearly. The risk is the 26pt header, where 89 dots may resolve into a texture rather than a spiral.",
+   n:89, hole:2.6, rim:12.6, d0:1.45, d1:1.45},
+
+  {key:"F", name:"Roomier, 34",
+   why:"Fibonacci one term down, larger dots, wider annulus. Fewest elements, so it survives the smallest sizes best — at the cost of looking more like a ring of dots than a bloom.",
+   n:34, hole:3.4, rim:12.7, d0:2.3, d1:2.3}
+];
+
+function dots(m){
+  const out = [];
+  for (let i = 0; i < m.n; i++){
+    const t = m.n > 1 ? i / (m.n - 1) : 1;
+    const r = m.hole + (m.rim - m.hole) * Math.sqrt(t);
+    const a = i * GOLD - 1.6;
+    out.push({x: 13 + r * Math.cos(a), y: 13 + r * Math.sin(a),
+              d: m.d0 + (m.d1 - m.d0) * t, t, r});
+  }
+  return out;
+}
+
+// The measurement that decides it: clear space between a dot and its nearest
+// neighbour, as a fraction of the dot's own width.
+function headroom(m){
+  const ds = dots(m);
+  let worst = Infinity, rimGaps = [], allGaps = [];
+  for (let i = 0; i < ds.length; i++){
+    let near = Infinity;
+    for (let j = 0; j < ds.length; j++){
+      if (i === j) continue;
+      near = Math.min(near, Math.hypot(ds[j].x - ds[i].x, ds[j].y - ds[i].y));
+    }
+    const gap = near - (ds[i].d + ds[i].d) / 2;
+    allGaps.push(gap / ds[i].d);
+    if (ds[i].t > 0.75) rimGaps.push(gap / ds[i].d);
+    worst = Math.min(worst, gap);
+  }
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  return {worst, rim: mean(rimGaps), overall: mean(allGaps)};
+}
+
+const ramp = t => `hsl(${18 + t * 154} ${85 - t * 25}% ${54 + t * 8}%)`;
+
+let SIZE = 90;
+function draw(cv, m, px){
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = px * dpr; cv.height = px * dpr;
+  cv.style.width = px + "px"; cv.style.height = px + "px";
+  const c = cv.getContext("2d");
+  c.setTransform(dpr * px / 26, 0, 0, dpr * px / 26, 0, 0);
+  c.fillStyle = "#081A1D"; c.fillRect(0, 0, 26, 26);
+  for (const o of dots(m)){
+    c.fillStyle = ramp(o.t);
+    c.beginPath(); c.arc(o.x, o.y, o.d / 2, 0, 6.2832); c.fill();
+  }
+}
+
+const grid = document.getElementById("grid");
+const cells = [];
+for (const m of MARKS){
+  const cell = document.createElement("div");
+  cell.className = "cell" + (m.now ? " now" : "") + (m.pick ? " pick" : "");
+  cell.innerHTML =
+    `<div class="cap"><span class="key${m.now ? " now" : ""}">${m.key}</span>
+     <span class="ttl">${m.name}</span></div><div class="why">${m.why}</div>`;
+  const art = document.createElement("div");
+  art.className = "art";
+  const big = document.createElement("canvas");
+  const small = document.createElement("canvas");
+  const wrapBig = document.createElement("div");
+  const wrapSmall = document.createElement("div");
+  wrapBig.appendChild(big);
+  wrapBig.insertAdjacentHTML("beforeend", '<div class="cap2" data-role="main"></div>');
+  wrapSmall.appendChild(small);
+  wrapSmall.insertAdjacentHTML("beforeend", '<div class="cap2">26pt header</div>');
+  art.appendChild(wrapBig); art.appendChild(wrapSmall);
+  cell.appendChild(art);
+  const stat = document.createElement("div");
+  stat.className = "stat";
+  cell.appendChild(stat);
+  grid.appendChild(cell);
+  cells.push({m, big, small, stat, cap: wrapBig.querySelector('[data-role="main"]')});
+}
+
+function render(){
+  for (const c of cells){
+    draw(c.big, c.m, SIZE);
+    draw(c.small, c.m, 26);
+    c.cap.textContent = SIZE + "pt";
+    const h = headroom(c.m);
+    const warn = h.rim < 0.25 ? " warn" : "";
+    c.stat.innerHTML =
+      `${c.m.n} dots · diameter ${c.m.d0}${c.m.d0 === c.m.d1 ? "" : "–" + c.m.d1}<br>` +
+      `clear gap at the rim <b class="${warn.trim()}">${Math.round(h.rim * 100)}%</b> of a dot` +
+      ` · across the disc <b>${Math.round(h.overall * 100)}%</b><br>` +
+      `tightest anywhere <b class="${h.worst < 0.15 ? 'warn' : ''}">${h.worst.toFixed(2)}</b> units`;
+  }
+}
+
+const sizeBar = document.getElementById("sizeBar");
+for (const px of [26, 60, 90, 180]){
+  const b = document.createElement("button");
+  b.textContent = px === 60 ? "60pt home screen" : px === 26 ? "26pt header" : px + "pt";
+  if (px === SIZE) b.className = "on";
+  b.onclick = () => {
+    SIZE = px;
+    [...sizeBar.children].forEach(x => x.className = "");
+    b.className = "on";
+    render();
+  };
+  sizeBar.appendChild(b);
+}
+render();
+</script>

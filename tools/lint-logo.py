@@ -31,6 +31,9 @@ checks = [
     ("golden angle", r"goldenAngle\s*(?:=|:\s*Double\s*=)\s*([\d.]+)", r"^GOLDEN\s*=\s*([\d.]+)"),
     ("hole radius", r"let hole = ([\d.]+) \* scale", r"hole = ([\d.]+) \* scale"),
     ("max radius", r"let maxR = ([\d.]+) \* scale", r"max_r = ([\d.]+) \* scale"),
+    ("dot diameter",
+     r"static let dotDiameter: Double = ([\d.]+)",
+     r"^DOT_DIAMETER\s*=\s*([\d.]+)"),
 ]
 
 for what, swift_pattern, python_pattern in checks:
@@ -41,17 +44,26 @@ for what, swift_pattern, python_pattern in checks:
     if float(a) != float(b):
         problems.append(f"  {what}: Swift says {a}, the icon script says {b}")
 
-# The dot diameter ramp has to match too, since it sets the weight of the mark.
-swift_dia = re.search(r"diameter: \(([\d.]+) \+ ramp \* ([\d.]+)\) \* scale", swift)
-python_dia = re.search(r"diameter = \(([\d.]+) \+ t \* ([\d.]+)\) \* scale", python)
-if swift_dia and python_dia:
-    if swift_dia.groups() != python_dia.groups():
-        problems.append(
-            f"  dot diameter ramp: Swift says {swift_dia.groups()}, "
-            f"the icon script says {python_dia.groups()}"
-        )
-else:
-    problems.append("  could not compare the dot diameter ramp")
+# The icon must not scale dots on top of the shared diameter. This is the line
+# that actually broke the mark: DOT_SCALE sat at 1.35 to keep the icon weighty
+# when downsampled, and combined with dots that grew outward it pushed 26 of
+# them into genuine overlap on the home screen. The rim fused into a solid ring
+# and the spiral arms — the only thing that makes it read as a bloom — vanished.
+scale_match = re.search(r"^DOT_SCALE\s*=\s*([\d.]+)", python, re.M)
+if scale_match is None:
+    problems.append("  could not find DOT_SCALE in make-app-icon.py")
+elif float(scale_match.group(1)) != 1.0:
+    problems.append(
+        f"  DOT_SCALE is {scale_match.group(1)}, not 1.0 — the icon would fatten every "
+        f"dot and the rim would overlap again"
+    )
+
+# Nothing may reintroduce a diameter that varies with radius, for the same
+# reason: spacing is even, so a growing dot is a shrinking gap.
+if re.search(r"diameter:.*ramp\s*\*", swift):
+    problems.append("  SpiralGeometry's dot diameter varies with radius again")
+if re.search(r"diameter\s*=.*\bt\s*\*", python):
+    problems.append("  the icon script's dot diameter varies with radius again")
 
 if problems:
     print("The app icon and the in-app mark have drifted apart:")
@@ -60,4 +72,4 @@ if problems:
     print("  python tools/make-app-icon.py")
     sys.exit(1)
 
-print("logo OK — icon and in-app mark share dot count, angle, radii and ramp")
+print("logo OK — icon and in-app mark share count, angle, radii and an even dot")

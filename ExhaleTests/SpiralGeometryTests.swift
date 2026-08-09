@@ -119,6 +119,56 @@ final class SpiralGeometryTests: XCTestCase {
         }
     }
 
+    /// No two dots in the mark may overlap, at any size.
+    ///
+    /// They did. The diameter grew outward while phyllotaxis kept the spacing
+    /// even, so the clear gap fell from 101% of a dot at the centre to 11% at
+    /// the rim — and the icon generator then multiplied every dot by a further
+    /// 1.35, which pushed 26 of them into genuine overlap on the home screen.
+    /// The rim fused into a ring and the spiral arms disappeared, which is why
+    /// it stopped reading as a bloom.
+    func testNoTwoDotsInTheMarkOverlap() {
+        for box in [26.0, 60, 1024] {
+            let dots = LogoGeometry.dots(box: box)
+            for (i, a) in dots.enumerated() {
+                for b in dots[(i + 1)...] {
+                    let centres = hypot(b.position.x - a.position.x,
+                                        b.position.y - a.position.y)
+                    XCTAssertGreaterThan(
+                        centres, (a.diameter + b.diameter) / 2,
+                        "box \(box): two dots overlap"
+                    )
+                }
+            }
+        }
+    }
+
+    /// The gap has to survive at the rim specifically, since that is where the
+    /// arms are widest apart and most legible — and where it failed.
+    func testTheRimKeepsItsBreathingRoom() {
+        let dots = LogoGeometry.dots(box: 26)
+        let outer = dots.filter { $0.ramp > 0.75 }
+        XCTAssertFalse(outer.isEmpty)
+        for dot in outer {
+            let nearest = dots
+                .filter { $0.position != dot.position }
+                .map { hypot($0.position.x - dot.position.x, $0.position.y - dot.position.y) }
+                .min() ?? 0
+            XCTAssertGreaterThan(
+                (nearest - dot.diameter) / dot.diameter, 0.20,
+                "a rim dot has less than a fifth of its own width in clear space"
+            )
+        }
+    }
+
+    /// One diameter everywhere. A diameter that varies with radius is what
+    /// closed the gaps in the first place.
+    func testEveryDotIsTheSameSize() {
+        let dots = LogoGeometry.dots(box: 26)
+        let sizes = Set(dots.map { ($0.diameter * 1000).rounded() })
+        XCTAssertEqual(sizes.count, 1, "the mark's dots vary in size again")
+    }
+
     func testLogoScalesProportionally() {
         let small = LogoGeometry.dots(box: 26)
         let large = LogoGeometry.dots(box: 104)
