@@ -279,6 +279,22 @@ final class AppModel {
         tab = state.reasons.primary?.preferredTab ?? .today
     }
 
+    /// The day count is real and on screen.
+    ///
+    /// Three places used `progress.hasStarted` to mean this, and it stopped
+    /// meaning it the moment a scheduled date could pass unconfirmed. That put
+    /// "since 13 Jun" in the header of the very screen asking whether they had
+    /// stopped on the 13th, and left the tab bar live, so The Bill would total
+    /// up money saved across days they may have spent smoking. Both are the
+    /// exact false claim the confirmation step exists to prevent.
+    ///
+    /// Before the date and awaiting confirmation are different situations that
+    /// need identical treatment: no bill, no timeline, no "since".
+    var isCounting: Bool {
+        guard let progress else { return false }
+        return progress.hasStarted && !awaitingStartConfirmation
+    }
+
     /// The scheduled moment has arrived but the user has not yet said whether
     /// they went through with it.
     var awaitingStartConfirmation: Bool {

@@ -121,6 +121,8 @@ enum SeedNames {
         "onboard-reason-chosen",
         "onboard-reminders",
         "paywall",
+        "pre-quit-countdown",
+        "awaiting-start",
         "today-day90",
         "bill-cigarettes",
         "bill-tally-x10",

@@ -878,4 +878,43 @@ final class ScheduledStartTests: XCTestCase {
             .hasPrefix("Let today reach "))
         XCTAssertTrue(ReminderHorizon.line(quitDate: now, now: now).hasSuffix("."))
     }
+
+    // MARK: - Whether the count is live
+
+    /// Scheduled ahead, then the day arrived and went by without an answer.
+    /// Built the way the tests above build it: the helper derives awaitingStart
+    /// from the sign of its argument, so a negative day is a backdated start
+    /// rather than an unconfirmed one.
+    private func passedUnconfirmed() -> AppModel {
+        let m = scheduled(daysFromNow: 3)
+        var state = m.state
+        state.plan?.quitDate = Calendar.current.date(
+            byAdding: .day, value: -3, to: Seed.referenceNow)!
+        m.state = state
+        return m
+    }
+
+    /// hasStarted answers "is the date behind us", which stopped being the same
+    /// question once a date could pass unconfirmed.
+    func testAnUnconfirmedStartIsNotCounting() {
+        let m = passedUnconfirmed()
+        XCTAssertEqual(m.progress?.hasStarted, true)
+        XCTAssertTrue(m.awaitingStartConfirmation)
+        XCTAssertFalse(m.isCounting, "the bill and the tab bar key off this")
+    }
+
+    func testConfirmingMakesTheCountLive() {
+        let m = passedUnconfirmed()
+        m.confirmStart()
+        XCTAssertTrue(m.isCounting)
+    }
+
+    func testACountdownIsNotCounting() {
+        XCTAssertFalse(scheduled(daysFromNow: 3).isCounting)
+    }
+
+    func testAStartAlreadyBehindThemIsCounting() {
+        XCTAssertTrue(scheduled(daysFromNow: 0).isCounting)
+        XCTAssertTrue(scheduled(daysFromNow: -8).isCounting)
+    }
 }

@@ -138,12 +138,10 @@ struct MainShell: View {
             AppHeader()
 
             Group {
-                // Before the quit date there is no bill and no healing — the
+                // Until the count is real there is no bill and no healing: the
                 // other two tabs would show a receipt for nothing and a
                 // timeline that hasn't begun.
-                if model.awaitingStartConfirmation {
-                    TodayScreen()
-                } else if let progress = model.progress, !progress.hasStarted {
+                if !model.isCounting {
                     TodayScreen()
                 } else {
                     switch model.tab {
@@ -192,9 +190,13 @@ struct AppHeader: View {
             Spacer()
 
             HStack(spacing: 14) {
-                if let plan = model.plan, let progress = model.progress {
+                // Nothing at all while a passed date is unconfirmed. "since" would
+                // assert what the screen underneath is still asking, and "from"
+                // reads as upcoming for a day already gone. The confirmation
+                // screen names the day itself.
+                if let plan = model.plan, !model.awaitingStartConfirmation {
                     // "since 18 Jun" for a date three days out is simply false.
-                    Text(progress.hasStarted
+                    Text(model.isCounting
                          ? "since \(plan.quitDate.formatted(.dateTime.day().month(.abbreviated)))"
                          : "from \(plan.quitDate.formatted(.dateTime.day().month(.abbreviated)))")
                         .font(.spaceGrotesk(12))

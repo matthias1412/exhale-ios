@@ -16,7 +16,7 @@ struct TabBar: View {
     @Namespace private var selectionNamespace
 
     var body: some View {
-        if let progress = model.progress, !progress.hasStarted {
+        if !model.isCounting {
             EmptyView()
         } else {
             bar
