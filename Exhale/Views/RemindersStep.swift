@@ -8,6 +8,9 @@ import SwiftUI
 /// permanent, since iOS will not show the system dialog twice, so the ask gets
 /// the best moment available rather than a convenient one.
 ///
+/// The closing line names a real day, and which day depends on where they
+/// are: see ReminderHorizon.
+///
 /// The screen argues for the user's goal instead of listing what arrives.
 /// Naming the payload ("milestone alerts, a weekly summary") turns a decision
 /// about whether they will still be quit in a fortnight into a decision about
@@ -35,7 +38,10 @@ struct RemindersStep: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2)
 
-            Text("Let today reach next Tuesday.")
+            Text(ReminderHorizon.line(
+                quitDate: model.draft?.quitDate ?? model.clock.now,
+                now: model.clock.now
+            ))
                 .font(.spaceGrotesk(16, weight: .bold))
                 .foregroundStyle(Palette.textBrightest)
                 .fixedSize(horizontal: false, vertical: true)
@@ -46,19 +52,11 @@ struct RemindersStep: View {
             PillButton("Turn on reminders", style: .accent) { grant() }
                 .disabled(asking)
 
-            // Small, and directly under the button it describes: the system
-            // dialog appearing a beat later should not feel like a switch.
-            Text("iOS will ask you next.")
-                .font(.spaceGrotesk(11.5))
-                .foregroundStyle(Palette.textFaint)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 10)
-
             Button("Not now") { model.completeOnboarding() }
                 .font(.spaceGrotesk(13.5))
                 .foregroundStyle(Palette.textMuted)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 14)
+                .padding(.top, 16)
         }
         .padding(.top, 34)
     }

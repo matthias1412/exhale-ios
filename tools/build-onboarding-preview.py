@@ -204,8 +204,9 @@ S.append(dict(step="8 · Reminders", note="settled", prog=6, variants=[
       <div class="sub">Everyone who has ever quit had a moment like this one: clear, sure,
       done deliberating. What separates the ones who keep it is having something on their
       side on the days they don't feel like this.</div>
-      <div class="h xs">Let today reach next Tuesday.</div>
-      <div class="note">iOS will ask you next.</div>
+      <div class="h xs">Let today reach <u>Thursday</u>.</div>
+      <div class="note">The day is dynamic. Scheduled ahead: the date they picked. Starting now or
+      backdated: three days out, which is the worst of withdrawal. Never today's weekday.</div>
     </div>""",
     foot='<div class="cta">Turn on reminders</div><div class="cta ghost">Not now</div>'),
 ]))
