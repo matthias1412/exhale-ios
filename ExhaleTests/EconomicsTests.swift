@@ -390,3 +390,111 @@ final class CloudMirrorTests: XCTestCase {
         XCTAssertEqual(a, b)
     }
 }
+
+/// Every word that reaches a lock screen.
+///
+/// Three defects lived here and none was visible in the app: the reason the
+/// user gave never reached a single notification, a scheduled quit date
+/// produced no day-one alert at all, and the weekly receipt could fire before
+/// the user had stopped — reading "0.00 stayed in your pocket this week".
+final class NotificationCopyTests: XCTestCase {
+
+    /// The whole point of asking. Someone quitting for Emma should see Emma.
+    func testTheNameReachesTheLockScreen() {
+        let first = NotificationCopy.dayOne(reason: .someone, name: "Emma")
+        XCTAssertTrue(first.body.contains("Emma"), first.body)
+
+        let eve = NotificationCopy.eveOfQuit(reason: .someone, name: "Emma")
+        XCTAssertTrue(eve.body.contains("Emma"), eve.body)
+
+        let week = NotificationCopy.weeklyBill(
+            thisWeek: "€50", total: "€200", reason: .someone, name: "Emma")
+        XCTAssertTrue(week.body.contains("Emma"), week.body)
+
+        let later = NotificationCopy.morning(day: 20, reason: .someone, name: "Emma")
+        XCTAssertTrue(later.body.contains("Emma"), later.body)
+    }
+
+    /// ...and it must degrade cleanly. A blank name field is the common case
+    /// for someone who picked "someone in particular" and moved on.
+    func testAMissingNameNeverLeavesAHole() {
+        for name in [nil, "", "   "] as [String?] {
+            for message in [
+                NotificationCopy.dayOne(reason: .someone, name: name),
+                NotificationCopy.eveOfQuit(reason: .someone, name: name),
+                NotificationCopy.morning(day: 5, reason: .someone, name: name),
+                NotificationCopy.morning(day: 30, reason: .someone, name: name),
+                NotificationCopy.weeklyBill(thisWeek: "€50", total: "€200",
+                                            reason: .someone, name: name)
+            ] {
+                XCTAssertFalse(message.body.contains("  "), "double space: \(message.body)")
+                XCTAssertFalse(message.body.contains("()"), message.body)
+                XCTAssertFalse(message.body.contains("nil"), message.body)
+                XCTAssertFalse(message.body.isEmpty)
+            }
+        }
+    }
+
+    /// Every reason gets its own day one — a generic one wastes the only
+    /// notification the user has actually been waiting for.
+    func testEveryReasonHasItsOwnDayOne() {
+        var bodies = Set<String>()
+        for reason in QuitReason.allCases {
+            let m = NotificationCopy.dayOne(reason: reason, name: "Emma")
+            XCTAssertEqual(m.title, "Day one")
+            XCTAssertFalse(m.body.isEmpty)
+            bodies.insert(m.body)
+        }
+        XCTAssertEqual(bodies.count, QuitReason.allCases.count,
+                       "two reasons share a day-one message")
+        // ...and no reason at all still says something.
+        XCTAssertFalse(NotificationCopy.dayOne(reason: nil, name: nil).body.isEmpty)
+    }
+
+    /// The first week has a script; after that the line varies by reason so a
+    /// daily nudge does not become wallpaper.
+    func testTheFirstWeekIsNotRepetitive() {
+        var seen = Set<String>()
+        for day in 1...7 {
+            let m = NotificationCopy.morning(day: day, reason: .health, name: nil)
+            XCTAssertEqual(m.title, "Day \(day)")
+            seen.insert(m.body)
+        }
+        XCTAssertGreaterThanOrEqual(seen.count, 5,
+                                    "the first week repeats itself too often")
+    }
+
+    func testLaterMorningsDifferByReason() {
+        let bodies = QuitReason.allCases.map {
+            NotificationCopy.morning(day: 40, reason: $0, name: "Emma").body
+        }
+        XCTAssertEqual(Set(bodies).count, QuitReason.allCases.count)
+    }
+
+    /// Milestones stay factual: they are the only place the app makes a claim
+    /// about the user's body.
+    func testMilestonesSayWhenAndWhat() {
+        let week = Milestones.all.first { $0.when == "1 week" }!
+        let m = NotificationCopy.milestone(week)
+        XCTAssertEqual(m.title, week.title)
+        XCTAssertTrue(m.body.hasPrefix("1 week in."), m.body)
+        XCTAssertTrue(m.body.contains(week.body))
+    }
+
+    /// Nothing is long enough to be truncated into meaninglessness on a lock
+    /// screen, where roughly 110 characters of body survive.
+    func testNothingIsTooLongForALockScreen() {
+        var all: [NotificationCopy.Message] = []
+        for reason in QuitReason.allCases {
+            all.append(NotificationCopy.dayOne(reason: reason, name: "Emma"))
+            all.append(NotificationCopy.eveOfQuit(reason: reason, name: "Emma"))
+            for day in [1, 2, 3, 5, 40] {
+                all.append(NotificationCopy.morning(day: day, reason: reason, name: "Emma"))
+            }
+        }
+        for m in all {
+            XCTAssertLessThanOrEqual(m.title.count, 24, "title too long: \(m.title)")
+            XCTAssertLessThanOrEqual(m.body.count, 120, "body too long: \(m.body)")
+        }
+    }
+}
