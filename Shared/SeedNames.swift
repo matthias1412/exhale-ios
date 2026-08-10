@@ -24,6 +24,7 @@ enum SeedNames {
         "onboard-price-cigarettes",
         "onboard-price-vape",
         "onboard-quit-moment",
+        "onboard-reminders",
         "onboard-quit-time",
         "onboard-quit-date",
         "onboard-price-yearly",

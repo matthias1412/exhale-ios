@@ -252,6 +252,33 @@ final class AppModel {
         return day
     }
 
+    /// Ends onboarding: the draft becomes the saved plan.
+    ///
+    /// Deliberately the single place where that happens. The date is chosen a
+    /// step earlier but held in the draft until here, because `draft` and
+    /// `onboardingStep` live only in memory while `phase` is persisted. Saving
+    /// the plan before the phase moves would leave a relaunch restarting
+    /// onboarding on top of a plan that already existed.
+    func completeOnboarding() {
+        guard let draft = state.plan ?? self.draft else { return }
+        state.plan = draft
+
+        // A backdated start means milestones were crossed before the app
+        // existed. Left alone, the first launch would celebrate one of them,
+        // and someone who stopped in the spring would be congratulated for a
+        // morning in April they did not spend with us. Mark everything already
+        // behind them as seen; the Milestones tab still shows them passed.
+        let elapsed = clock.now.timeIntervalSince(draft.quitDate) / 3600
+        if elapsed > 0 { state.lastCelebratedHours = elapsed }
+
+        // A future date is a plan, not a fact. The count waits until they say
+        // it happened.
+        state.awaitingStart = draft.quitDate > clock.now
+
+        state.phase = .paywall
+        tab = state.reasons.primary?.preferredTab ?? .today
+    }
+
     /// The scheduled moment has arrived but the user has not yet said whether
     /// they went through with it.
     var awaitingStartConfirmation: Bool {

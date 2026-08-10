@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Four steps. Only step 1 is real so far; the rest still stub out.
+/// The onboarding flow, in order.
 struct OnboardingFlow: View {
-    /// Index of the final step. Five steps: product, why, amount, price, moment.
-    static let lastStep = 5
+    /// Index of the final step. Seven: intro, product, why, amount, price,
+    /// moment, reminders.
+    static let lastStep = 6
 
     @Environment(AppModel.self) private var model
 
@@ -18,7 +19,8 @@ struct OnboardingFlow: View {
                 case 2: ReasonStep()
                 case 3: AmountStep()
                 case 4: PriceStep()
-                default: QuitMomentStep()
+                case 5: QuitMomentStep()
+                default: RemindersStep()
                 }
             }
             // Steps slide in the direction of travel, so Back feels like going
@@ -31,7 +33,7 @@ struct OnboardingFlow: View {
 
             Spacer(minLength: 0)
 
-            if model.onboardingStep < Self.lastStep {
+            if model.onboardingStep < Self.lastStep - 1 {
                 footer
             }
         }
@@ -55,7 +57,7 @@ struct OnboardingFlow: View {
                     Capsule()
                         .fill(i <= model.onboardingStep ? Palette.accent
                                                         : Palette.textPrimary.opacity(0.15))
-                        .frame(width: 22, height: 4)
+                        .frame(width: 18, height: 4)
                 }
             }
             .accessibilityLabel("Step \(model.onboardingStep + 1) of \(Self.lastStep + 1)")

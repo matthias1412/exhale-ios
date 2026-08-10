@@ -258,25 +258,9 @@ struct QuitMomentStep: View {
 
     private func finish(with date: Date) {
         model.draft?.quitDate = date
-        guard let draft = model.draft else { return }
-        model.state.plan = draft
-
-        // A backdated start means milestones were crossed before the app
-        // existed. Left alone, the first launch would celebrate one of them,
-        // and someone who stopped in the spring would be congratulated for a
-        // morning in April they did not spend with us. Mark everything already
-        // behind them as seen; the Milestones tab still shows them passed.
-        let elapsed = model.clock.now.timeIntervalSince(date) / 3600
-        if elapsed > 0 {
-            model.state.lastCelebratedHours = elapsed
-        }
-
-        // A future date is a plan, not a fact. The count waits until they say
-        // it happened.
-        model.state.awaitingStart = date > model.clock.now
-
-        model.state.phase = .paywall
-        model.tab = model.state.reasons.primary?.preferredTab ?? .today
+        // The plan is not saved here. One more step first, and committing it
+        // early would strand a relaunch inside a half finished onboarding.
+        model.onboardingStep += 1
     }
 }
 

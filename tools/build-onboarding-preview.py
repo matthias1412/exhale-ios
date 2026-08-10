@@ -197,40 +197,17 @@ S.append(dict(step="7 · Day one", note="", prog=6, variants=[
     </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
 ]))
 
-S.append(dict(step="8 · Reminders", note="asks first, not last", prog=6, variants=[
-  dict(name="Ask first", body="""
+S.append(dict(step="8 · Reminders", note="settled", prog=6, variants=[
+  dict(name="Shipped", body="""
     <div class="body">
-      <div class="h sm">Can we send you a few?</div>
-      <div class="sub">Here is all of it:</div>
-      <div class="bullet"><b></b><div><div class="bt">When a milestone lands</div>
-        <div class="bd">The first is twenty minutes after you stop</div></div></div>
-      <div class="bullet"><b></b><div><div class="bt">Sunday morning</div>
-        <div class="bd">What the week didn't cost you</div></div></div>
-      <div class="bullet"><b></b><div><div class="bt">A morning nudge, if you want one</div>
-        <div class="bd">Off unless you turn it on</div></div></div>
-      <div class="note">Roughly four in the first week, fewer after. iOS will ask you next.</div>
+      <div class="h sm">Deciding is the easy part.</div>
+      <div class="sub">Everyone who has ever quit had a moment like this one: clear, sure,
+      done deliberating. What separates the ones who keep it is having something on their
+      side on the days they don't feel like this.</div>
+      <div class="h xs">Let today reach next Tuesday.</div>
+      <div class="note">iOS will ask you next.</div>
     </div>""",
-    foot='<div class="cta">Yes, send them</div><div class="cta ghost">Not now</div>'),
-
-  dict(name="Named", body="""
-    <div class="body">
-      <div class="h sm">Can we send you a few?</div>
-      <div class="sub">The hard days are the ones you don't see coming. We'll tell you the moment
-      your body hits a milestone, and check in on the mornings that matter, with Emma's name
-      on them.</div>
-      <div class="note">Roughly four in the first week, fewer after. iOS will ask you next.</div>
-    </div>""",
-    foot='<div class="cta">Yes, send them</div><div class="cta ghost">Not now</div>'),
-
-  dict(name="Day two and three", body="""
-    <div class="body">
-      <div class="h sm">Can we send you a few?</div>
-      <div class="sub">Day two and day three are statistically the worst of it, and most people who
-      go back do it in the first week, usually somewhere they weren't expecting.<br><br>
-      Let us put something on your lock screen on those mornings.</div>
-      <div class="note">Roughly four in the first week, fewer after. iOS will ask you next.</div>
-    </div>""",
-    foot='<div class="cta">Yes, send them</div><div class="cta ghost">Not now</div>'),
+    foot='<div class="cta">Turn on reminders</div><div class="cta ghost">Not now</div>'),
 ]))
 
 S.append(dict(step="9 · Ready", note="no fake computation", prog=7, variants=[
@@ -306,6 +283,7 @@ HEAD = """<meta charset="utf-8">
   .body.mid{justify-content:center;padding-bottom:18px}
   .h{font-size:24px;font-weight:700;line-height:1.14;letter-spacing:-.3px}
   .h.sm{font-size:19.5px;line-height:1.2}
+  .h.xs{font-size:13px;line-height:1.3;color:var(--fg);margin-top:14px}
   .sub{font-size:11.5px;line-height:1.55;color:var(--muted);margin-top:10px}
   .sub b{color:var(--fg);font-weight:500}
   .row{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:13px;

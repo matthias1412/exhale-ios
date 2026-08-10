@@ -117,6 +117,9 @@ enum Seed {
         case "onboard-price-vape":
             return onboarding(step: 4, product: .vape)
 
+        case "onboard-reminders":
+            return onboarding(step: 6, product: .cigarettes)
+
         case "onboard-quit-moment":
             return onboarding(step: 5, product: .cigarettes)
 

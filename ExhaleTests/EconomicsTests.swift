@@ -763,4 +763,52 @@ final class ScheduledStartTests: XCTestCase {
         XCTAssertNil(state.awaitingStart)
         XCTAssertEqual(state.cravingsWon, 3)
     }
+
+    // MARK: - Finishing onboarding
+
+    /// The commit moved out of QuitMomentStep when the reminders step was added
+    /// after it. These pin the behaviour to its new home rather than to the
+    /// view that used to own it.
+    private func draftingModel(quitDate: Date) -> AppModel {
+        let m = AppModel(clock: FrozenClock(now: Seed.referenceNow))
+        var draft = QuitPlan.starting(product: .cigarettes)
+        draft.weeklySpend = 60
+        draft.quitDate = quitDate
+        m.draft = draft
+        return m
+    }
+
+    func testFinishingOnboardingSavesThePlanAndMovesToPaywall() {
+        let m = draftingModel(quitDate: Seed.referenceNow)
+        m.completeOnboarding()
+        XCTAssertNotNil(m.state.plan)
+        XCTAssertEqual(m.state.phase, .paywall)
+    }
+
+    func testAFutureDateFinishesAwaitingConfirmation() {
+        let future = Calendar.current.date(
+            byAdding: .day, value: 4, to: Seed.referenceNow)!
+        let m = draftingModel(quitDate: future)
+        m.completeOnboarding()
+        XCTAssertEqual(m.state.awaitingStart, true)
+        // Not yet due, so it counts down rather than asking.
+        XCTAssertFalse(m.awaitingStartConfirmation)
+    }
+
+    func testStartingNowNeverAwaitsConfirmation() {
+        let m = draftingModel(quitDate: Seed.referenceNow)
+        m.completeOnboarding()
+        XCTAssertEqual(m.state.awaitingStart, false)
+        XCTAssertFalse(m.awaitingStartConfirmation)
+    }
+
+    func testBackdatingFinishesWithoutRetroactiveCelebrations() {
+        let past = Calendar.current.date(
+            byAdding: .day, value: -31, to: Seed.referenceNow)!
+        let m = draftingModel(quitDate: past)
+        m.completeOnboarding()
+        XCTAssertEqual(m.state.awaitingStart, false)
+        m.claimPendingCelebration()
+        XCTAssertNil(m.pendingCelebration)
+    }
 }
