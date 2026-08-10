@@ -15,7 +15,7 @@ S.append(dict(step="0 · Welcome", note="the one you objected to", prog=None, va
       <div class="h">Your last one<br>is behind you.</div>
       <div class="sub">The first three days are the hard part. After that the nicotine is gone and
       what's left is habit, and habit is beatable.<br><br>
-      <b>Exhale is built for those three days,</b> and every one after.</div>
+      <b>Those three days are the ones this is for,</b> and every one after.</div>
     </div>""",
     foot='<div class="cta">Let\'s start</div><div class="cta ghost">I quit a while ago</div>'),
 
@@ -44,7 +44,7 @@ S.append(dict(step="1 · Product", note="settled", prog=0, variants=[
   dict(name="As built", body="""
     <div class="body">
       <div class="h sm">What are you quitting?</div>
-      <div class="sub">No judgement. This only changes what we count.</div>
+      <div class="sub">No judgement.</div>
       <div class="row"><div style="flex:1"><div class="rt">Cigarettes</div>
         <div class="rs">packs, rollies</div></div><div class="ring"></div></div>
       <div class="row sel"><div style="flex:1"><div class="rt">Vape</div>
@@ -99,7 +99,7 @@ S.append(dict(step="4 · Why", note="you liked this one", prog=3, variants=[
   dict(name="Who's it for", body="""
     <div class="body">
       <div class="h sm">Who is this for?</div>
-      <div class="sub">We'll hand it back to you on the days it's hard.</div>
+      <div class="sub">Pick any that are true.</div>
       <div class="row"><div style="flex:1"><div class="rt">Me</div>
         <div class="rs">My lungs, my heart, my money</div></div><div class="ring"></div></div>
       <div class="row sel"><div style="flex:1"><div class="rt">Someone in particular</div>
@@ -120,7 +120,7 @@ S.append(dict(step="5 · Cravings", note="new: normal, and we help", prog=4, var
       That's not willpower talking, it's just how they work.<br><br>
       The trick is having somewhere to put those three minutes.</div>
       <div class="sos">I'm craving, help me through it</div>
-      <div class="sub" style="margin-top:8px">On every screen. One tap starts a timer and a breath.</div>
+      <div class="sub" style="margin-top:8px">It sits on every screen.</div>
     </div>""", foot='<div class="cta">Good to know</div>'),
 
   dict(name="Not a warning sign", body="""
@@ -149,7 +149,7 @@ S.append(dict(step="6 · Slips", note="new: it happens, and it is handled", prog
       <div class="h sm">If you slip, you haven't failed.</div>
       <div class="sub">Most people who stop for good slipped on the way. One cigarette is one
       cigarette, and <b>it doesn't wipe out the forty days behind it.</b><br><br>
-      There's a button for that too. Tell the truth, keep your history, carry on.</div>
+      There's a button for that too. Tell the truth and carry on.</div>
       <div class="slip">I slipped</div>
     </div>""", foot='<div class="cta">Got it</div>'),
 
@@ -158,8 +158,7 @@ S.append(dict(step="6 · Slips", note="new: it happens, and it is handled", prog
       <div class="h sm">The cigarette isn't the dangerous part.</div>
       <div class="sub">Deciding you've blown it is. That's what turns one slip into starting over
       in six months.<br><br>
-      So log it, keep every day you've already earned, and keep going. The app is built to let
-      you do exactly that.</div>
+      So log it, keep every day you've already earned, and keep going.</div>
       <div class="slip">I slipped</div>
     </div>""", foot='<div class="cta">Got it</div>'),
 
@@ -168,8 +167,7 @@ S.append(dict(step="6 · Slips", note="new: it happens, and it is handled", prog
       <div class="h sm">Slips happen.</div>
       <div class="sub">They happen to most people who eventually quit for good. What matters is
       what happens next.<br><br>
-      Log it in one tap. Your streak keeps its history, the app doesn't lecture you, and you
-      pick up where you were.</div>
+      Log it in one tap. Every day you already earned stays exactly where it is.</div>
       <div class="slip">I slipped</div>
     </div>""", foot='<div class="cta">Got it</div>'),
 ]))
@@ -183,6 +181,7 @@ S.append(dict(step="7 · Day one", note="", prog=6, variants=[
       <div class="or">OR PICK A DAY</div>
       <div class="chips"><div class="chip">Tomorrow</div><div class="chip on">Monday</div>
         <div class="chip">Pick a date</div></div>
+      <div class="sub" style="text-align:center;margin-top:14px;color:var(--accent)">It was longer ago</div>
     </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
 
   dict(name="Already stopped", body="""
@@ -194,85 +193,73 @@ S.append(dict(step="7 · Day one", note="", prog=6, variants=[
       <div class="or">OR</div>
       <div class="chips"><div class="chip on">Earlier today</div><div class="chip">Yesterday</div>
         <div class="chip">Pick a date</div><div class="chip">Starting Monday</div></div>
+      <div class="sub" style="text-align:center;margin-top:14px;color:var(--accent)">It was longer ago</div>
     </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
 ]))
 
-S.append(dict(step="8 · Reminders", note="new: asked in context", prog=7, variants=[
-  dict(name="Named", body="""
+S.append(dict(step="8 · Reminders", note="asks first, not last", prog=6, variants=[
+  dict(name="Ask first", body="""
     <div class="body">
-      <div class="h sm">Stay on track</div>
-      <div class="sub">The hard days are the ones you don't see coming.<br><br>
-      We'll tell you the moment your body hits a milestone, and check in on the mornings that
-      matter, <b>with Emma's name on it</b>, because that's what you said this was for.</div>
-      <div class="note">Three a week at most. Never a guilt trip.</div>
-    </div>""",
-    foot='<div class="cta">Turn on reminders</div><div class="cta ghost">Maybe later</div>'),
-
-  dict(name="What you'll get", body="""
-    <div class="body">
-      <div class="h sm">Want us to check in?</div>
-      <div class="sub">Three kinds, and you can turn any of them off later:</div>
-      <div class="bullet"><b></b><div><div class="bt">The moment a milestone lands</div>
-        <div class="bd">"Your heart rate is back to normal", 20 minutes in</div></div></div>
-      <div class="bullet"><b></b><div><div class="bt">Sunday's receipt</div>
+      <div class="h sm">Can we send you a few?</div>
+      <div class="sub">Here is all of it:</div>
+      <div class="bullet"><b></b><div><div class="bt">When a milestone lands</div>
+        <div class="bd">The first is twenty minutes after you stop</div></div></div>
+      <div class="bullet"><b></b><div><div class="bt">Sunday morning</div>
         <div class="bd">What the week didn't cost you</div></div></div>
       <div class="bullet"><b></b><div><div class="bt">A morning nudge, if you want one</div>
-        <div class="bd">Off by default</div></div></div>
+        <div class="bd">Off unless you turn it on</div></div></div>
+      <div class="note">Roughly four in the first week, fewer after. iOS will ask you next.</div>
     </div>""",
-    foot='<div class="cta">Turn on reminders</div><div class="cta ghost">Maybe later</div>'),
+    foot='<div class="cta">Yes, send them</div><div class="cta ghost">Not now</div>'),
 
-  dict(name="Hardest days", body="""
+  dict(name="Named", body="""
     <div class="body">
-      <div class="h sm">Day two and day three</div>
-      <div class="sub">Statistically the worst of it. Most people who go back do it in the first
-      week, usually somewhere they didn't expect.<br><br>
-      Let us put something on your lock screen on those mornings.</div>
-      <div class="note">Three a week at most, and Emma's name on the ones that matter.</div>
+      <div class="h sm">Can we send you a few?</div>
+      <div class="sub">The hard days are the ones you don't see coming. We'll tell you the moment
+      your body hits a milestone, and check in on the mornings that matter, with Emma's name
+      on them.</div>
+      <div class="note">Roughly four in the first week, fewer after. iOS will ask you next.</div>
     </div>""",
-    foot='<div class="cta">Turn on reminders</div><div class="cta ghost">Maybe later</div>'),
+    foot='<div class="cta">Yes, send them</div><div class="cta ghost">Not now</div>'),
+
+  dict(name="Day two and three", body="""
+    <div class="body">
+      <div class="h sm">Can we send you a few?</div>
+      <div class="sub">Day two and day three are statistically the worst of it, and most people who
+      go back do it in the first week, usually somewhere they weren't expecting.<br><br>
+      Let us put something on your lock screen on those mornings.</div>
+      <div class="note">Roughly four in the first week, fewer after. iOS will ask you next.</div>
+    </div>""",
+    foot='<div class="cta">Yes, send them</div><div class="cta ghost">Not now</div>'),
 ]))
 
-S.append(dict(step="9 · Building", note="new: ~1.5s, and it is real work", prog=7, variants=[
-  dict(name="Checklist", body="""
-    <div class="body mid">
-      <div class="h sm">Building your plan</div>
-      <div class="load">
-        <div class="li done"><b></b>Working out what this costs you</div>
-        <div class="li done"><b></b>Mapping your 18 milestones</div>
-        <div class="li"><b></b>Setting up the first three days</div>
-      </div>
-    </div>""", foot=''),
-
-  dict(name="Just the mark", body="""
-    <div class="body mid" style="align-items:center;text-align:center">
-      <div class="dots" data-mark="58" style="width:58px;height:58px;margin:0 auto 20px"></div>
-      <div class="h sm" style="text-align:center">Building your plan</div>
-      <div class="sub" style="text-align:center">One moment.</div>
-    </div>""", foot=''),
-]))
-
-S.append(dict(step="10 · Ready", note="new: the payoff", prog=7, variants=[
+S.append(dict(step="9 · Ready", note="no fake computation", prog=7, variants=[
   dict(name="Money first", body="""
     <div class="body mid">
-      <div class="sub" style="margin-top:0">Your plan is ready.</div>
+      <div class="h sm">That's everything.</div>
       <div class="big">€1,560</div>
       <div class="sub" style="margin-top:2px">a year, staying in your pocket.</div>
       <div class="statline"><span>Milestones ahead</span><span>18</span></div>
       <div class="statline"><span>First one</span><span>20 minutes</span></div>
-      <div class="statline"><span>Hardest stretch</span><span>days 1–3</span></div>
-      <div class="sub" style="margin-top:14px">Emma's the reason. We'll remind you.</div>
+      <div class="statline"><span>Hardest stretch</span><span>days 1 to 3</span></div>
     </div>""", foot='<div class="cta">Start day one</div>'),
 
   dict(name="Time first", body="""
     <div class="body mid">
-      <div class="sub" style="margin-top:0">Your plan is ready.</div>
+      <div class="h sm">That's everything.</div>
       <div class="big">20 minutes</div>
       <div class="sub" style="margin-top:2px">until your heart rate starts coming down.</div>
       <div class="statline"><span>Then</span><span>12 hours</span></div>
       <div class="statline"><span>Nicotine gone</span><span>3 days</span></div>
       <div class="statline"><span>A year of vaping</span><span>€1,560</span></div>
-      <div class="sub" style="margin-top:14px">Emma's the reason. We'll remind you.</div>
     </div>""", foot='<div class="cta">Start day one</div>'),
+
+  dict(name="Straight in", body="""
+    <div class="body mid">
+      <div class="h">Day one<br>starts now.</div>
+      <div class="sub">Twenty minutes until your heart rate starts coming down. We'll tell you
+      when it does.</div>
+    </div>""", foot='<div class="cta">Take me in</div>'),
 ]))
 
 HEAD = """<meta charset="utf-8">

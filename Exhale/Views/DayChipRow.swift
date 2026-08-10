@@ -99,3 +99,91 @@ struct DayChipRow: View {
         }
     }
 }
+
+/// For someone who stopped longer ago than the chips reach.
+///
+/// The chips cover "just now" through "last Thursday", which is where honest
+/// answers cluster. They do not cover the person who quit in the spring and is
+/// installing this in August, and that person exists: the welcome screen offers
+/// them a way in, so the app has to have somewhere to put them.
+///
+/// A year back is the limit. Past that the app would be a record of something
+/// finished rather than a tool for something in progress.
+struct PastQuitDatePicker: View {
+    let now: Date
+    let pick: (Date) -> Void
+
+    @State private var date: Date
+    @Environment(\.dismiss) private var dismiss
+
+    init(now: Date, pick: @escaping (Date) -> Void) {
+        self.now = now
+        self.pick = pick
+        _date = State(initialValue: Calendar.current.date(
+            byAdding: .day, value: -30, to: now
+        ) ?? now)
+    }
+
+    private var range: ClosedRange<Date> {
+        let earliest = Calendar.current.date(byAdding: .year, value: -1, to: now) ?? now
+        return earliest...now
+    }
+
+    private var dayCount: Int {
+        let days = Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: date),
+            to: Calendar.current.startOfDay(for: now)
+        ).day ?? 0
+        return max(1, days + 1)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Palette.background.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    DatePicker(
+                        "Last one",
+                        selection: $date,
+                        in: range,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .tint(Palette.accent)
+                    .padding(.horizontal, 8)
+
+                    Text("That puts you on day \(dayCount).")
+                        .font(.spaceGrotesk(15, weight: .medium))
+                        .foregroundStyle(Palette.textPrimary)
+                        .padding(.top, 8)
+
+                    Text("Everything before today is already behind you, so nothing will be celebrated retrospectively.")
+                        .font(.spaceGrotesk(12))
+                        .foregroundStyle(Palette.textMuted)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 30)
+                        .padding(.top, 6)
+
+                    Spacer()
+
+                    PillButton("That's when I stopped", style: .accent) {
+                        pick(Calendar.current.startOfDay(for: date).addingTimeInterval(12 * 3600))
+                    }
+                    .padding(.horizontal, 26)
+                    .padding(.bottom, 30)
+                }
+            }
+            .navigationTitle("When was your last one?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Palette.textMuted)
+                }
+            }
+        }
+    }
+}

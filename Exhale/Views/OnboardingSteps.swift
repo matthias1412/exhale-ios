@@ -191,6 +191,7 @@ struct CurrencyChips: View {
 struct QuitMomentStep: View {
     @Environment(AppModel.self) private var model
     @State private var chosen: Date?
+    @State private var showingCalendar = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -224,6 +225,15 @@ struct QuitMomentStep: View {
             )
             .padding(.top, 10)
 
+            // The chips stop a week back, which is fine for "last Thursday" and
+            // useless for someone who stopped in the spring. They are the fast
+            // path; this is the honest one.
+            Button("It was longer ago") { showingCalendar = true }
+                .font(.spaceGrotesk(13))
+                .foregroundStyle(Palette.accent)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 12)
+
             if let chosen {
                 PillButton(confirmTitle(for: chosen), style: .outline) {
                     finish(with: chosen)
@@ -234,6 +244,12 @@ struct QuitMomentStep: View {
         }
         .padding(.top, 34)
         .animation(.snappy(duration: 0.2), value: chosen)
+        .sheet(isPresented: $showingCalendar) {
+            PastQuitDatePicker(now: model.clock.now) { date in
+                chosen = date
+                showingCalendar = false
+            }
+        }
     }
 
     private func confirmTitle(for date: Date) -> String {
@@ -242,11 +258,21 @@ struct QuitMomentStep: View {
 
     private func finish(with date: Date) {
         model.draft?.quitDate = date
-        if let draft = model.draft {
-            model.state.plan = draft
-            model.state.phase = .paywall
-            model.tab = model.state.reasons.primary?.preferredTab ?? .today
+        guard let draft = model.draft else { return }
+        model.state.plan = draft
+
+        // A backdated start means milestones were crossed before the app
+        // existed. Left alone, the first launch would celebrate one of them,
+        // and someone who stopped in the spring would be congratulated for a
+        // morning in April they did not spend with us. Mark everything already
+        // behind them as seen; the Milestones tab still shows them passed.
+        let elapsed = model.clock.now.timeIntervalSince(date) / 3600
+        if elapsed > 0 {
+            model.state.lastCelebratedHours = elapsed
         }
+
+        model.state.phase = .paywall
+        model.tab = model.state.reasons.primary?.preferredTab ?? .today
     }
 }
 

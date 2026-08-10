@@ -576,3 +576,67 @@ final class NameUsageTests: XCTestCase {
         }
     }
 }
+
+/// Backdating a quit date.
+///
+/// The chips reach a week back, which covers "last Thursday" and nothing else.
+/// Someone who stopped in the spring is a real user, since the welcome screen
+/// invites them in, so the date has to be settable properly. The risk is what
+/// happens to milestones they crossed before installing.
+@MainActor
+final class BackdatingTests: XCTestCase {
+
+    private func model(quitDaysAgo: Int) -> AppModel {
+        let m = AppModel(
+            state: PersistedState(),
+            clock: AppClock(frozen: Seed.referenceNow),
+            store: .ephemeral,
+            persistenceEnabled: false,
+            subscriptions: MockSubscriptionGate()
+        )
+        var state = m.state
+        state.phase = .app
+        let quit = Calendar.current.date(
+            byAdding: .day, value: -quitDaysAgo,
+            to: Calendar.current.startOfDay(for: Seed.referenceNow)
+        )!
+        state.plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
+                              currencyCode: "EUR", quitDate: quit)
+        // What OnboardingSteps.finish does for a past date.
+        let elapsed = Seed.referenceNow.timeIntervalSince(quit) / 3600
+        if elapsed > 0 { state.lastCelebratedHours = elapsed }
+        m.state = state
+        return m
+    }
+
+    /// Someone who stopped a month ago has crossed seven marks. Firing even one
+    /// burst for a morning in July is hollow, and firing seven is absurd.
+    func testNothingIsCelebratedRetrospectively() {
+        let m = model(quitDaysAgo: 30)
+        m.claimPendingCelebration()
+        XCTAssertNil(m.pendingCelebration,
+                     "a milestone crossed before install was celebrated")
+        XCTAssertNil(m.withheldDay)
+    }
+
+    /// ...but the streak itself is real and counted.
+    func testTheDaysStillCount() {
+        XCTAssertEqual(model(quitDaysAgo: 30).progress?.dayNumber, 31)
+        XCTAssertEqual(model(quitDaysAgo: 200).progress?.dayNumber, 201)
+    }
+
+    /// And the next milestone ahead of them still fires normally.
+    func testTheNextOneStillArrives() {
+        let m = model(quitDaysAgo: 30)          // past 1 month, before 3 months
+        m.claimPendingCelebration()
+        XCTAssertNil(m.pendingCelebration)
+
+        // Three months later, the mark they reach *with* the app is theirs.
+        var state = m.state
+        state.plan?.quitDate = Calendar.current.date(
+            byAdding: .day, value: -95, to: Seed.referenceNow)!
+        m.state = state
+        m.claimPendingCelebration()
+        XCTAssertEqual(m.pendingCelebration?.when, "3 months")
+    }
+}
