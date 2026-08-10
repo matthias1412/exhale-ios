@@ -407,10 +407,6 @@ final class NotificationCopyTests: XCTestCase {
         let eve = NotificationCopy.eveOfQuit(reason: .someone, name: "Emma")
         XCTAssertTrue(eve.body.contains("Emma"), eve.body)
 
-        let week = NotificationCopy.weeklyBill(
-            thisWeek: "€50", total: "€200", reason: .someone, name: "Emma")
-        XCTAssertTrue(week.body.contains("Emma"), week.body)
-
         let later = NotificationCopy.morning(day: 20, reason: .someone, name: "Emma")
         XCTAssertTrue(later.body.contains("Emma"), later.body)
     }
@@ -423,9 +419,7 @@ final class NotificationCopyTests: XCTestCase {
                 NotificationCopy.dayOne(reason: .someone, name: name),
                 NotificationCopy.eveOfQuit(reason: .someone, name: name),
                 NotificationCopy.morning(day: 5, reason: .someone, name: name),
-                NotificationCopy.morning(day: 30, reason: .someone, name: name),
-                NotificationCopy.weeklyBill(thisWeek: "€50", total: "€200",
-                                            reason: .someone, name: name)
+                NotificationCopy.morning(day: 30, reason: .someone, name: name)
             ] {
                 XCTAssertFalse(message.body.contains("  "), "double space: \(message.body)")
                 XCTAssertFalse(message.body.contains("()"), message.body)
@@ -495,6 +489,90 @@ final class NotificationCopyTests: XCTestCase {
         for m in all {
             XCTAssertLessThanOrEqual(m.title.count, 24, "title too long: \(m.title)")
             XCTAssertLessThanOrEqual(m.body.count, 120, "body too long: \(m.body)")
+        }
+    }
+}
+
+/// The name is a dedication, never a witness.
+///
+/// The app knows a first name and nothing else. It does not know whether that
+/// person lives with the user, sees them weekly, or died in 2019. Wording that
+/// implied otherwise shipped once — "Emma would say so too", which claims she
+/// is watching and approving while saying nothing at all, and "Emma hasn't
+/// smelled it on you since", which assumes daily physical proximity.
+final class NameUsageTests: XCTestCase {
+
+    private var everyMessageMentioningTheName: [String] {
+        var out: [String] = []
+        for name in ["Emma", "Dad"] {
+            out.append(NotificationCopy.dayOne(reason: .someone, name: name).body)
+            out.append(NotificationCopy.eveOfQuit(reason: .someone, name: name).body)
+            for day in [1, 2, 3, 5, 9, 16, 40, 400] {
+                out.append(NotificationCopy.morning(day: day, reason: .someone, name: name).body)
+            }
+        }
+        return out.filter { $0.contains("Emma") || $0.contains("Dad") }
+    }
+
+    /// Nothing may claim the named person perceives, thinks or says anything.
+    func testTheNamedPersonIsNeverGivenAnOpinionOrASense() {
+        let forbidden = [
+            "would say", "would be", "thinks", "knows", "sees", "saw",
+            "smelled", "smells", "noticed", "proud", "watching", "'s too"
+        ]
+        for body in everyMessageMentioningTheName {
+            for phrase in forbidden {
+                XCTAssertFalse(
+                    body.lowercased().contains(phrase),
+                    "\"\(body)\" claims something about the named person"
+                )
+            }
+        }
+    }
+
+    /// ...and the name still has to appear somewhere, or asking for it was
+    /// pointless.
+    func testTheNameIsStillUsed() {
+        XCTAssertFalse(everyMessageMentioningTheName.isEmpty)
+        XCTAssertTrue(
+            NotificationCopy.dayOne(reason: .someone, name: "Emma").body.contains("Emma")
+        )
+    }
+
+    /// No line may tell the user what they are feeling — that is a claim about
+    /// someone's inside on a morning that might be going badly.
+    func testNothingTellsTheUserHowTheyFeel() {
+        var all: [String] = []
+        for reason in QuitReason.allCases {
+            for day in [1, 2, 3, 5, 9, 16, 40, 400] {
+                all.append(NotificationCopy.morning(day: day, reason: reason, name: "Emma").body)
+            }
+            all.append(NotificationCopy.dayOne(reason: reason, name: "Emma").body)
+        }
+        for body in all {
+            for phrase in ["you feel", "you're not resisting", "you don't want",
+                           "whether you've noticed"] {
+                XCTAssertFalse(body.lowercased().contains(phrase),
+                               "\"\(body)\" tells the user their own state")
+            }
+        }
+    }
+
+    /// No line may assume what day of the week it is.
+    func testNothingAssumesTheCalendar() {
+        var all: [String] = []
+        for reason in QuitReason.allCases {
+            all.append(NotificationCopy.dayOne(reason: reason, name: nil).body)
+            all.append(NotificationCopy.eveOfQuit(reason: reason, name: nil).body)
+            for day in [1, 3, 9, 40] {
+                all.append(NotificationCopy.morning(day: day, reason: reason, name: nil).body)
+            }
+        }
+        for body in all {
+            for phrase in ["weekend", "monday", "friday", "saturday", "sunday"] {
+                XCTAssertFalse(body.lowercased().contains(phrase),
+                               "\"\(body)\" assumes the day of the week")
+            }
         }
     }
 }

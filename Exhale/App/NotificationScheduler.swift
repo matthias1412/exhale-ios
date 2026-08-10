@@ -163,9 +163,7 @@ final class NotificationScheduler {
             // "kept it" — kept what? Ambiguous on a lock screen.
             let message = NotificationCopy.weeklyBill(
                 thisWeek: thisWeek.moneyString(plan.currencyCode),
-                total: progress.moneyKept.moneyString(plan.currencyCode),
-                reason: state.reasons.primary,
-                name: state.reasonName
+                total: progress.moneyKept.moneyString(plan.currencyCode)
             )
             await add(
                 identifier: "\(Identifier.weeklyBill).\(week)",

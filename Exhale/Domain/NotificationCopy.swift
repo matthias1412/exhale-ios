@@ -9,6 +9,24 @@ import Foundation
 /// and which tab opens first, but every notification was generic — so someone
 /// who said they were doing this for Emma never once saw Emma's name on their
 /// lock screen, which is the exact moment it would have counted.
+///
+/// ## Rules the wording follows
+///
+/// **A name is a dedication, never a witness.** "This is the one for Emma"
+/// claims nothing. "Emma would say so too" claims she is watching and
+/// approving, and says nothing at all; "Emma hasn't smelled it on you since"
+/// assumes she is physically near you every day. Emma might be a grandparent
+/// who died, or a child seen every other weekend. The app knows a first name
+/// and nothing else, so it may only ever say what the *user* told it: that
+/// this is for them.
+///
+/// **Nothing tells the user what they are feeling.** "You're not resisting it
+/// any more" is a claim about someone's inner state on a morning that might be
+/// going badly. Describe the body, the money and the days — those are known.
+///
+/// **No assumptions about the calendar.** An earlier line promised clean
+/// clothes "by the weekend", which is wrong for anyone who stops on a
+/// Saturday.
 enum NotificationCopy {
 
     struct Message: Equatable, Sendable {
@@ -36,7 +54,7 @@ enum NotificationCopy {
         case .fitness:
             body = "Your breath starts coming back today. You'll notice it on stairs first."
         case .smell:
-            body = "By the weekend your clothes will smell of nothing at all."
+            body = "Give it a few days and your clothes will stop smelling of it."
         case nil:
             body = "Day one starts now. Twenty minutes to the first change."
         }
@@ -81,10 +99,6 @@ enum NotificationCopy {
             return Message(title: "Day 3",
                            body: "By tonight the nicotine is out of you. What's left after that is habit.")
         case 4...6:
-            if reason == .someone, let who = person(name) {
-                return Message(title: "Day \(day)",
-                               body: "\(day - 1) days done. \(who) hasn't smelled it on you since.")
-            }
             return Message(title: "Day \(day)",
                            body: "\(day - 1) days done. Today is just the next one.")
         default:
@@ -96,32 +110,32 @@ enum NotificationCopy {
         let later: String
         switch reason {
         case .money:
-            later = "Every day of this is money you didn't hand over."
+            later = "Another day of not handing money over."
         case .someone:
-            later = person(name).map { "Still doing it. \($0) would say so too." }
-                ?? "Still doing it."
+            later = person(name).map { "\($0) is still the reason." }
+                ?? "Still going, for the reason you gave."
         case .health:
             later = "Your lungs are further along than they were last week."
         case .fitness:
-            later = "Breathing is easier than it was a week ago, whether you've noticed or not."
+            later = "Around now, stairs start giving you less trouble."
         case .smell:
-            later = "Nothing about you smells of it any more."
+            later = "Your clothes stopped carrying it a while ago."
         case .freedom, nil:
-            later = "You're not resisting it any more. You just don't do it."
+            later = "Not smoking is turning into the ordinary thing you do."
         }
         return Message(title: "Day \(day)", body: later)
     }
 
     // MARK: - The weekly receipt
 
-    static func weeklyBill(
-        thisWeek: String, total: String, reason: QuitReason?, name: String?
-    ) -> Message {
-        var body = "\(thisWeek) stayed in your pocket this week. \(total) since you stopped."
-        if reason == .someone, let who = person(name) {
-            body += " That's \(who)'s too."
-        }
-        return Message(title: "Another week clear", body: body)
+    /// Deliberately unpersonalised. The figure is already the user's own, and
+    /// an earlier version appended "That's Emma's too" — which quietly claims
+    /// the money belongs to someone who never agreed to that.
+    static func weeklyBill(thisWeek: String, total: String) -> Message {
+        Message(
+            title: "Another week clear",
+            body: "\(thisWeek) stayed in your pocket this week. \(total) since you stopped."
+        )
     }
 
     // MARK: - Milestones

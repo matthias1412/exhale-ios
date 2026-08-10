@@ -45,6 +45,7 @@ jobs:
           python3 tools/lint-braces.py
           python3 tools/lint-seeds.py
           python3 tools/lint-logo.py
+          python3 tools/lint-notifications.py
           bash tools/lint-shell.sh
 
       - name: Generate project
