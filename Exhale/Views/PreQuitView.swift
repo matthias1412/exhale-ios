@@ -14,6 +14,8 @@ struct PreQuitView: View {
     @Environment(AppModel.self) private var model
     let progress: QuitProgress
 
+    @State private var rescheduling = false
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
@@ -56,16 +58,30 @@ struct PreQuitView: View {
 
             Spacer(minLength: 0)
 
-            // Changing your mind toward "sooner" should always be one tap.
-            Button("Actually, I've already stopped") {
-                model.state.plan?.quitDate = model.clock.now
+            // Both directions need a way out. Bringing it forward was already
+            // here; moving it was not, so the only way to change a date you had
+            // second thoughts about was to wait for it to pass.
+            VStack(spacing: 8) {
+                PillButton("Start now instead", style: .outline) {
+                    model.confirmStart(at: model.clock.now)
+                }
+
+                Button("Move it to another day") { rescheduling = true }
+                    .font(.spaceGrotesk(13))
+                    .foregroundStyle(Palette.textMuted)
+                    .padding(.top, 2)
             }
-            .font(.spaceGrotesk(13.5, weight: .medium))
-            .foregroundStyle(Palette.accent)
+            .padding(.horizontal, 26)
             .padding(.bottom, 26)
         }
         .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
+        .sheet(isPresented: $rescheduling) {
+            RescheduleSheet(now: model.clock.now) { date in
+                model.rescheduleStart(to: date)
+                rescheduling = false
+            }
+        }
     }
 }
 

@@ -640,3 +640,127 @@ final class BackdatingTests: XCTestCase {
         XCTAssertEqual(m.pendingCelebration?.when, "3 months")
     }
 }
+
+/// A scheduled start does not begin on its own.
+///
+/// The count used to be pure arithmetic on the clock: `now >= quitDate`. Set
+/// Monday, keep smoking, open the app on Wednesday and it said day three. The
+/// one number the whole product rests on was being asserted by a calendar
+/// rather than reported by a person.
+@MainActor
+final class ScheduledStartTests: XCTestCase {
+
+    private func scheduled(daysFromNow: Int) -> AppModel {
+        let m = AppModel(
+            state: PersistedState(),
+            clock: AppClock(frozen: Seed.referenceNow),
+            store: .ephemeral,
+            persistenceEnabled: false,
+            subscriptions: MockSubscriptionGate()
+        )
+        var state = m.state
+        state.phase = .app
+        var plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
+                            currencyCode: "EUR", quitDate: Seed.referenceNow)
+        plan.quitDate = Calendar.current.date(
+            byAdding: .day, value: daysFromNow,
+            to: Calendar.current.startOfDay(for: Seed.referenceNow)
+        )!
+        state.plan = plan
+        state.awaitingStart = daysFromNow > 0
+        m.state = state
+        return m
+    }
+
+    /// Before the day: counting down, not counting up, and nothing to confirm.
+    func testBeforeTheDayNothingIsPending() {
+        let m = scheduled(daysFromNow: 3)
+        XCTAssertFalse(m.awaitingStartConfirmation)
+        XCTAssertEqual(m.progress?.hasStarted, false)
+    }
+
+    /// The day passes unconfirmed: the app asks rather than assuming.
+    func testThePassedDayAsksInsteadOfCounting() {
+        let m = scheduled(daysFromNow: 3)
+        var state = m.state
+        state.plan?.quitDate = Calendar.current.date(
+            byAdding: .day, value: -2, to: Seed.referenceNow)!
+        m.state = state
+        XCTAssertTrue(m.awaitingStartConfirmation,
+                      "two days past a scheduled start and it just counted")
+    }
+
+    /// Confirming starts the count from the day they said.
+    func testConfirmingStartsTheCount() {
+        let m = scheduled(daysFromNow: 3)
+        var state = m.state
+        state.plan?.quitDate = Calendar.current.date(
+            byAdding: .day, value: -2, to: Seed.referenceNow)!
+        m.state = state
+
+        m.confirmStart()
+        XCTAssertFalse(m.awaitingStartConfirmation)
+        XCTAssertEqual(m.state.awaitingStart, false)
+        XCTAssertEqual(m.progress?.dayNumber, 3)
+    }
+
+    /// "I stopped, but later than that" moves the start and shortens the count.
+    func testStoppingLaterCountsFromLater() {
+        let m = scheduled(daysFromNow: 3)
+        var state = m.state
+        state.plan?.quitDate = Calendar.current.date(
+            byAdding: .day, value: -4, to: Seed.referenceNow)!
+        m.state = state
+
+        let actually = Calendar.current.date(byAdding: .day, value: -1, to: Seed.referenceNow)!
+        m.confirmStart(at: actually)
+        XCTAssertEqual(m.progress?.dayNumber, 2)
+        XCTAssertFalse(m.awaitingStartConfirmation)
+    }
+
+    /// "Not yet, move it" pushes the date out and keeps waiting.
+    func testReschedulingKeepsItPending() {
+        let m = scheduled(daysFromNow: 3)
+        let later = Calendar.current.date(byAdding: .day, value: 5, to: Seed.referenceNow)!
+        m.rescheduleStart(to: later)
+        XCTAssertEqual(m.state.awaitingStart, true)
+        XCTAssertFalse(m.awaitingStartConfirmation)
+        XCTAssertEqual(m.progress?.hasStarted, false)
+    }
+
+    /// "Start now instead" from the countdown begins immediately.
+    func testStartingNowBegins() {
+        let m = scheduled(daysFromNow: 3)
+        m.confirmStart(at: Seed.referenceNow)
+        XCTAssertFalse(m.awaitingStartConfirmation)
+        XCTAssertEqual(m.progress?.dayNumber, 1)
+        XCTAssertEqual(m.progress?.hasStarted, true)
+    }
+
+    /// Nothing is celebrated for the gap between the scheduled day and owning
+    /// up to it: the user was not stopped during it.
+    func testTheUnconfirmedGapEarnsNoCelebration() {
+        let m = scheduled(daysFromNow: 3)
+        var state = m.state
+        state.plan?.quitDate = Calendar.current.date(
+            byAdding: .day, value: -5, to: Seed.referenceNow)!
+        m.state = state
+        m.confirmStart()
+        m.claimPendingCelebration()
+        XCTAssertNil(m.pendingCelebration)
+    }
+
+    /// State written before any of this existed must still decode. There is no
+    /// custom decoder, so a non-optional addition would throw and take the
+    /// user's streak with it.
+    func testOlderSavedStateStillLoads() throws {
+        let json = """
+        {"phase":"app","cravingsWon":3,"notifyMilestones":true,"notifyWeeklyBill":true,
+         "notifyMorningCheckIn":false,"reasons":[],"lastCelebratedHours":0,
+         "pastAttempts":[],"slips":[],"updatedAt":0}
+        """.data(using: .utf8)!
+        let state = try JSONDecoder().decode(PersistedState.self, from: json)
+        XCTAssertNil(state.awaitingStart)
+        XCTAssertEqual(state.cravingsWon, 3)
+    }
+}

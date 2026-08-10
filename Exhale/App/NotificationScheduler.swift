@@ -53,14 +53,21 @@ final class NotificationScheduler {
         // app cannot afford.
         await scheduleStart(state: state, plan: plan, now: now)
 
-        if state.notifyMilestones {
-            await scheduleMilestones(plan: plan, now: now)
-        }
-        if state.notifyWeeklyBill {
-            await scheduleWeeklyBill(state: state, plan: plan, now: now)
-        }
-        if state.notifyMorningCheckIn {
-            await scheduleMorningCheckIn(state: state, plan: plan, now: now)
+        // Everything derived from the quit date waits for the quit to be
+        // real. Sending "20 minutes in, your heart rate settles" to someone who
+        // scheduled Monday and then did not stop is the app asserting something
+        // it has no way to know.
+        let awaiting = (state.awaitingStart ?? false) && plan.quitDate <= now
+        if !awaiting {
+            if state.notifyMilestones {
+                await scheduleMilestones(plan: plan, now: now)
+            }
+            if state.notifyWeeklyBill {
+                await scheduleWeeklyBill(state: state, plan: plan, now: now)
+            }
+            if state.notifyMorningCheckIn {
+                await scheduleMorningCheckIn(state: state, plan: plan, now: now)
+            }
         }
 
         let pending = await centre.pendingNotificationRequests().count

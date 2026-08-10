@@ -41,6 +41,21 @@ struct PersistedState: Codable, Equatable, Sendable {
     var pastAttempts: [QuitAttempt] = []
     /// Individual slips that did not end a run.
     var slips: [Slip] = []
+    /// Set when a start is scheduled for the future, and cleared once the user
+    /// says they actually stopped.
+    ///
+    /// Without it the count began on the stroke of the chosen date whether or
+    /// not anything happened: schedule Monday, carry on smoking, open the app
+    /// on Wednesday and it read "Day 3". A streak the user never earned is
+    /// worse than no streak, because the whole product is that number being
+    /// true.
+    ///
+    /// Optional so state written before this existed still decodes. There is
+    /// no custom decoder here, and a non-optional addition would throw on
+    /// every saved file and take the streak with it. A missing key means no
+    /// confirmation was ever pending, which is true of every plan that began
+    /// immediately or was backdated.
+    var awaitingStart: Bool?
 
     static func == (a: Self, b: Self) -> Bool {
         a.phase == b.phase && a.plan == b.plan
@@ -235,6 +250,34 @@ final class AppModel {
         guard day >= 1, day <= progress.dayNumber else { return nil }
         guard progress.dayNumber > 1 else { return nil }
         return day
+    }
+
+    /// The scheduled moment has arrived but the user has not yet said whether
+    /// they went through with it.
+    var awaitingStartConfirmation: Bool {
+        guard let plan = state.plan else { return false }
+        return (state.awaitingStart ?? false) && plan.quitDate <= clock.now
+    }
+
+    /// They stopped when they said they would.
+    func confirmStart(at date: Date? = nil) {
+        guard var plan = state.plan else { return }
+        if let date { plan.quitDate = date }
+        state.plan = plan
+        state.awaitingStart = false
+        // Anything crossed between the scheduled moment and confirming is not
+        // celebrated: they were not using the app for it.
+        let elapsed = clock.now.timeIntervalSince(plan.quitDate) / 3600
+        if elapsed > 0 { state.lastCelebratedHours = elapsed }
+    }
+
+    /// They did not, and want a new date.
+    func rescheduleStart(to date: Date) {
+        guard var plan = state.plan else { return }
+        plan.quitDate = date
+        state.plan = plan
+        state.awaitingStart = date > clock.now
+        state.lastCelebratedHours = 0
     }
 
     /// Days carrying a milestone, for marking them in the spiral.

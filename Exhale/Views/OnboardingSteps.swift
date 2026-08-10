@@ -271,6 +271,10 @@ struct QuitMomentStep: View {
             model.state.lastCelebratedHours = elapsed
         }
 
+        // A future date is a plan, not a fact. The count waits until they say
+        // it happened.
+        model.state.awaitingStart = date > model.clock.now
+
         model.state.phase = .paywall
         model.tab = model.state.reasons.primary?.preferredTab ?? .today
     }

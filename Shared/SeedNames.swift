@@ -41,6 +41,7 @@ enum SeedNames {
         "today-vape",
         "today-imminent-milestone",
         "pre-quit-countdown",
+        "awaiting-start",
         "milestone-celebration",
         "milestone-celebration-f20",
         "milestone-celebration-f45",

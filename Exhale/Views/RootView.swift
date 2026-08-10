@@ -141,7 +141,9 @@ struct MainShell: View {
                 // Before the quit date there is no bill and no healing — the
                 // other two tabs would show a receipt for nothing and a
                 // timeline that hasn't begun.
-                if let progress = model.progress, !progress.hasStarted {
+                if model.awaitingStartConfirmation {
+                    TodayScreen()
+                } else if let progress = model.progress, !progress.hasStarted {
                     TodayScreen()
                 } else {
                     switch model.tab {

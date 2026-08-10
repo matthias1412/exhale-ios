@@ -303,6 +303,20 @@ enum Seed {
                 model.state = state
             }
 
+        // The scheduled day arrived and nobody has said whether it happened.
+        case "awaiting-start":
+            return make(phase: .app) { model in
+                var state = model.state
+                var p = plan(.cigarettes, day: 1)
+                p.quitDate = Calendar.current.date(
+                    byAdding: .day, value: -2,
+                    to: Calendar.current.startOfDay(for: referenceNow)
+                ) ?? referenceNow
+                state.plan = p
+                state.awaitingStart = true
+                model.state = state
+            }
+
         case "today-imminent-milestone":
             // ~6 hours short of the 72h mark, so the near-miss nudge shows.
             return make(phase: .app) { model in

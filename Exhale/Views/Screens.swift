@@ -7,7 +7,9 @@ struct TodayScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if let progress = model.progress, !progress.hasStarted {
+            if model.awaitingStartConfirmation {
+                StartConfirmationView()
+            } else if let progress = model.progress, !progress.hasStarted {
                 PreQuitView(progress: progress)
             } else if let progress = model.progress {
                 // The numeral is drawn inside SpiralView now: it counts up in
