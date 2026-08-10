@@ -119,6 +119,7 @@ enum SeedNames {
         "onboard-product-selected",
         "onboard-reason",
         "onboard-reason-chosen",
+        "onboard-reminders",
         "paywall",
         "today-day90",
         "bill-cigarettes",
