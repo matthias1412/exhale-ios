@@ -770,11 +770,15 @@ final class ScheduledStartTests: XCTestCase {
     /// after it. These pin the behaviour to its new home rather than to the
     /// view that used to own it.
     private func draftingModel(quitDate: Date) -> AppModel {
-        let m = AppModel(clock: FrozenClock(now: Seed.referenceNow))
-        var draft = QuitPlan.starting(product: .cigarettes)
-        draft.weeklySpend = 60
-        draft.quitDate = quitDate
-        m.draft = draft
+        let m = AppModel(
+            state: PersistedState(),
+            clock: AppClock(frozen: Seed.referenceNow),
+            store: .ephemeral,
+            persistenceEnabled: false,
+            subscriptions: MockSubscriptionGate()
+        )
+        m.draft = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
+                           currencyCode: "EUR", quitDate: quitDate)
         return m
     }
 

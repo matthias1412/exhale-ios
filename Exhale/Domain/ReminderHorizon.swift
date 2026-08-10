@@ -52,8 +52,9 @@ enum ReminderHorizon {
     }
 
     private static func weekday(_ date: Date, _ calendar: Calendar) -> String {
-        date.formatted(
-            .dateTime.weekday(.wide).locale(calendar.locale ?? .current)
-        )
+        // Deliberately the plain formatter, matching how StartConfirmationView
+        // names days. Pinning a locale off the calendar instead would let the
+        // two disagree on a device where they differ.
+        date.formatted(.dateTime.weekday(.wide))
     }
 }
