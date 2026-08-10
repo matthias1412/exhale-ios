@@ -83,7 +83,7 @@ struct ImminentMilestoneNote: View {
             Circle()
                 .fill(milestone.colour)
                 .frame(width: 6, height: 6)
-            Text("\(timing) — \(milestone.title.lowercased())")
+            Text("\(timing), \(milestone.title.lowercased())")
                 .font(.spaceGrotesk(12))
                 .foregroundStyle(Palette.textMuted)
         }

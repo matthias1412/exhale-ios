@@ -83,7 +83,7 @@ struct BillScreen: View {
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
 
-            Text("and counting — day \(progress.dayNumber), since \(sinceDate(plan))")
+            Text("and counting. Day \(progress.dayNumber), since \(sinceDate(plan))")
                 .font(.archivo(12))
                 .foregroundStyle(Palette.ink.opacity(0.6))
                 .padding(.top, 6)

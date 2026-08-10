@@ -30,7 +30,7 @@ struct NotificationPrimer: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Want to know when you hit these?")
                 .font(.spaceGrotesk(14, weight: .bold))
-            Text("We'll tell you the moment your body passes each one. Nothing else — no daily nagging unless you ask for it.")
+            Text("We'll tell you the moment your body passes each one. Nothing else. No daily nagging unless you ask for it.")
                 .font(.spaceGrotesk(12.5))
                 .foregroundStyle(Palette.textMuted)
                 .fixedSize(horizontal: false, vertical: true)

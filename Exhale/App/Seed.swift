@@ -269,7 +269,7 @@ enum Seed {
         case "banner-milestone":
             return make(phase: .app, plan: plan(.cigarettes, day: 3)) {
                 $0.banner = BannerContent(
-                    title: "72 h — Nicotine-free body",
+                    title: "72 h · Nicotine-free body",
                     body: "The nicotine itself is out of your system. It's habit now, not chemistry."
                 )
             }

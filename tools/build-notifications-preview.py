@@ -144,7 +144,7 @@ DATA = {
 }
 
 page = """<meta charset="utf-8">
-<title>Exhale — every notification</title>
+<title>Exhale notifications</title>
 <style>
 """ + fonts + """
   :root{
@@ -184,13 +184,13 @@ page = """<meta charset="utf-8">
   .count{font-size:11.5px;color:var(--ink-3);margin-top:18px}
 </style>
 
-<h1>Exhale — every notification</h1>
+<h1>Exhale notifications</h1>
 <p class="lede">The whole first month on one page, so the wording can be read the way it will be
-received rather than found on a phone in three days. <b>The reason now reaches the lock screen</b> —
-it drove the craving screen and the opening tab before, but every notification was generic, so
+received rather than found on a phone in three days. <b>The reason now reaches the lock screen.</b>
+It drove the craving screen and the opening tab before, but every notification was generic, so
 someone quitting for Emma never once saw her name. Switch reason and start type below.</p>
 <p class="lede" style="margin-top:-10px">Every figure here is <b>computed from the plan</b>, not
-typed in — this timeline assumes €30 a week, so a €90-a-week smoker sees three times these numbers.
+typed in. This timeline assumes €30 a week, so a €90-a-week smoker sees three times these numbers.
 The first Sunday reads the same twice because a partial first week <i>is</i> the whole total.</p>
 
 <div class="rail">
@@ -231,7 +231,7 @@ function render(){
       <div class="nt">${title}</div><div class="nx">${body}</div></div>
       <div class="tag ${kind}">${kind}</div></div>`;
   }
-  html += `<div class="count">${rows.length} notifications in the first month —
+  html += `<div class="count">${rows.length} notifications in the first month,
     about ${(rows.length/4.3).toFixed(1)} a week.</div>`;
   feed.innerHTML = html;
   feed.querySelectorAll('.ico').forEach(markInto);

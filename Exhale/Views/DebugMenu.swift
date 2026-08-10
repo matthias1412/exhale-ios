@@ -46,7 +46,7 @@ struct DebugMenu: View {
                     dayStepper.padding(.top, 14)
 
                     SectionLabel("ANIMATIONS").padding(.top, 26)
-                    Text("Set a day above, then swipe the app away and open it again — that's the real thing, exactly as someone on day \(currentDay) would see it. The button below forces the same arrival without the relaunch.")
+                    Text("Set a day above, then swipe the app away and open it again. That is the real thing, exactly as someone on day \(currentDay) would see it. The button below forces the same arrival without the relaunch.")
                         .font(.spaceGrotesk(12))
                         .foregroundStyle(Palette.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -60,7 +60,7 @@ struct DebugMenu: View {
                     .padding(.top, 12)
 
                     SectionLabel("CELEBRATIONS").padding(.top, 26)
-                    Text("Jumps to the day the milestone lands on, plays its burst, then lets the spiral arrive behind it — the full sequence, in order.")
+                    Text("Jumps to the day the milestone lands on, plays its burst, then lets the spiral arrive behind it. The full sequence, in order.")
                         .font(.spaceGrotesk(12))
                         .foregroundStyle(Palette.textMuted)
                         .fixedSize(horizontal: false, vertical: true)

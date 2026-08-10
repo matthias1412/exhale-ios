@@ -50,8 +50,13 @@ struct PriceField: View {
         .animation(.snappy(duration: 0.15), value: focused)
     }
 
+    /// Just the currency symbol. It used to be the formatted zero with every
+    /// digit replaced by an em dash, which said the same thing in a character
+    /// the rest of the app no longer uses.
     private var placeholder: String {
-        Decimal(0).currencyString(currencyCode).replacingOccurrences(of: "0", with: "—")
+        Decimal(0).currencyString(currencyCode)
+            .components(separatedBy: CharacterSet(charactersIn: "0123456789.,  "))
+            .joined()
     }
 
     private var text: Binding<String> {

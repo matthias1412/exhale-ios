@@ -199,7 +199,7 @@ struct NotAloneNote: View {
                 .frame(width: 5, height: 5)
                 .padding(.top, 6)
 
-            Text("You're not doing something unusual. Most people who smoke want to stop — and most who manage it needed more than one go.")
+            Text("You're not doing something unusual. Most people who smoke want to stop, and most who manage it needed more than one go.")
                 .font(.spaceGrotesk(12.5))
                 .lineSpacing(3)
                 .foregroundStyle(Palette.textMuted)

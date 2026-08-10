@@ -43,7 +43,7 @@ struct IntroStep: View {
                     .foregroundStyle(Palette.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("I'm craving — help me through it")
+                Text("I'm craving, help me through it")
                     .font(.spaceGrotesk(16, weight: .medium))
                     .foregroundStyle(Palette.emberSoft)
                     .frame(maxWidth: .infinity)

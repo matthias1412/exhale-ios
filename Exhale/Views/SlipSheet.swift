@@ -70,7 +70,7 @@ struct SlipSheet: View {
             VStack(spacing: 12) {
                 // Listed first, and styled as the primary action, on purpose.
                 choice(
-                    title: "It was one — I'm still going",
+                    title: "It was one. I'm still going",
                     detail: "Your streak and your spiral stay exactly as they are.",
                     style: .accent
                 ) {

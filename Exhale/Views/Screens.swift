@@ -23,7 +23,7 @@ struct TodayScreen: View {
                 .padding(.horizontal, 24)
 
                 if progress.dayNumber > 120 {
-                    Text("\(progress.dayNumber.formatted(.number)) days — one dot each")
+                    Text("\(progress.dayNumber.formatted(.number)) days, one dot each")
                         .font(.spaceGrotesk(11))
                         .tracking(0.66)
                         .foregroundStyle(Palette.textFaint)
@@ -104,7 +104,7 @@ struct CravingButton: View {
         Button {
             model.sosStartedAt = model.clock.now
         } label: {
-            Text("I'm craving — help me through it")
+            Text("I'm craving, help me through it")
                 .font(.spaceGrotesk(16, weight: .medium))
                 .foregroundStyle(Palette.emberSoft)
                 .frame(maxWidth: .infinity)
@@ -211,7 +211,7 @@ struct CravingSOSScreen: View {
                         model.state.cravingsWon += 1
                         model.sosStartedAt = nil
                     } label: {
-                        Text("It passed — I'm okay")
+                        Text("It passed, I'm okay")
                             .font(.spaceGrotesk(16, weight: .bold))
                             .foregroundStyle(Palette.onAccent)
                             .frame(maxWidth: .infinity)

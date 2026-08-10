@@ -150,7 +150,7 @@ struct SettingsScreen: View {
 
             ToggleRow(
                 title: "Morning check-in",
-                subtitle: "A quiet nudge at 9:00 — one day at a time",
+                subtitle: "A quiet nudge at 9:00, one day at a time",
                 isOn: model.state.notifyMorningCheckIn,
                 divider: false
             ) { model.state.notifyMorningCheckIn.toggle() }
@@ -184,7 +184,7 @@ struct SettingsScreen: View {
             testSent = true
             Task { await NotificationScheduler.shared.sendTestNotification(state: model.state) }
         } label: {
-            Text(testSent ? "Sent — check your lock screen" : "Send me a test notification")
+            Text(testSent ? "Sent. Check your lock screen" : "Send me a test notification")
                 .font(.spaceGrotesk(14, weight: .bold))
                 .foregroundStyle(Palette.accentSoft)
                 .frame(maxWidth: .infinity)

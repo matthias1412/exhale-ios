@@ -107,7 +107,7 @@ struct PaywallAnchor: View {
                 + Text(offer.localisedPrice)
                     .font(.spaceGrotesk(13.5, weight: .bold))
                     .foregroundStyle(Palette.textPrimary)
-                + Text(" a year — it pays for itself in ")
+                + Text(" a year. It pays for itself in ")
                     .font(.spaceGrotesk(13.5))
                     .foregroundStyle(Palette.textMuted)
                 + Text("\(days) \(days == 1 ? "day" : "days")")
@@ -132,7 +132,7 @@ struct PaywallAnchor: View {
             + Text(first?.when ?? "20 min")
                 .font(.spaceGrotesk(13.5, weight: .bold))
                 .foregroundStyle(Palette.textPrimary)
-            + Text(" away — \((first?.title ?? "your heart rate settles").lowercased()).")
+            + Text(" away: \((first?.title ?? "your heart rate settles").lowercased()).")
                 .font(.spaceGrotesk(13.5))
                 .foregroundStyle(Palette.textMuted)
         }

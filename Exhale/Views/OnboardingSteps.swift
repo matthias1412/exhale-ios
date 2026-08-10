@@ -203,7 +203,7 @@ struct QuitMomentStep: View {
                 .foregroundStyle(Palette.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
-            PillButton("Just had it — start now", style: .accent) {
+            PillButton("Just had one, start now", style: .accent) {
                 finish(with: model.clock.now)
             }
             .padding(.top, 24)
