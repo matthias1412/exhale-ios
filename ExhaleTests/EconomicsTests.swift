@@ -818,21 +818,22 @@ final class ScheduledStartTests: XCTestCase {
         date.formatted(.dateTime.weekday(.wide))
     }
 
-    private func day(_ offset: Int, from base: Date = Seed.referenceNow) -> Date {
+    private func day(_ offset: Int, from base: Date) -> Date {
         Calendar.current.date(byAdding: .day, value: offset, to: base)!
     }
 
     func testStartingNowNamesTheThirdDay() {
         let now = Seed.referenceNow
         XCTAssertEqual(ReminderHorizon.target(quitDate: now, now: now),
-                       weekdayName(day(3)))
+                       weekdayName(day(3, from: now)))
     }
 
     /// The bug that started this: a weekday that could be read as the one
     /// already in progress says nothing at all.
     func testTheNamedDayIsNeverToday() {
+        let base = Seed.referenceNow
         for offset in -40...20 {
-            let now = day(offset)
+            let now = day(offset, from: base)
             for quit in [now, day(-9, from: now), day(2, from: now), day(5, from: now)] {
                 XCTAssertNotEqual(
                     ReminderHorizon.target(quitDate: quit, now: now),
@@ -845,7 +846,7 @@ final class ScheduledStartTests: XCTestCase {
 
     func testAScheduledDateNamesThatDate() {
         let now = Seed.referenceNow
-        let quit = day(4)
+        let quit = day(4, from: now)
         XCTAssertEqual(ReminderHorizon.target(quitDate: quit, now: now),
                        weekdayName(quit))
     }
@@ -853,18 +854,18 @@ final class ScheduledStartTests: XCTestCase {
     /// Past six days a weekday name means the wrong week to most people.
     func testADistantDateStopsGuessingTheWeekday() {
         let now = Seed.referenceNow
-        XCTAssertEqual(ReminderHorizon.target(quitDate: day(11), now: now),
+        XCTAssertEqual(ReminderHorizon.target(quitDate: day(11, from: now), now: now),
                        "the day you picked")
-        XCTAssertEqual(ReminderHorizon.target(quitDate: day(6), now: now),
-                       weekdayName(day(6)))
+        XCTAssertEqual(ReminderHorizon.target(quitDate: day(6, from: now), now: now),
+                       weekdayName(day(6, from: now)))
     }
 
     /// Someone weeks in has no upcoming quit date to reach, so the line falls
     /// back to an ordinary near day rather than naming something behind them.
     func testBackdatingNamesTheThirdDayFromNow() {
         let now = Seed.referenceNow
-        XCTAssertEqual(ReminderHorizon.target(quitDate: day(-31), now: now),
-                       weekdayName(day(3)))
+        XCTAssertEqual(ReminderHorizon.target(quitDate: day(-31, from: now), now: now),
+                       weekdayName(day(3, from: now)))
     }
 
     func testTheLineIsASentence() {
