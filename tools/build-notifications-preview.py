@@ -88,6 +88,28 @@ def weekly(this_week, total, reason, name):
     return ("Another week clear", body)
 
 
+# The figures are computed the way the app computes them, from a weekly spend,
+# rather than typed in. An earlier hand-written pair read "€30 this week, €26
+# since you stopped", which is arithmetically impossible and exactly the kind
+# of thing a fake number sneaks past a review.
+WEEKLY_SPEND = 30.0          # euros; whatever the user told us in onboarding
+DAILY = WEEKLY_SPEND / 7
+
+
+def money(days):
+    return max(0.0, days) * DAILY
+
+
+def euros(v):
+    return "€" + f"{v:,.0f}"
+
+
+def bill_at(days_quit):
+    total = money(days_quit)
+    this_week = max(0.0, total - money(days_quit - 7))
+    return euros(this_week), euros(total)
+
+
 def timeline(reason, name, scheduled):
     """Everything that lands in the first month, in order."""
     out = []
@@ -101,12 +123,12 @@ def timeline(reason, name, scheduled):
     out.append(("Wed 09:00", "morning", *morning(3, reason, name)))
     out.append(("Thu 08:00", "milestone", MILESTONES[3][2], f"{MILESTONES[3][1]} in. {MILESTONES[3][3]}"))
     out.append(("Thu 09:00", "morning", *morning(4, reason, name)))
-    out.append(("Sun 10:00", "bill", *weekly("€30", "€26", reason, name)))
+    out.append(("Sun 10:00", "bill", *weekly(*bill_at(6.08), reason, name)))
     out.append(("Mon 08:00", "milestone", MILESTONES[4][2], f"{MILESTONES[4][1]} in. {MILESTONES[4][3]}"))
-    out.append(("Sun 10:00", "bill", *weekly("€30", "€56", reason, name)))
+    out.append(("Sun 10:00", "bill", *weekly(*bill_at(13.08), reason, name)))
     out.append(("Mon 08:00", "milestone", MILESTONES[5][2], f"{MILESTONES[5][1]} in. {MILESTONES[5][3]}"))
     out.append(("Tue 09:00", "morning", *morning(16, reason, name)))
-    out.append(("Sun 10:00", "bill", *weekly("€30", "€116", reason, name)))
+    out.append(("Sun 10:00", "bill", *weekly(*bill_at(20.08), reason, name)))
     out.append(("Wed 08:00", "milestone", MILESTONES[6][2], f"{MILESTONES[6][1]} in. {MILESTONES[6][3]}"))
     out.append(("Thu 09:00", "morning", *morning(32, reason, name)))
     return out
@@ -167,6 +189,9 @@ page = """<meta charset="utf-8">
 received rather than found on a phone in three days. <b>The reason now reaches the lock screen</b> —
 it drove the craving screen and the opening tab before, but every notification was generic, so
 someone quitting for Emma never once saw her name. Switch reason and start type below.</p>
+<p class="lede" style="margin-top:-10px">Every figure here is <b>computed from the plan</b>, not
+typed in — this timeline assumes €30 a week, so a €90-a-week smoker sees three times these numbers.
+The first Sunday reads the same twice because a partial first week <i>is</i> the whole total.</p>
 
 <div class="rail">
   <span class="lbl">Reason</span><span id="reasonBar"></span>
