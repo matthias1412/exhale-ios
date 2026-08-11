@@ -96,32 +96,53 @@ enum Seed {
 
         // Onboarding — one seed per step, and per product where the copy differs.
         case "onboard-intro":
-            return make(phase: .onboarding) { $0.onboardingStep = 0 }
+            return make(phase: .onboarding) { $0.onboardingStep = OnboardingStep.welcome.rawValue }
 
         case "onboard-product":
-            return make(phase: .onboarding) { $0.onboardingStep = 1 }
+            return make(phase: .onboarding) { $0.onboardingStep = OnboardingStep.product.rawValue }
 
         case "onboard-product-selected":
             // Selected state: accent border, filled radio, tinted row.
-            return onboarding(step: 1, product: .pouches)
+            return onboarding(step: OnboardingStep.product.rawValue, product: .pouches)
 
         case "onboard-amount-cigarettes":
-            return onboarding(step: 3, product: .cigarettes)
+            return onboarding(step: OnboardingStep.amount.rawValue, product: .cigarettes)
         case "onboard-amount-vape":
-            return onboarding(step: 3, product: .vape)
+            return onboarding(step: OnboardingStep.amount.rawValue, product: .vape)
         case "onboard-amount-pouches":
-            return onboarding(step: 3, product: .pouches)
+            return onboarding(step: OnboardingStep.amount.rawValue, product: .pouches)
 
         case "onboard-price-cigarettes":
-            return onboarding(step: 4, product: .cigarettes)
+            return onboarding(step: OnboardingStep.spend.rawValue, product: .cigarettes)
         case "onboard-price-vape":
-            return onboarding(step: 4, product: .vape)
+            return onboarding(step: OnboardingStep.spend.rawValue, product: .vape)
+
+        case "onboard-cravings":
+            return onboarding(step: OnboardingStep.cravings.rawValue, product: .cigarettes)
+
+        case "onboard-slips":
+            return onboarding(step: OnboardingStep.slips.rawValue, product: .cigarettes)
+
+        case "onboard-ready":
+            return onboarding(step: OnboardingStep.ready.rawValue, product: .cigarettes)
+
+        case "onboard-ready-scheduled":
+            return onboarding(step: OnboardingStep.ready.rawValue, product: .cigarettes) { model in
+                model.draft?.quitDate = Calendar.current.date(
+                    byAdding: .day, value: 4, to: Seed.referenceNow)!
+            }
+
+        case "onboard-ready-backdated":
+            return onboarding(step: OnboardingStep.ready.rawValue, product: .vape) { model in
+                model.draft?.quitDate = Calendar.current.date(
+                    byAdding: .day, value: -31, to: Seed.referenceNow)!
+            }
 
         case "onboard-reminders":
-            return onboarding(step: 6, product: .cigarettes)
+            return onboarding(step: OnboardingStep.reminders.rawValue, product: .cigarettes)
 
         case "onboard-quit-moment":
-            return onboarding(step: 5, product: .cigarettes)
+            return onboarding(step: OnboardingStep.dayOne.rawValue, product: .cigarettes)
 
         case "paywall":
             return make(phase: .paywall, plan: plan(.cigarettes, day: 1))
@@ -139,13 +160,13 @@ enum Seed {
 
         case "onboard-price-yearly":
             // The annual loss figure, which is the number that lands.
-            return onboarding(step: 4, product: .pouches)
+            return onboarding(step: OnboardingStep.spend.rawValue, product: .pouches)
 
         case "onboard-reason":
-            return onboarding(step: 2, product: .cigarettes)
+            return onboarding(step: OnboardingStep.why.rawValue, product: .cigarettes)
 
         case "onboard-reason-chosen":
-            return onboarding(step: 2, product: .cigarettes) { model in
+            return onboarding(step: OnboardingStep.why.rawValue, product: .cigarettes) { model in
                 var state = model.state
                 state.reasons = [.someone, .money]
                 state.reasonName = "Emma"
@@ -163,12 +184,12 @@ enum Seed {
         case "onboard-quit-time":
             // Step 4 with the time wheel open — an overlay step that was
             // previously unreachable from a seed and therefore never captured.
-            return onboarding(step: 5, product: .cigarettes) {
+            return onboarding(step: OnboardingStep.dayOne.rawValue, product: .cigarettes) {
                 $0.quitPickerMode = .earlierToday
             }
 
         case "onboard-quit-date":
-            return onboarding(step: 5, product: .cigarettes) {
+            return onboarding(step: OnboardingStep.dayOne.rawValue, product: .cigarettes) {
                 $0.quitPickerMode = .pickDate
             }
 
@@ -246,7 +267,7 @@ enum Seed {
             }
         case "onboard-price-empty":
             // Continue must stay disabled until a price is entered.
-            return onboarding(step: 4, product: .cigarettes) { model in
+            return onboarding(step: OnboardingStep.spend.rawValue, product: .cigarettes) { model in
                 model.draft?.weeklySpend = 0
             }
 

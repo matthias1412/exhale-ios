@@ -2,9 +2,8 @@ import SwiftUI
 
 /// The onboarding flow, in order.
 struct OnboardingFlow: View {
-    /// Index of the final step. Seven: intro, product, why, amount, price,
-    /// moment, reminders.
-    static let lastStep = 6
+    /// Steps are named in OnboardingStep; this is just the last index.
+    static let lastStep = OnboardingStep.allCases.count - 1
 
     @Environment(AppModel.self) private var model
 
@@ -13,14 +12,17 @@ struct OnboardingFlow: View {
             header
 
             Group {
-                switch model.onboardingStep {
-                case 0: IntroStep()
-                case 1: ProductPickerStep()
-                case 2: ReasonStep()
-                case 3: AmountStep()
-                case 4: PriceStep()
-                case 5: QuitMomentStep()
-                default: RemindersStep()
+                switch OnboardingStep(rawValue: model.onboardingStep) ?? .ready {
+                case .welcome:   IntroStep()
+                case .product:   ProductPickerStep()
+                case .amount:    AmountStep()
+                case .spend:     PriceStep()
+                case .why:       ReasonStep()
+                case .cravings:  CravingsStep()
+                case .slips:     SlipsStep()
+                case .dayOne:    QuitMomentStep()
+                case .reminders: RemindersStep()
+                case .ready:     ReadyStep()
                 }
             }
             // Steps slide in the direction of travel, so Back feels like going
@@ -33,7 +35,7 @@ struct OnboardingFlow: View {
 
             Spacer(minLength: 0)
 
-            if model.onboardingStep < Self.lastStep - 1 {
+            if !(OnboardingStep(rawValue: model.onboardingStep)?.providesOwnFooter ?? true) {
                 footer
             }
         }
@@ -52,12 +54,12 @@ struct OnboardingFlow: View {
                     .foregroundStyle(Palette.accent)
             }
             Spacer()
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 ForEach(0..<(Self.lastStep + 1), id: \.self) { i in
                     Capsule()
                         .fill(i <= model.onboardingStep ? Palette.accent
                                                         : Palette.textPrimary.opacity(0.15))
-                        .frame(width: 18, height: 4)
+                        .frame(width: 12, height: 4)
                 }
             }
             .accessibilityLabel("Step \(model.onboardingStep + 1) of \(Self.lastStep + 1)")
@@ -90,15 +92,15 @@ struct OnboardingFlow: View {
     }
 
     private var canContinue: Bool {
-        switch model.onboardingStep {
-        case 1: model.draft != nil
-        case 2: !model.state.reasons.isEmpty
+        switch OnboardingStep(rawValue: model.onboardingStep) {
+        case .product: model.draft != nil
+        case .why: !model.state.reasons.isEmpty
         // The price step was skippable. It stopped being optional the moment
         // the per-country price table went away and the field started blank:
         // tapping through left the spend at zero, which makes The Bill a
         // receipt for nothing and the paywall read "Nicotine takes €0.00 from
         // you every year".
-        case 4: (model.draft?.weeklySpend ?? 0) > 0
+        case .spend: (model.draft?.weeklySpend ?? 0) > 0
         default: true
         }
     }

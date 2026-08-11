@@ -917,4 +917,67 @@ final class ScheduledStartTests: XCTestCase {
         XCTAssertTrue(scheduled(daysFromNow: 0).isCounting)
         XCTAssertTrue(scheduled(daysFromNow: -8).isCounting)
     }
+
+    // MARK: - The ready screen
+
+    private func readyPlan(_ offsetDays: Int, product: NicotineProduct = .cigarettes)
+        -> QuitPlan {
+        QuitPlan(product: product, amount: 15, weeklySpend: 49.875,
+                 currencyCode: "EUR",
+                 quitDate: Calendar.current.date(
+                    byAdding: .day, value: offsetDays, to: Seed.referenceNow)!)
+    }
+
+    /// Starting now: the nearest mark is minutes away, so it is the hero and
+    /// drops out of the list underneath rather than appearing twice.
+    func testStartingNowLeadsWithTheNearestMilestone() {
+        let s = ReadySummary(plan: readyPlan(0), now: Seed.referenceNow)
+        XCTAssertEqual(s.headline, "20 min")
+        XCTAssertEqual(s.cta, "Start day one")
+        XCTAssertFalse(s.rows.contains { $0.value == "20 min" })
+    }
+
+    /// Scheduled: "20 minutes until your heart rate settles" is false for
+    /// someone who has not stopped, so the day itself leads.
+    func testAScheduledStartLeadsWithTheDay() {
+        let plan = readyPlan(4)
+        let s = ReadySummary(plan: plan, now: Seed.referenceNow)
+        XCTAssertEqual(s.headline, plan.quitDate.formatted(.dateTime.weekday(.wide)))
+        XCTAssertEqual(s.cta, "That's the plan")
+    }
+
+    func testBackdatingLeadsWithTheDayTheyAreOn() {
+        let s = ReadySummary(plan: readyPlan(-31), now: Seed.referenceNow)
+        XCTAssertEqual(s.headline, "Day 32")
+        XCTAssertEqual(s.cta, "Pick up from here")
+    }
+
+    /// Marks already behind them must never be offered as upcoming.
+    func testBackdatingOnlyListsMilestonesStillAhead() {
+        let s = ReadySummary(plan: readyPlan(-31), now: Seed.referenceNow)
+        for row in s.rows.dropLast() {
+            XCTAssertFalse(["20 min", "12 h", "48 h", "72 h", "1 week", "2 weeks"]
+                .contains(row.value), "offered a passed mark: \(row.value)")
+        }
+    }
+
+    /// The money row closes every variant, and reads off the same figure the
+    /// paywall and The Bill use.
+    func testTheMoneyRowIsAlwaysLast() {
+        for offset in [-31, 0, 4] {
+            let plan = readyPlan(offset)
+            let s = ReadySummary(plan: plan, now: Seed.referenceNow)
+            let expected = QuitProgress(plan: plan, now: Seed.referenceNow)
+                .yearlyBurn.moneyString("EUR")
+            XCTAssertEqual(s.rows.last?.value, expected)
+        }
+    }
+
+    /// Milestones that do not apply to the product must not appear.
+    func testVapeNeverSeesCigaretteOnlyMarks() {
+        let s = ReadySummary(plan: readyPlan(0, product: .vape), now: Seed.referenceNow)
+        for row in s.rows {
+            XCTAssertNotEqual(row.label, "Carbon monoxide clears")
+        }
+    }
 }

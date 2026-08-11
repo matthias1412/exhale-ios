@@ -16,7 +16,7 @@ import SwiftUI
 /// about whether they will still be quit in a fortnight into a decision about
 /// inbox volume, and the second question has an obvious cheap answer.
 ///
-/// Nothing is committed until this step ends. The plan is held in the draft
+/// Nothing is committed here either. The plan is held in the draft
 /// until then, because `onboardingStep` and `draft` are not persisted while
 /// `phase` is: writing the plan here and leaving the phase behind would mean a
 /// relaunch mid-step restarted onboarding on top of a saved plan.
@@ -52,7 +52,7 @@ struct RemindersStep: View {
             PillButton("Turn on reminders", style: .accent) { grant() }
                 .disabled(asking)
 
-            Button("Not now") { model.completeOnboarding() }
+            Button("Not now") { model.onboardingStep += 1 }
                 .font(.spaceGrotesk(13.5))
                 .foregroundStyle(Palette.textMuted)
                 .frame(maxWidth: .infinity)
@@ -65,16 +65,14 @@ struct RemindersStep: View {
         // Frozen clock means a seeded screenshot run. Touching the real
         // notification centre there would put a system dialog over the capture.
         guard !model.clock.isFrozen else {
-            model.completeOnboarding()
+            model.onboardingStep += 1
             return
         }
         asking = true
         Task {
             _ = await NotificationScheduler.shared.requestAuthorisation()
-            // Commit first: scheduling reads the saved plan, which does not
-            // exist until onboarding completes.
-            model.completeOnboarding()
-            await NotificationScheduler.shared.reschedule(state: model.state)
+            // Scheduling happens on the ready screen, once the plan is saved.
+            model.onboardingStep += 1
         }
     }
 }
