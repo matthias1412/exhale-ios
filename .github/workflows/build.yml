@@ -46,6 +46,8 @@ jobs:
           python3 tools/lint-seeds.py
           python3 tools/lint-logo.py
           python3 tools/lint-notifications.py
+          python3 tools/build-onboarding-preview.py
+          python3 tools/lint-onboarding-copy.py
           python3 tools/lint-dashes.py
           bash tools/lint-shell.sh
 

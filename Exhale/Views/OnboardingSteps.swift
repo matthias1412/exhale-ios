@@ -109,7 +109,7 @@ struct PriceStep: View {
                         .padding(.top, 20)
                         .transition(.opacity)
                 } else {
-                    Text("Roughly what leaves your pocket. We won't guess it for you.")
+                    Text("Roughly what leaves your pocket.")
                         .font(.spaceGrotesk(13))
                         .foregroundStyle(Palette.textFaint)
                         .frame(maxWidth: .infinity)
@@ -199,7 +199,7 @@ struct QuitMomentStep: View {
                 .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("Now is the strongest answer. But a date you'll actually keep beats a date you won't.")
+            Text("Now is the strongest answer. But a day you'll keep beats a day you won't.")
                 .font(.spaceGrotesk(14))
                 .foregroundStyle(Palette.textMuted)
                 .fixedSize(horizontal: false, vertical: true)

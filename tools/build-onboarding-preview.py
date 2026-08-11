@@ -8,7 +8,7 @@ fonts = pathlib.Path("tools/preview/_fonts.css").read_text(encoding="utf-8")
 # scaffolding (status bar, header, progress) is shared.
 S = []
 
-S.append(dict(step="0 · Welcome", note="the one you objected to", prog=None, variants=[
+S.append(dict(step="0 · Welcome", note="settled", prog=None, variants=[
   dict(name="Behind you", body="""
     <div class="body mid">
       <div class="dots" data-mark="46" style="width:46px;height:46px;margin-bottom:18px"></div>
@@ -17,27 +17,7 @@ S.append(dict(step="0 · Welcome", note="the one you objected to", prog=None, va
       what's left is habit, and habit is beatable.<br><br>
       <b>Those three days are the ones this is for,</b> and every one after.</div>
     </div>""",
-    foot='<div class="cta">Let\'s start</div><div class="cta ghost">I quit a while ago</div>'),
-
-  dict(name="Already done", body="""
-    <div class="body mid">
-      <div class="dots" data-mark="46" style="width:46px;height:46px;margin-bottom:18px"></div>
-      <div class="h">The hardest part<br>is already done.</div>
-      <div class="sub">You decided. Everything after this is just getting through the days,
-      and we'll count every single one of them with you.<br><br>
-      <b>Starting with the next three.</b></div>
-    </div>""",
-    foot='<div class="cta">Let\'s start</div><div class="cta ghost">I quit a while ago</div>'),
-
-  dict(name="72 hours", body="""
-    <div class="body mid">
-      <div class="dots" data-mark="46" style="width:46px;height:46px;margin-bottom:18px"></div>
-      <div class="h">Seventy-two hours.</div>
-      <div class="sub">That's how long the nicotine takes to leave. After that you're not fighting
-      chemistry any more, you're breaking a habit, and habits break.<br><br>
-      <b>This is for both halves.</b></div>
-    </div>""",
-    foot='<div class="cta">Let\'s start</div><div class="cta ghost">I quit a while ago</div>'),
+    foot='<div class="cta">Let\'s start</div><div class="cta ghost">I quit a while ago</div>')
 ]))
 
 S.append(dict(step="1 · Product", note="settled", prog=0, variants=[
@@ -71,7 +51,7 @@ S.append(dict(step="3 · Spend", note="", prog=2, variants=[
   dict(name="As built", body="""
     <div class="body">
       <div class="h sm">Spend on vaping in a normal week?</div>
-      <div class="sub">Prices in EUR · <b style="color:var(--accent)">Change</b></div>
+      <div class="sub">Roughly what leaves your pocket.<br>Prices in EUR · <b style="color:var(--accent)">Change</b></div>
       <div class="stepper" style="margin-top:18px"><div class="circ">−</div>
         <div class="price">€30</div><div class="circ">+</div></div>
       <div class="burn"><div class="burnm">≈ €130 a month, vanishing into vapour</div>
@@ -79,7 +59,7 @@ S.append(dict(step="3 · Spend", note="", prog=2, variants=[
     </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
 ]))
 
-S.append(dict(step="4 · Why", note="you liked this one", prog=3, variants=[
+S.append(dict(step="4 · Why", note="settled", prog=3, variants=[
   dict(name="Why this time", body="""
     <div class="body">
       <div class="h sm">Why this time?</div>
@@ -94,25 +74,10 @@ S.append(dict(step="4 · Why", note="you liked this one", prog=3, variants=[
       <div class="row"><div style="flex:1"><div class="rt">Being free of it</div>
         <div class="rs">Not needing anything</div></div><div class="ring"></div></div>
       <div class="field">Emma</div>
-    </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
-
-  dict(name="Who's it for", body="""
-    <div class="body">
-      <div class="h sm">Who is this for?</div>
-      <div class="sub">Pick any that are true.</div>
-      <div class="row"><div style="flex:1"><div class="rt">Me</div>
-        <div class="rs">My lungs, my heart, my money</div></div><div class="ring"></div></div>
-      <div class="row sel"><div style="flex:1"><div class="rt">Someone in particular</div>
-        <div class="rs">A partner, a child, a parent</div></div>
-        <div class="badge">MAIN</div><div class="ring on"></div></div>
-      <div class="row"><div style="flex:1"><div class="rt">The person I'd rather be</div>
-        <div class="rs">Not needing anything</div></div><div class="ring"></div></div>
-      <div class="field">Their name, if you like. Emma</div>
-      <div class="note">Kept on your phone. Never sent anywhere.</div>
-    </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
+    </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>')
 ]))
 
-S.append(dict(step="5 · Cravings", note="new: normal, and we help", prog=4, variants=[
+S.append(dict(step="5 · Cravings", note="settled", prog=4, variants=[
   dict(name="Three minutes", body="""
     <div class="body mid">
       <div class="h sm">A craving lasts about three minutes.</div>
@@ -121,29 +86,10 @@ S.append(dict(step="5 · Cravings", note="new: normal, and we help", prog=4, var
       The trick is having somewhere to put those three minutes.</div>
       <div class="sos">I'm craving, help me through it</div>
       <div class="sub" style="margin-top:8px">It sits on every screen.</div>
-    </div>""", foot='<div class="cta">Good to know</div>'),
-
-  dict(name="Not a warning sign", body="""
-    <div class="body mid">
-      <div class="h sm">Cravings aren't a sign it's going wrong.</div>
-      <div class="sub">Everyone gets them, they're worst in the first week, and they pass in about
-      three minutes on their own.<br><br>
-      What matters is what you do with those three minutes.</div>
-      <div class="sos">I'm craving, help me through it</div>
-      <div class="sub" style="margin-top:8px">This button is on every screen in the app.</div>
-    </div>""", foot='<div class="cta">Good to know</div>'),
-
-  dict(name="Willpower runs out", body="""
-    <div class="body mid">
-      <div class="quote">Willpower runs out. Everyone's does.<br><br>
-      A craving doesn't care how motivated you are. It arrives, peaks in about three minutes
-      and leaves, <em>whether you smoke or not</em>.<br><br>
-      What gets people through is having something to do for those three minutes.</div>
-      <div class="sos" style="margin-top:14px">I'm craving, help me through it</div>
-    </div>""", foot='<div class="cta">Makes sense</div>'),
+    </div>""", foot='<div class="cta">Good to know</div>')
 ]))
 
-S.append(dict(step="6 · Slips", note="new: it happens, and it is handled", prog=5, variants=[
+S.append(dict(step="6 · Slips", note="settled", prog=5, variants=[
   dict(name="Not a reset", body="""
     <div class="body mid">
       <div class="h sm">If you slip, you haven't failed.</div>
@@ -151,28 +97,10 @@ S.append(dict(step="6 · Slips", note="new: it happens, and it is handled", prog
       cigarette, and <b>it doesn't wipe out the forty days behind it.</b><br><br>
       There's a button for that too. Tell the truth and carry on.</div>
       <div class="slip">I slipped</div>
-    </div>""", foot='<div class="cta">Got it</div>'),
-
-  dict(name="The dangerous bit", body="""
-    <div class="body mid">
-      <div class="h sm">The cigarette isn't the dangerous part.</div>
-      <div class="sub">Deciding you've blown it is. That's what turns one slip into starting over
-      in six months.<br><br>
-      So log it, keep every day you've already earned, and keep going.</div>
-      <div class="slip">I slipped</div>
-    </div>""", foot='<div class="cta">Got it</div>'),
-
-  dict(name="Plain", body="""
-    <div class="body mid">
-      <div class="h sm">Slips happen.</div>
-      <div class="sub">They happen to most people who eventually quit for good. What matters is
-      what happens next.<br><br>
-      Log it in one tap. Every day you already earned stays exactly where it is.</div>
-      <div class="slip">I slipped</div>
-    </div>""", foot='<div class="cta">Got it</div>'),
+    </div>""", foot='<div class="cta">Got it</div>')
 ]))
 
-S.append(dict(step="7 · Day one", note="", prog=6, variants=[
+S.append(dict(step="7 · Day one", note="settled", prog=6, variants=[
   dict(name="Now is strongest", body="""
     <div class="body">
       <div class="h sm">When does day one start?</div>
@@ -182,19 +110,7 @@ S.append(dict(step="7 · Day one", note="", prog=6, variants=[
       <div class="chips"><div class="chip">Tomorrow</div><div class="chip on">Monday</div>
         <div class="chip">Pick a date</div></div>
       <div class="sub" style="text-align:center;margin-top:14px;color:var(--accent)">It was longer ago</div>
-    </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
-
-  dict(name="Already stopped", body="""
-    <div class="body">
-      <div class="h sm">When was your last one?</div>
-      <div class="sub">If you've already stopped, we'll count from then. You shouldn't lose days
-      you've already done.</div>
-      <div class="cta out" style="margin-top:16px">Just had one, start now</div>
-      <div class="or">OR</div>
-      <div class="chips"><div class="chip on">Earlier today</div><div class="chip">Yesterday</div>
-        <div class="chip">Pick a date</div><div class="chip">Starting Monday</div></div>
-      <div class="sub" style="text-align:center;margin-top:14px;color:var(--accent)">It was longer ago</div>
-    </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>'),
+    </div>""", foot='<div class="cta">Continue</div><div class="back">Back</div>')
 ]))
 
 S.append(dict(step="8 · Reminders", note="settled", prog=6, variants=[
@@ -211,17 +127,7 @@ S.append(dict(step="8 · Reminders", note="settled", prog=6, variants=[
     foot='<div class="cta">Turn on reminders</div><div class="cta ghost">Not now</div>'),
 ]))
 
-S.append(dict(step="9 · Ready", note="no fake computation", prog=7, variants=[
-  dict(name="Money first", body="""
-    <div class="body mid">
-      <div class="h sm">That's everything.</div>
-      <div class="big">€1,560</div>
-      <div class="sub" style="margin-top:2px">a year, staying in your pocket.</div>
-      <div class="statline"><span>Milestones ahead</span><span>18</span></div>
-      <div class="statline"><span>First one</span><span>20 minutes</span></div>
-      <div class="statline"><span>Hardest stretch</span><span>days 1 to 3</span></div>
-    </div>""", foot='<div class="cta">Start day one</div>'),
-
+S.append(dict(step="9 · Ready", note="settled", prog=7, variants=[
   dict(name="Time first", body="""
     <div class="body mid">
       <div class="h sm">That's everything.</div>
@@ -230,14 +136,7 @@ S.append(dict(step="9 · Ready", note="no fake computation", prog=7, variants=[
       <div class="statline"><span>Then</span><span>12 hours</span></div>
       <div class="statline"><span>Nicotine gone</span><span>3 days</span></div>
       <div class="statline"><span>A year of vaping</span><span>€1,560</span></div>
-    </div>""", foot='<div class="cta">Start day one</div>'),
-
-  dict(name="Straight in", body="""
-    <div class="body mid">
-      <div class="h">Day one<br>starts now.</div>
-      <div class="sub">Twenty minutes until your heart rate starts coming down. We'll tell you
-      when it does.</div>
-    </div>""", foot='<div class="cta">Take me in</div>'),
+    </div>""", foot='<div class="cta">Start day one</div>')
 ]))
 
 HEAD = """<meta charset="utf-8">

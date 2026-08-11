@@ -11,11 +11,11 @@ struct ReasonStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Why now?")
+            Text("Why this time?")
                 .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("Pick as many as are true. We'll hand the first one back to you when it's hard.")
+            Text("Pick any that are true.")
                 .font(.spaceGrotesk(14))
                 .foregroundStyle(Palette.textMuted)
                 .fixedSize(horizontal: false, vertical: true)

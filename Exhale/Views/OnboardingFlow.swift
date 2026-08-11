@@ -116,7 +116,7 @@ struct ProductPickerStep: View {
                 .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("No judgement. We just need the shape of the habit.")
+            Text("No judgement.")
                 .font(.spaceGrotesk(14))
                 .foregroundStyle(Palette.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -203,7 +203,7 @@ struct NotAloneNote: View {
                 .frame(width: 5, height: 5)
                 .padding(.top, 6)
 
-            Text("You're not doing something unusual. Most people who smoke want to stop, and most who manage it needed more than one go.")
+            Text("Most people who smoke want to stop, and most who manage it needed more than one go. You're not doing something unusual.")
                 .font(.spaceGrotesk(12.5))
                 .lineSpacing(3)
                 .foregroundStyle(Palette.textMuted)

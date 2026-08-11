@@ -1,0 +1,79 @@
+{
+  "_comment": "Approved onboarding copy. The single source of truth for the lines the user has signed off. lint-onboarding-copy.py asserts every string here appears verbatim in BOTH the Swift view that owns it and the generated preview, so an approved edit cannot land in one and not the other. Add a line here only once it is agreed; change it here and in both places together.",
+  "screens": [
+    {
+      "step": "welcome",
+      "swift": "Exhale/Views/IntroStep.swift",
+      "lines": [
+        "Your last one is behind you.",
+        "The first three days are the hard part. After that the nicotine is gone and what's left is habit, and habit is beatable.",
+        "Those three days are the ones this is for, and every one after."
+      ]
+    },
+    {
+      "step": "product",
+      "swift": "Exhale/Views/OnboardingFlow.swift",
+      "lines": [
+        "What are you quitting?",
+        "No judgement.",
+        "Most people who smoke want to stop, and most who manage it needed more than one go. You're not doing something unusual."
+      ]
+    },
+    {
+      "step": "amount",
+      "swift": "Exhale/Views/OnboardingSteps.swift",
+      "lines": ["Your honest average. Rough is fine."]
+    },
+    {
+      "step": "spend",
+      "swift": "Exhale/Views/OnboardingSteps.swift",
+      "lines": ["Roughly what leaves your pocket.", "a year, gone"]
+    },
+    {
+      "step": "why",
+      "swift": "Exhale/Views/ReasonStep.swift",
+      "lines": ["Why this time?", "Pick any that are true."]
+    },
+    {
+      "step": "cravings",
+      "swift": "Exhale/Views/OnboardingExtraSteps.swift",
+      "lines": [
+        "A craving lasts about three minutes.",
+        "It arrives, it peaks, and it goes, whether you smoke or not. That's not willpower talking, it's just how they work. The trick is having somewhere to put those three minutes.",
+        "It sits on every screen."
+      ]
+    },
+    {
+      "step": "slips",
+      "swift": "Exhale/Views/OnboardingExtraSteps.swift",
+      "lines": [
+        "If you slip, you haven't failed.",
+        "Most people who stop for good slipped on the way. One cigarette is one cigarette, and it doesn't wipe out the forty days behind it.",
+        "There's a button for that too. Tell the truth and carry on."
+      ]
+    },
+    {
+      "step": "dayOne",
+      "swift": "Exhale/Views/OnboardingSteps.swift",
+      "lines": [
+        "When does day one start?",
+        "Now is the strongest answer. But a day you'll keep beats a day you won't.",
+        "It was longer ago"
+      ]
+    },
+    {
+      "step": "reminders",
+      "swift": "Exhale/Views/RemindersStep.swift",
+      "lines": [
+        "Deciding is the easy part.",
+        "Everyone who has ever quit had a moment like this one: clear, sure, done deliberating. What separates the ones who keep it is having something on their side on the days they don't feel like this.",
+        "Turn on reminders"
+      ]
+    },
+    {
+      "step": "ready",
+      "swift": "Exhale/Views/OnboardingExtraSteps.swift",
+      "lines": ["That's everything."]
+    }
+  ]
+}
