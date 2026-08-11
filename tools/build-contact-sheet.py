@@ -25,14 +25,18 @@ QUALITY = 82
 # not alphabetical. Seeds not named here land in "Everything else" rather than
 # being dropped, so a new seed can never go missing from a review.
 GROUPS = [
-    ("Onboarding", "Six steps, then the ask. Every product variant.", [
-        "onboard-intro", "onboard-product", "onboard-product-selected",
-        "onboard-reason", "onboard-reason-chosen",
+    ("Onboarding", "All ten steps, in the order you meet them.", [
+        "onboard-intro",
+        "onboard-product", "onboard-product-selected",
         "onboard-amount-cigarettes", "onboard-amount-vape", "onboard-amount-pouches",
-        "onboard-price-cigarettes", "onboard-price-vape",
-        "onboard-price-yearly", "onboard-price-empty",
+        "onboard-price-empty", "onboard-price-cigarettes", "onboard-price-vape",
+        "onboard-price-yearly",
+        "onboard-reason", "onboard-reason-chosen",
+        "onboard-cravings",
+        "onboard-slips",
         "onboard-quit-moment", "onboard-quit-time", "onboard-quit-date",
         "onboard-reminders",
+        "onboard-ready", "onboard-ready-scheduled", "onboard-ready-backdated",
     ]),
     ("Paywall", "Including the states that are easy to forget.", [
         "paywall", "paywall-loading", "paywall-foreign-currency",

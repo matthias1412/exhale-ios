@@ -946,6 +946,17 @@ final class ScheduledStartTests: XCTestCase {
         XCTAssertEqual(s.cta, "That's the plan")
     }
 
+    /// Day one must never be described as behind them, however many hours in.
+    func testStoppingEarlierTodayIsStillDayOne() {
+        let now = Seed.referenceNow
+        let plan = QuitPlan(product: .cigarettes, amount: 15, weeklySpend: 49.875,
+                            currencyCode: "EUR",
+                            quitDate: now.addingTimeInterval(-9 * 3600))
+        let s = ReadySummary(plan: plan, now: now)
+        XCTAssertFalse(s.headline.hasPrefix("Day "), "got \(s.headline)")
+        XCTAssertEqual(s.cta, "Start day one")
+    }
+
     func testBackdatingLeadsWithTheDayTheyAreOn() {
         let s = ReadySummary(plan: readyPlan(-31), now: Seed.referenceNow)
         XCTAssertEqual(s.headline, "Day 32")

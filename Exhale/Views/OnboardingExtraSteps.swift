@@ -199,9 +199,13 @@ struct ReadySummary {
             caption = "when day one starts. Everything below follows from it."
             cta = "That's the plan"
             listed = Array(upcoming.prefix(2))
-        } else if let next = upcoming.first, elapsed < 1 {
-            // Starting now: the nearest mark is minutes away and worth naming,
-            // so it becomes the hero and drops out of the list below it.
+        } else if let next = upcoming.first, elapsed < 24 {
+            // Day one, whether they stopped this minute or at breakfast. The
+            // nearest mark leads and drops out of the list below it.
+            //
+            // This was gated on the first hour, which meant anyone who said
+            // "this morning" was handed the backdated wording and told day one
+            // was already behind them.
             headline = next.when
             caption = "until \(next.title.lowercased()). Then:"
             cta = "Start day one"
