@@ -338,8 +338,14 @@ final class AppModel {
     }
 }
 
+/// Lets a seed open the quit-date calendar, which is otherwise local state
+/// inside the step and so was unreachable from a screenshot run.
+///
+/// `earlierToday` went with it: the time wheel it named stopped existing when
+/// the step became chips plus a calendar, and the seed pointing at it quietly
+/// produced a third identical screenshot of the plain step.
 enum QuitPickerMode: String, Sendable {
-    case none, earlierToday, pickDate
+    case none, pickDate
 }
 
 struct BannerContent: Equatable, Sendable {

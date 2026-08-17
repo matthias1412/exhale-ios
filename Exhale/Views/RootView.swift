@@ -158,6 +158,17 @@ struct MainShell: View {
             .transition(.opacity.combined(with: .offset(y: 8)))
             .animation(.snappy(duration: 0.26), value: model.tab)
 
+            // Onboarding promises this sits on every screen, and it did not:
+            // it was mounted inside TodayScreen, so The Bill and Milestones
+            // had no way to reach it. A craving does not wait for someone to
+            // navigate home first, which is the entire argument for the
+            // button existing, so it lives above the tab bar instead.
+            if model.isCounting {
+                CravingButton()
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 10)
+            }
+
             TabBar()
         }
     }

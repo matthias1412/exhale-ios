@@ -30,7 +30,6 @@ enum SeedNames {
         "onboard-ready",
         "onboard-ready-scheduled",
         "onboard-ready-backdated",
-        "onboard-quit-time",
         "onboard-quit-date",
         "onboard-price-yearly",
         "onboard-price-empty",

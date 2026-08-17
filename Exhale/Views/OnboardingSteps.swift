@@ -193,6 +193,17 @@ struct QuitMomentStep: View {
     @State private var chosen: Date?
     @State private var showingCalendar = false
 
+    /// Either the user tapped, or a seed asked for it.
+    private var calendarOpen: Binding<Bool> {
+        Binding(
+            get: { showingCalendar || model.quitPickerMode == .pickDate },
+            set: { open in
+                showingCalendar = open
+                if !open { model.quitPickerMode = .none }
+            }
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("When does day one start?")
@@ -244,7 +255,7 @@ struct QuitMomentStep: View {
         }
         .padding(.top, 34)
         .animation(.snappy(duration: 0.2), value: chosen)
-        .sheet(isPresented: $showingCalendar) {
+        .sheet(isPresented: calendarOpen) {
             PastQuitDatePicker(now: model.clock.now) { date in
                 chosen = date
                 showingCalendar = false

@@ -51,9 +51,6 @@ struct TodayScreen: View {
                     .padding(.bottom, 16)
                 }
 
-                CravingButton()
-                    .padding(.horizontal, 24)
-
                 SlipLink()
                     // Clearance for the floating tab bar, which now sits over
                     // the content rather than below it.

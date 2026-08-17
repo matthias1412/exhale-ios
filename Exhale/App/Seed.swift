@@ -181,13 +181,6 @@ enum Seed {
                 model.state = state
             }
 
-        case "onboard-quit-time":
-            // Step 4 with the time wheel open — an overlay step that was
-            // previously unreachable from a seed and therefore never captured.
-            return onboarding(step: OnboardingStep.dayOne.rawValue, product: .cigarettes) {
-                $0.quitPickerMode = .earlierToday
-            }
-
         case "onboard-quit-date":
             return onboarding(step: OnboardingStep.dayOne.rawValue, product: .cigarettes) {
                 $0.quitPickerMode = .pickDate

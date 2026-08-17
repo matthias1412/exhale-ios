@@ -34,7 +34,7 @@ GROUPS = [
         "onboard-reason", "onboard-reason-chosen",
         "onboard-cravings",
         "onboard-slips",
-        "onboard-quit-moment", "onboard-quit-time", "onboard-quit-date",
+        "onboard-quit-moment", "onboard-quit-date",
         "onboard-reminders",
         "onboard-ready", "onboard-ready-scheduled", "onboard-ready-backdated",
     ]),
