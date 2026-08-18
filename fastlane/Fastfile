@@ -37,13 +37,20 @@ platform :ios do
 
     # No builds exist yet on the first upload, and without an explicit initial
     # value this raises instead of returning zero.
+    next_build = latest_testflight_build_number(
+      api_key: api_key,
+      initial_build_number: 0
+    ) + 1
+
     increment_build_number(
-      build_number: latest_testflight_build_number(
-        api_key: api_key,
-        initial_build_number: 0
-      ) + 1,
+      build_number: next_build,
       xcodeproj: "Exhale.xcodeproj"
     )
+
+    # Say it out loud. Fastlane's closing summary table reports elapsed seconds
+    # per step, not values, and reading that column as a build number is an
+    # easy and confident mistake to make when checking which build shipped.
+    UI.important("Uploading build #{next_build} of #{lane_context[SharedValues::VERSION_NUMBER] || "1.0.0"}")
 
     build_app(
       scheme: "Exhale",
