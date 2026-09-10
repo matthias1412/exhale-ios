@@ -12,6 +12,10 @@ on:
         description: "Sign and upload to TestFlight (needs match + App Store Connect secrets)"
         type: boolean
         default: false
+      debug_tools:
+        description: "Include the day-jumping debug tools. Leave OFF for anything headed to the App Store."
+        type: boolean
+        default: false
       setup_signing:
         description: "First run only — let match CREATE certificates. Leave off afterwards."
         type: boolean
@@ -28,6 +32,9 @@ jobs:
     # failed the archive with "requires a development team".
     env:
       DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+      # Expanded inside project.yml into SWIFT_ACTIVE_COMPILATION_CONDITIONS.
+      # Empty means the debug tools are not compiled at all.
+      EXHALE_DEBUG_TOOLS: ${{ inputs.debug_tools && 'DEBUG_TOOLS' || '' }}
 
     steps:
       - uses: actions/checkout@v4

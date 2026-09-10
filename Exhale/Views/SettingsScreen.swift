@@ -46,10 +46,11 @@ struct SettingsScreen: View {
 
                     testButton.padding(.top, 22)
 
+#if DEBUG_TOOLS
                     // Five taps on the wordmark still works, but nobody
                     // testing a build should have to know that.
                     SectionLabel("TESTING").padding(.top, 26)
-                    Text("Jump to any day, replay the spiral, play any milestone's celebration, and start over. Goes before the App Store build.")
+                    Text("Jump to any day, replay the spiral, play any milestone's celebration, and start over. Not present in App Store builds.")
                         .font(.spaceGrotesk(12))
                         .foregroundStyle(Palette.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -64,6 +65,7 @@ struct SettingsScreen: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                     .background(Capsule().stroke(Palette.accent.opacity(0.4), lineWidth: 1.5))
+                    #endif
                     .padding(.top, 12)
 
             SectionLabel("START OVER").padding(.top, 26)

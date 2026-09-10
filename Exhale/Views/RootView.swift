@@ -64,11 +64,13 @@ struct RootView: View {
                 .zIndex(35)
             }
 
+            #if DEBUG_TOOLS
             if model.debugMenuOpen {
                 DebugMenu()
                     .transition(.opacity)
                     .zIndex(30)
             }
+            #endif
         }
         .overlay(alignment: .top) {
             // Sits in the safe area by layout, so it can never collide with
@@ -188,6 +190,7 @@ struct AppHeader: View {
                     .foregroundStyle(Palette.accent)
             }
             .contentShape(Rectangle())
+            #if DEBUG_TOOLS
             .onTapGesture {
                 // Hidden debug menu: five taps on the wordmark.
                 wordmarkTaps += 1
@@ -196,6 +199,7 @@ struct AppHeader: View {
                     model.debugMenuOpen = true
                 }
             }
+            #endif
             .accessibilityLabel("Exhale")
 
             Spacer()

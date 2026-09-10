@@ -47,6 +47,12 @@ targets:
         INFOPLIST_FILE: Exhale/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Exhale/Resources/Exhale.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # The debug tools are compiled in only when this is set, and it is set
+        # by asking for it. Off is the default precisely because the failure
+        # everyone eventually makes is forgetting to take something out, and a
+        # store build that ships a "jump to any day" button is far worse than a
+        # test build that is missing one.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) ${EXHALE_DEBUG_TOOLS}"
       configs:
         debug:
           # Simulator builds (build + screenshot jobs) sign ad-hoc.

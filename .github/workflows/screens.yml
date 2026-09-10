@@ -25,6 +25,11 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
 
+    # Always on here: one of the seeds photographs the debug menu, and a
+    # screenshot run never leaves the runner.
+    env:
+      EXHALE_DEBUG_TOOLS: DEBUG_TOOLS
+
     steps:
       - uses: actions/checkout@v4
 
