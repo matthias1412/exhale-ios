@@ -46,7 +46,7 @@ struct SettingsScreen: View {
 
                     testButton.padding(.top, 22)
 
-#if DEBUG_TOOLS
+                    #if DEBUG_TOOLS
                     // Five taps on the wordmark still works, but nobody
                     // testing a build should have to know that.
                     SectionLabel("TESTING").padding(.top, 26)
@@ -65,8 +65,8 @@ struct SettingsScreen: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                     .background(Capsule().stroke(Palette.accent.opacity(0.4), lineWidth: 1.5))
-                    #endif
                     .padding(.top, 12)
+                    #endif
 
             SectionLabel("START OVER").padding(.top, 26)
             Text("Clears your plan and your history on this device and in iCloud, and runs setup again. Your streak is not recoverable afterwards.")
