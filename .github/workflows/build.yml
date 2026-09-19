@@ -21,6 +21,17 @@ on:
         type: boolean
         default: false
 
+# Two TestFlight uploads in flight together both ask App Store Connect for the
+# latest build number, both get the same answer, and both try to upload it. One
+# wins and the other comes back as ITMS-90189, a redundant binary, by email,
+# minutes later, long after the run has reported success.
+#
+# Uploads therefore queue behind each other. Runs that only build and test get a
+# group of their own and still run in parallel, because nothing about them races.
+concurrency:
+  group: ${{ inputs.testflight && 'testflight-upload' || format('build-{0}', github.run_id) }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: macos-15
