@@ -28,11 +28,7 @@ struct MilestoneCelebration: View {
     /// burst canvas. The gather lands here so the burst resolves into the dot
     /// it is about rather than dissolving in the middle of the screen.
     private var spiralSlot: UnitPoint {
-        let day = max(1, Int((milestone.hours / 24).rounded(.down)) + 1)
-        let dots = SpiralGeometry.dots(forDay: day)
-        guard let last = dots.last else { return .center }
-        return UnitPoint(x: last.position.x / SpiralGeometry.box,
-                         y: last.position.y / SpiralGeometry.box)
+        Burst.slot(forDay: max(1, Int((milestone.hours / 24).rounded(.down)) + 1))
     }
 
     var body: some View {
@@ -47,9 +43,10 @@ struct MilestoneCelebration: View {
 
                 // Burst above, words below. Overlapping them meant the
                 // milestone's own dot ended up behind its own title.
-                VStack(spacing: 26) {
+                VStack(spacing: 0) {
                     Burst(progress: t, colour: milestone.colour, target: spiralSlot)
-                        .frame(width: 210, height: 210)
+                        .frame(width: Burst.contentSide + Burst.margin * 2,
+                               height: Burst.contentSide + Burst.margin * 2)
 
                     VStack(spacing: 0) {
                         Text(milestone.when.uppercased())
@@ -185,7 +182,7 @@ struct MilestoneCelebration: View {
 ///
 /// Ignite's contribution is the flare and a gravity pull applied to the whole
 /// field at once, which breathes the bloom back inward without breaking it.
-private struct Burst: View {
+struct Burst: View {
     let progress: Double
     let colour: Color
     /// Where this milestone's dot lives in the spiral, in unit coordinates
@@ -201,12 +198,40 @@ private struct Burst: View {
     private let stagger = 0.26
     private let unwind = 0.7
     private let gravity = 30.0
+    /// Bleed room. The gather lands on the milestone's real dot, which for a
+    /// mark like six months sits near the rim of the spiral, and the ring drawn
+    /// around it then reached past the edge of the canvas and was cut off flat.
+    /// The burst is unchanged in size; the box around it grew.
+    static let margin: Double = 30
+    /// The burst's own square, in points, before the margin is added.
+    static let contentSide: Double = 210
+    /// How far the ring reaches from the landing dot, in design units. The
+    /// widest thing drawn around the gather, and so what the margin must clear.
+    static let ringUnits: Double = 18
+
+    /// Where a spiral fraction lands inside a canvas of this size.
+    static func landing(in canvasSide: Double, target: UnitPoint) -> CGPoint {
+        let side = canvasSide - margin * 2
+        return CGPoint(x: (canvasSide - side) / 2 + side * target.x,
+                       y: (canvasSide - side) / 2 + side * target.y)
+    }
+
+    /// The fraction of the spiral box a given day's dot sits at.
+    static func slot(forDay day: Int) -> UnitPoint {
+        guard let last = SpiralGeometry.dots(forDay: max(1, day)).last else { return .center }
+        return UnitPoint(x: last.position.x / SpiralGeometry.box,
+                         y: last.position.y / SpiralGeometry.box)
+    }
 
     var body: some View {
         Canvas { context, size in
             let centre = CGPoint(x: size.width / 2, y: size.height / 2)
-            let unit = min(size.width, size.height) / 302
-            let landing = CGPoint(x: size.width * target.x, y: size.height * target.y)
+            let side = min(size.width, size.height) - Self.margin * 2
+            let unit = side / 302
+            // Fractions of the spiral, placed inside the inset square rather
+            // than the whole canvas, so the drawing keeps its proportions and
+            // the margin stays margin.
+            let landing = Self.landing(in: min(size.width, size.height), target: target)
 
             let bloom = clamp((progress - 0.03) / (bloomEnd - 0.03))
             let gather = clamp((progress - gatherAt) / (1 - gatherAt))

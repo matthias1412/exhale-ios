@@ -169,7 +169,8 @@ struct CravingSOSScreen: View {
                 Spacer()
 
                 BreathingOrb(elapsed: elapsed, reduceMotion: reduceMotion)
-                    .frame(width: 240, height: 240)
+                    .frame(width: BreathingOrb.canvasSide,
+                           height: BreathingOrb.canvasSide)
 
                 Spacer()
 
@@ -255,7 +256,14 @@ struct BreathingOrb: View {
     /// stays free.
     private static let dotCount = 320
     /// Design units. The body reaches the ring at the top of the inhale.
-    private static let ringRadius: Double = 104
+    static let ringRadius: Double = 104
+    /// The canvas is bigger than the orb on purpose.
+    ///
+    /// `Canvas` clips to its own bounds, and the halo is drawn at 1.6 times the
+    /// body's radius: at the top of an inhale that reaches 166 units from a
+    /// centre 120 in, so the glow was being sliced off flat on all four sides.
+    /// The orb keeps its size; the box around it grew.
+    static let canvasSide: Double = 352
     private static let emptyRadius: Double = 30
 
     private var state: (fullness: Double, phase: BreathPattern.Phase) {
@@ -282,7 +290,7 @@ struct BreathingOrb: View {
 
     private func draw(in context: inout GraphicsContext, size: CGSize) {
         let centre = CGPoint(x: size.width / 2, y: size.height / 2)
-        let unit = min(size.width, size.height) / 240
+        let unit = min(size.width, size.height) / Self.canvasSide
         let fullness = state.fullness
         let radius = (Self.emptyRadius
             + fullness * (Self.ringRadius - Self.emptyRadius)) * unit

@@ -688,4 +688,39 @@ final class WithheldDotTests: XCTestCase {
         XCTAssertNil(m.pendingCelebration)
         XCTAssertNil(m.withheldDay)
     }
+
+    // MARK: - Nothing drawn outside its canvas
+
+    /// Canvas clips to its own bounds, silently. This is the third thing in
+    /// this app to be cut off by it, after the fly-in that happened entirely
+    /// off screen and the orb's halo, so the geometry is pinned here rather
+    /// than trusted to reasoning.
+    func testEveryMilestoneRingFitsInsideTheBurst() {
+        let canvas = Burst.contentSide + Burst.margin * 2
+        let unit = (canvas - Burst.margin * 2) / SpiralGeometry.box
+        let ring = Burst.ringUnits * unit
+
+        for milestone in Milestones.all {
+            let day = max(1, Int((milestone.hours / 24).rounded(.down)) + 1)
+            let point = Burst.landing(in: canvas, target: Burst.slot(forDay: day))
+
+            XCTAssertGreaterThanOrEqual(point.x - ring, 0,
+                "\(milestone.when) ring clipped on the left")
+            XCTAssertLessThanOrEqual(point.x + ring, canvas,
+                "\(milestone.when) ring clipped on the right")
+            XCTAssertGreaterThanOrEqual(point.y - ring, 0,
+                "\(milestone.when) ring clipped at the top")
+            XCTAssertLessThanOrEqual(point.y + ring, canvas,
+                "\(milestone.when) ring clipped at the bottom")
+        }
+    }
+
+    /// The halo is drawn at 1.6 times the body's radius, and the body reaches
+    /// the ring at the top of an inhale. That is the widest the orb ever gets.
+    func testTheOrbHaloFitsItsCanvas() {
+        let unit = BreathingOrb.canvasSide / BreathingOrb.canvasSide   // 1 by construction
+        let halo = BreathingOrb.ringRadius * 1.6 * unit
+        XCTAssertLessThanOrEqual(halo, BreathingOrb.canvasSide / 2,
+            "the halo reaches past the edge and gets sliced flat")
+    }
 }
