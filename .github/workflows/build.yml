@@ -32,6 +32,7 @@ jobs:
     # failed the archive with "requires a development team".
     env:
       DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+      REVENUECAT_KEY: ${{ secrets.REVENUECAT_KEY }}
       # Expanded inside project.yml into SWIFT_ACTIVE_COMPILATION_CONDITIONS.
       # Empty means the debug tools are not compiled at all.
       EXHALE_DEBUG_TOOLS: ${{ inputs.debug_tools && 'DEBUG_TOOLS' || '' }}
