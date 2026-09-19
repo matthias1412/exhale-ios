@@ -630,7 +630,18 @@ final class WithheldDotTests: XCTestCase {
         m.claimPendingCelebration()
         XCTAssertNotNil(m.pendingCelebration, "day one still earns a celebration")
         XCTAssertNil(m.withheldDay)
-        XCTAssertTrue(m.arrivalFinished)
+        // Holding nothing back is not the same as having nothing to wait for.
+        // A single dot still arrives, and this used to arm the celebration
+        // over the top of it, which is the burst-over-a-counting-spiral bug.
+        XCTAssertFalse(m.arrivalFinished)
+    }
+
+    func testDayOneArmsImmediatelyOnceTheSpiralIsUp() {
+        let m = model(day: 1)
+        m.hasRevealedSpiral = true
+        m.claimPendingCelebration()
+        XCTAssertNotNil(m.pendingCelebration)
+        XCTAssertTrue(m.arrivalFinished, "no arrival left to wait for")
     }
 
     /// Several crossed while away: one celebration, and it holds that one's dot.
