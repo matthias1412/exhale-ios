@@ -91,6 +91,10 @@ struct RootView: View {
         // long time, so cold-launch alone would have made this fire rarely.
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active, !model.clock.isFrozen else { return }
+            // Before the claim, not after: whether a dot is held back is
+            // decided from whether the spiral has arrived, so the restart has
+            // to land first or the claim reads last session's answer.
+            model.restartArrival()
             model.claimPendingCelebration()
         }
         .onChange(of: model.state) { _, newState in

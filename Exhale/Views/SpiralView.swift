@@ -72,7 +72,8 @@ struct SpiralView: View {
         // cross a milestone fired both at once: the spiral arrived underneath
         // an opaque full-screen celebration, and by the time that was dismissed
         // `hasRevealedSpiral` was already true, so the spiral was simply there.
-        .task(id: model.celebrationDecided) {
+        .task(id: RevealGate(decided: model.celebrationDecided,
+                             token: model.revealToken)) {
             // Nothing animates until the model knows whether a celebration is
             // coming, because the answer decides whether a dot is held back.
             // Starting earlier is what produced a spiral frozen on "Day 1":
@@ -101,6 +102,14 @@ struct SpiralView: View {
     }
 
     // MARK: - Reveal
+
+    /// What restarts the arrival. The token changes when the user comes back
+    /// to the app; `decided` holds everything until the model knows whether a
+    /// celebration is coming.
+    private struct RevealGate: Equatable {
+        let decided: Bool
+        let token: Int
+    }
 
     /// Ends the arrival on the true day, however it ended.
     ///

@@ -131,6 +131,15 @@ final class AppModel {
     /// cancelled the arrival halfway through its count.
     var celebrationChecked = false
 
+    /// Bumped every time the arrival should play again.
+    ///
+    /// The arrival is deliberately once per *view*, so switching tabs does not
+    /// replay it. That also meant it was once per launch, and iOS keeps apps
+    /// resident for hours: press home, come back, and the spiral was simply
+    /// there. The ask was for it to play each time the app is opened, and
+    /// coming back to an app that never left memory is still opening it.
+    var revealToken = 0
+
     /// Seeded runs never claim celebrations, so nothing would ever decide for
     /// them and the spiral would sit waiting forever.
     var celebrationDecided: Bool { clock.isFrozen || celebrationChecked }
@@ -248,6 +257,19 @@ final class AppModel {
         // and left it waiting in the cases where it did not.
         arrivalFinished = hasRevealedSpiral
         armCelebrationIfStranded()
+    }
+
+    /// Play the arrival again, because the user has just come back.
+    ///
+    /// Held off while a celebration is still on screen: restarting underneath
+    /// one would replay the count behind an opaque overlay and hand the burst
+    /// a spiral that had gone back to the beginning.
+    func restartArrival() {
+        guard pendingCelebration == nil else { return }
+        hasRevealedSpiral = false
+        arrivalFinished = false
+        withheldDay = nil
+        revealToken += 1
     }
 
     /// A celebration waits for the spiral to finish arriving. If the spiral

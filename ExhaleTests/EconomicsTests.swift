@@ -1073,4 +1073,42 @@ final class ScheduledStartTests: XCTestCase {
             )
         }
     }
+
+    // MARK: - Coming back to the app
+
+    func testReturningReplaysTheArrival() {
+        let m = crossedAMilestone(daysIn: 10)
+        m.hasRevealedSpiral = true
+        m.arrivalFinished = true
+        let before = m.revealToken
+
+        m.restartArrival()
+
+        XCTAssertFalse(m.hasRevealedSpiral)
+        XCTAssertFalse(m.arrivalFinished)
+        XCTAssertGreaterThan(m.revealToken, before, "the view keys off this")
+    }
+
+    /// Restarting under a celebration would replay the count behind an opaque
+    /// overlay and hand the burst a spiral back at the beginning.
+    func testReturningDoesNotRestartUnderACelebration() {
+        let m = crossedAMilestone(daysIn: 8)
+        m.claimPendingCelebration()
+        XCTAssertNotNil(m.pendingCelebration)
+        let before = m.revealToken
+
+        m.restartArrival()
+
+        XCTAssertEqual(m.revealToken, before)
+    }
+
+    /// Starting over must leave nothing half set.
+    func testResetClearsTheArrivalToo() {
+        let m = crossedAMilestone(daysIn: 10)
+        m.restartArrival()
+        m.resetEverything()
+        XCTAssertFalse(m.hasRevealedSpiral)
+        XCTAssertFalse(m.arrivalFinished)
+        XCTAssertNil(m.withheldDay)
+    }
 }
