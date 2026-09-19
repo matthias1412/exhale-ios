@@ -5,7 +5,10 @@ import SwiftUI
 enum Palette {
     // Surfaces
     static let background = Color(hex: 0x081A1D)
-    static let cravingOverlay = Color(hex: 0x051417).opacity(0.98)
+    // Opaque, for the reason MilestoneCelebration already records: at 0.98 the
+    // day count, the money and the tab bar all showed through, and a screen
+    // someone opens mid-craving should be the only thing in front of them.
+    static let cravingOverlay = Color(hex: 0x051417)
     static let bannerBackground = Color(hex: 0x162A2D).opacity(0.96)
     static let bannerIconTile = Color(hex: 0x0C2225)
 
