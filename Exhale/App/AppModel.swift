@@ -122,6 +122,18 @@ final class AppModel {
     /// the last one — never happens. It is armed rather than timed, because
     /// the arrival's length depends on the streak.
     var arrivalFinished = false
+
+    /// Whether `claimPendingCelebration` has had its say yet this session.
+    ///
+    /// The arrival must not begin until the answer is known. It used to begin
+    /// immediately, while the launch task was still awaiting a notification
+    /// rebuild, and a celebration landing a few hundred milliseconds later
+    /// cancelled the arrival halfway through its count.
+    var celebrationChecked = false
+
+    /// Seeded runs never claim celebrations, so nothing would ever decide for
+    /// them and the spiral would sit waiting forever.
+    var celebrationDecided: Bool { clock.isFrozen || celebrationChecked }
     /// Screenshot-harness only: run animations in real time even though the
     /// clock is frozen. A frozen clock is what makes stills reproducible, but
     /// it is also what stops anything time-driven from moving — so a recording
@@ -181,6 +193,7 @@ final class AppModel {
         onboardingStep = 0
         tab = .today
         hasRevealedSpiral = false
+        celebrationChecked = false
         pendingCelebration = nil
         withheldDay = nil
         arrivalFinished = false
@@ -208,6 +221,9 @@ final class AppModel {
     /// Called on launch and on return to the foreground. Holds back at most one
     /// at a time — three celebrations in a row is a queue, not a reward.
     func claimPendingCelebration() {
+        // Set on every exit, including the ones that find nothing: "no
+        // celebration" is an answer, and the spiral is waiting for one.
+        defer { celebrationChecked = true }
         guard let plan = state.plan else { return }
         let unseen = Milestones.unseen(
             for: plan.product,
@@ -223,11 +239,31 @@ final class AppModel {
         state.lastCelebratedHours = latest.hours
         tab = .today
         withheldDay = withholdable(latest)
-        // If the arrival is not going to play — the spiral is already on
-        // screen, or motion is off — there is nothing to wait for, so arm the
-        // celebration now. Missing this is how the celebration would never
-        // appear at all for someone who crossed a milestone mid-session.
-        arrivalFinished = (withheldDay == nil)
+        // Armed immediately only when the spiral is already on screen and so
+        // has no arrival left to play. Otherwise the celebration waits, and
+        // the spiral arms it when it settles.
+        //
+        // This used to key off whether a dot was withheld, which armed the
+        // celebration in exactly the cases where the arrival still had to run,
+        // and left it waiting in the cases where it did not.
+        arrivalFinished = hasRevealedSpiral
+        armCelebrationIfStranded()
+    }
+
+    /// A celebration waits for the spiral to finish arriving. If the spiral
+    /// never arrives — never on screen, never rendered, a tab the user did not
+    /// open — nothing would ever arm it and the reward would simply be eaten.
+    ///
+    /// The ordinary path is the spiral settling. This is the path where there
+    /// is no spiral, and it exists because a missed milestone is invisible: no
+    /// crash, no error, just a moment the user earned and never got.
+    private func armCelebrationIfStranded() {
+        guard pendingCelebration != nil, !arrivalFinished, !clock.isFrozen else { return }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            guard let self, self.pendingCelebration != nil, !self.arrivalFinished else { return }
+            self.arrivalFinished = true
+        }
     }
 
     /// Which dot, if any, the spiral should hold back for this celebration.

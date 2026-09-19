@@ -112,8 +112,12 @@ struct RootView: View {
             // asking for money — and a denial is effectively permanent. It is
             // asked for on the Milestones tab instead, where the reason for it
             // is on screen.
-            await NotificationScheduler.shared.reschedule(state: model.state)
+            // Claimed before the reschedule, not after. Rebuilding the
+            // notification set is real work, and every millisecond of it was a
+            // millisecond in which the spiral had already decided nothing was
+            // coming and started counting.
             model.claimPendingCelebration()
+            await NotificationScheduler.shared.reschedule(state: model.state)
 
             // A milestone crossed *while you are looking at the app* was
             // never celebrated. Claiming only happened on becoming active, so

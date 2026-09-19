@@ -991,4 +991,86 @@ final class ScheduledStartTests: XCTestCase {
             XCTAssertNotEqual(row.label, "Carbon monoxide clears")
         }
     }
+
+    // MARK: - The arrival and the celebration
+
+    /// Both of these were live on TestFlight: a spiral frozen on "Day 1" after
+    /// eight days away, and a handoff that only ever resolved by accident.
+    private func crossedAMilestone(daysIn: Int) -> AppModel {
+        let m = AppModel(
+            state: PersistedState(),
+            clock: AppClock(frozen: Seed.referenceNow),
+            store: .ephemeral,
+            persistenceEnabled: false,
+            subscriptions: MockSubscriptionGate()
+        )
+        var state = m.state
+        state.phase = .app
+        state.plan = QuitPlan(
+            product: .cigarettes, amount: 15, weeklySpend: 49.875,
+            currencyCode: "EUR",
+            quitDate: Calendar.current.date(
+                byAdding: .day, value: -daysIn, to: Seed.referenceNow)!
+        )
+        state.lastCelebratedHours = 0
+        m.state = state
+        return m
+    }
+
+    /// "No celebration" is an answer, and the spiral waits for one. A path
+    /// that returned without answering left the arrival waiting forever.
+    func testEveryClaimPathDecides() {
+        let empty = AppModel(
+            state: PersistedState(), clock: AppClock(frozen: Seed.referenceNow),
+            store: .ephemeral, persistenceEnabled: false,
+            subscriptions: MockSubscriptionGate()
+        )
+        XCTAssertFalse(empty.celebrationChecked)
+        empty.claimPendingCelebration()            // no plan at all
+        XCTAssertTrue(empty.celebrationChecked)
+
+        let none = crossedAMilestone(daysIn: 8)
+        var seen = none.state
+        seen.lastCelebratedHours = 99_999          // everything already seen
+        none.state = seen
+        none.claimPendingCelebration()
+        XCTAssertTrue(none.celebrationChecked)
+        XCTAssertNil(none.pendingCelebration)
+    }
+
+    /// The celebration must wait for an arrival that has not happened yet.
+    /// Arming it here is what let a burst play over a spiral still counting.
+    func testACelebrationWaitsForTheArrival() {
+        let m = crossedAMilestone(daysIn: 8)
+        m.claimPendingCelebration()
+        XCTAssertNotNil(m.pendingCelebration)
+        XCTAssertFalse(m.arrivalFinished, "would play over a counting spiral")
+    }
+
+    /// ...but not when the spiral is already on screen, or it would wait for
+    /// an arrival that is never going to run again.
+    func testACelebrationDoesNotWaitWhenTheSpiralIsAlreadyUp() {
+        let m = crossedAMilestone(daysIn: 8)
+        m.hasRevealedSpiral = true
+        m.claimPendingCelebration()
+        XCTAssertNotNil(m.pendingCelebration)
+        XCTAssertTrue(m.arrivalFinished)
+    }
+
+    /// Seeded runs never claim, so nothing would ever decide for them and the
+    /// spiral would sit waiting through every screenshot.
+    func testAFrozenClockCountsAsDecided() {
+        XCTAssertTrue(crossedAMilestone(daysIn: 8).celebrationDecided)
+    }
+
+    /// The invariant the whole screen rests on: a finished arrival shows the
+    /// day the user is actually on, never a number from partway through.
+    func testAFinishedArrivalShowsTheRealDay() {
+        for day in [1, 2, 8, 90, 365, 1825] {
+            XCTAssertEqual(
+                RevealRamp.displayedDay(atProgress: 1, totalDays: day), day,
+                "day \(day) did not land on itself"
+            )
+        }
+    }
 }

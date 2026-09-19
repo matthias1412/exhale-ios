@@ -72,29 +72,51 @@ struct SpiralView: View {
         // cross a milestone fired both at once: the spiral arrived underneath
         // an opaque full-screen celebration, and by the time that was dismissed
         // `hasRevealedSpiral` was already true, so the spiral was simply there.
-        .task(id: model.pendingCelebration == nil) {
-            guard model.pendingCelebration == nil else { return }
+        .task(id: model.celebrationDecided) {
+            // Nothing animates until the model knows whether a celebration is
+            // coming, because the answer decides whether a dot is held back.
+            // Starting earlier is what produced a spiral frozen on "Day 1":
+            // the arrival began, a celebration arrived a few hundred
+            // milliseconds later, and the half-finished count stayed on screen.
+            //
+            // It deliberately does NOT wait for the celebration to clear. That
+            // was the other half of the bug: the celebration waits for the
+            // arrival and the arrival waited for the celebration, so the only
+            // thing that ever broke the tie was the race itself.
+            guard model.celebrationDecided else { return }
             // Once per session. Switching tabs recreates this view, and
             // replaying the arrival every time made a considered animation feel
             // like a glitch.
             guard !reduceMotion, !model.hasRevealedSpiral else {
-                isRevealing = false
-                model.arrivalFinished = true
+                settle()
                 return
             }
             model.hasRevealedSpiral = true
             revealStart = .now
             try? await Task.sleep(for: .seconds(duration + 0.2))
-            isRevealing = false
-            // Hands over to any queued celebration. Set unconditionally so a
-            // cancelled or interrupted arrival cannot strand one.
-            model.arrivalFinished = true
+            settle()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilitySummary)
     }
 
     // MARK: - Reveal
+
+    /// Ends the arrival on the true day, however it ended.
+    ///
+    /// This is the invariant the whole screen rests on: the spiral may or may
+    /// not animate, but the number under it is never a number the user is not
+    /// actually on. Clearing `revealStart` sends `progress` to 1, so a paused
+    /// timeline redraws the finished streak instead of keeping whichever frame
+    /// it happened to stop on. A cancelled task resumes here too, which is why
+    /// an interrupted arrival can no longer strand a half-counted numeral.
+    private func settle() {
+        revealStart = nil
+        isRevealing = false
+        // Hands over to any queued celebration. Set unconditionally so a
+        // cancelled or interrupted arrival cannot strand one.
+        model.arrivalFinished = true
+    }
 
     private func progress(at date: Date) -> Double {
         if let frozen = model.spiralRevealFrame { return frozen }
