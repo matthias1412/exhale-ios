@@ -68,30 +68,32 @@ struct SpiralView: View {
             .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
         }
         .aspectRatio(1, contentMode: .fit)
-        // Keyed on whether a celebration is up. Opening the app on the day you
-        // cross a milestone fired both at once: the spiral arrived underneath
-        // an opaque full-screen celebration, and by the time that was dismissed
-        // `hasRevealedSpiral` was already true, so the spiral was simply there.
-        .task(id: RevealGate(decided: model.celebrationDecided,
-                             token: model.revealToken)) {
-            // Nothing animates until the model knows whether a celebration is
-            // coming, because the answer decides whether a dot is held back.
-            // Starting earlier is what produced a spiral frozen on "Day 1":
-            // the arrival began, a celebration arrived a few hundred
-            // milliseconds later, and the half-finished count stayed on screen.
-            //
-            // It deliberately does NOT wait for the celebration to clear. That
-            // was the other half of the bug: the celebration waits for the
-            // arrival and the arrival waited for the celebration, so the only
-            // thing that ever broke the tie was the race itself.
-            guard model.celebrationDecided else { return }
-            // Once per session. Switching tabs recreates this view, and
-            // replaying the arrival every time made a considered animation feel
-            // like a glitch.
+        // Keyed on the token, which changes when the user comes back to the
+        // app. Nothing else restarts the arrival.
+        .task(id: model.revealToken) {
+            // Once per view, and again whenever the user comes back. Switching
+            // tabs recreates this view, and replaying every time made a
+            // considered animation feel like a glitch.
             guard !reduceMotion, !model.hasRevealedSpiral else {
                 settle()
                 return
             }
+
+            // Whether a dot is held back for a celebration is decided by the
+            // model, and the answer is worth a moment's wait: starting first is
+            // what left a spiral frozen on "Day 1".
+            //
+            // A moment, though, and no more. This used to block until the
+            // answer came, which made a missing answer indistinguishable from a
+            // spiral that never animates at all, and that is exactly what
+            // shipped. An occasional missed handoff is a smaller failure than
+            // the arrival silently never running.
+            var waited = 0.0
+            while !model.celebrationDecided, waited < 0.4, !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(20))
+                waited += 0.02
+            }
+
             model.hasRevealedSpiral = true
             revealStart = .now
             try? await Task.sleep(for: .seconds(duration + 0.2))
@@ -102,14 +104,6 @@ struct SpiralView: View {
     }
 
     // MARK: - Reveal
-
-    /// What restarts the arrival. The token changes when the user comes back
-    /// to the app; `decided` holds everything until the model knows whether a
-    /// celebration is coming.
-    private struct RevealGate: Equatable {
-        let decided: Bool
-        let token: Int
-    }
 
     /// Ends the arrival on the true day, however it ended.
     ///

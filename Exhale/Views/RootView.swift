@@ -9,6 +9,12 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Whether the app actually went away. Becoming active also happens at
+    /// launch and after a passing interruption, and restarting the arrival for
+    /// those would cut the launch animation off a few frames in and play it
+    /// again from the beginning.
+    @State private var wasBackgrounded = false
+
     var body: some View {
         ZStack {
             Palette.background.ignoresSafeArea()
@@ -90,11 +96,15 @@ struct RootView: View {
         // on noticing when the user comes back. iOS keeps apps resident for a
         // long time, so cold-launch alone would have made this fire rarely.
         .onChange(of: scenePhase) { _, phase in
+            if phase == .background { wasBackgrounded = true }
             guard phase == .active, !model.clock.isFrozen else { return }
             // Before the claim, not after: whether a dot is held back is
             // decided from whether the spiral has arrived, so the restart has
             // to land first or the claim reads last session's answer.
-            model.restartArrival()
+            if wasBackgrounded {
+                wasBackgrounded = false
+                model.restartArrival()
+            }
             model.claimPendingCelebration()
         }
         .onChange(of: model.state) { _, newState in
