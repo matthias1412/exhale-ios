@@ -11,9 +11,9 @@ struct SubscriptionOffer: Identifiable, Equatable, Sendable {
 
     let id: String
     let term: Term
-    /// e.g. "€29.99" — straight from the store.
+    /// e.g. "€19.99" — straight from the store.
     let localisedPrice: String
-    /// e.g. "€2.49" — the yearly price divided by twelve, formatted by the
+    /// e.g. "€1.67" — the yearly price divided by twelve, formatted by the
     /// store in the same currency. Nil for monthly.
     let localisedPricePerMonth: String?
     /// Raw amount, used only for the "pays for itself in N days" anchor.
@@ -71,14 +71,21 @@ final class MockSubscriptionGate: SubscriptionGate {
         self.isSubscribed = isSubscribed
     }
 
+    /// Placeholders, but not arbitrary ones: they match what App Store
+    /// Connect actually charges. Every review artifact - the contact sheet,
+    /// the screenshots Apple asks for alongside each subscription - is drawn
+    /// from these, and a capture that quotes a price the store does not
+    /// charge is a document that has to be explained rather than read.
     static let sampleOffers: [SubscriptionOffer] = [
         SubscriptionOffer(id: "exhale.yearly", term: .yearly,
-                          localisedPrice: "€29.99", localisedPricePerMonth: "€2.49",
-                          amount: 29.99, currencyCode: "EUR",
+                          localisedPrice: "€19.99", localisedPricePerMonth: "€1.67",
+                          amount: 19.99, currencyCode: "EUR",
                           hasFreeTrial: true, trialDays: 7),
         SubscriptionOffer(id: "exhale.monthly", term: .monthly,
-                          localisedPrice: "€4.99", localisedPricePerMonth: nil,
-                          amount: 4.99, currencyCode: "EUR",
+                          localisedPrice: "€2.99", localisedPricePerMonth: nil,
+                          // No trial claimed here until App Store Connect is
+                          // seen to offer one on the monthly product too.
+                          amount: 2.99, currencyCode: "EUR",
                           hasFreeTrial: false, trialDays: 0)
     ]
 
