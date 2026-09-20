@@ -74,3 +74,60 @@ final class PaywallTests: XCTestCase {
         XCTAssertEqual(progress(free).paybackDays(yearlyPrice: 29.99), 1)
     }
 }
+
+/// When the paywall is allowed to stand in front of the app, and when it is
+/// emphatically not.
+///
+/// This is the money path and it has two opposite failure modes, each bad in
+/// its own direction: let everyone through and the app earns nothing; lock on
+/// a question the store never answered and paying subscribers are shut out of
+/// what they bought, or — worse — a broken offering bricks every install at
+/// once with no way to buy the way out and no release ready to fix it.
+@MainActor
+final class SubscriptionLockTests: XCTestCase {
+
+    private func model(_ gate: MockSubscriptionGate) -> AppModel {
+        AppModel(
+            state: PersistedState(),
+            clock: AppClock(frozen: Seed.referenceNow),
+            store: .ephemeral,
+            persistenceEnabled: false,
+            subscriptions: gate
+        )
+    }
+
+    func testUnknownEntitlementDoesNotLock() {
+        // The state at every cold launch, for as long as the store takes.
+        XCTAssertFalse(model(MockSubscriptionGate(isSubscribed: nil)).isLocked)
+    }
+
+    func testSubscriberIsNotLocked() {
+        XCTAssertFalse(model(MockSubscriptionGate(isSubscribed: true)).isLocked)
+    }
+
+    func testNonSubscriberWithOffersIsLocked() {
+        XCTAssertTrue(model(MockSubscriptionGate(isSubscribed: false)).isLocked)
+    }
+
+    /// The brick case. No offering means no way to buy, and locking someone
+    /// out with no way back in is not a paywall.
+    func testNonSubscriberIsNotLockedWhenNothingCanBeSold() {
+        let gate = MockSubscriptionGate(state: .unavailable("No subscriptions are available right now."),
+                                        isSubscribed: false)
+        XCTAssertFalse(model(gate).isLocked)
+    }
+
+    func testNonSubscriberIsNotLockedWhilePricesAreStillLoading() {
+        let gate = MockSubscriptionGate(state: .loading, isSubscribed: false)
+        XCTAssertFalse(model(gate).isLocked)
+    }
+
+    /// Buying is the way through, and the only way through.
+    func testPurchaseUnlocks() async {
+        let gate = MockSubscriptionGate(isSubscribed: false)
+        let m = model(gate)
+        XCTAssertTrue(m.isLocked)
+        _ = await gate.purchase(MockSubscriptionGate.sampleOffers[0])
+        XCTAssertFalse(m.isLocked)
+    }
+}

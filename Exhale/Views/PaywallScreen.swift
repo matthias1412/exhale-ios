@@ -16,10 +16,21 @@ struct PaywallScreen: View {
             }
             .padding(.top, 8)
 
-            Text("Your quit plan is ready.")
+            Text(returning ? "Your subscription has ended." : "Your quit plan is ready.")
                 .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 22)
+
+            // Someone who has been counting for months and hits this screen
+            // needs to know, in the first second, that their streak has not
+            // been taken away. It is on their device; nothing was lost.
+            if returning {
+                Text("Your streak is safe. Pick up where you left off.")
+                    .font(.spaceGrotesk(13.5))
+                    .foregroundStyle(Palette.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 6)
+            }
 
             if let plan = model.plan, let progress = model.progress {
                 PaywallAnchor(
@@ -75,33 +86,72 @@ struct PaywallScreen: View {
     }
 
     private var actions: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             PillButton(primaryTitle, style: .accent) {
                 guard case .ready(let list) = model.subscriptions.state,
                       let offer = list.first(where: { $0.term == selected }) else {
+                    // Nothing to sell, so nothing to stand in the way. This is
+                    // the same judgement as `isLocked`: no offer, no wall.
                     model.state.phase = .app
                     return
                 }
                 working = true
                 Task {
-                    _ = await model.subscriptions.purchase(offer)
+                    let bought = await model.subscriptions.purchase(offer)
                     working = false
-                    model.state.phase = .app
+                    // Only a completed purchase opens the app. This used to
+                    // fall through on failure *and* on cancellation, which
+                    // meant tapping the button and then declining Apple's
+                    // sheet was a working way to get the whole app for free.
+                    if bought { model.state.phase = .app }
                 }
             }
-            .disabled(working)
-
-            Button("Maybe later") { model.state.phase = .app }
-                .font(.spaceGrotesk(13))
-                .foregroundStyle(Palette.textFaint)
+            .disabled(working || isLoadingPrices)
 
             Button("Restore purchases") {
-                Task { _ = await model.subscriptions.restore() }
+                Task {
+                    if await model.subscriptions.restore() { model.state.phase = .app }
+                }
             }
-            .font(.spaceGrotesk(12))
-            .foregroundStyle(Palette.textFaint.opacity(0.7))
+            .font(.spaceGrotesk(12.5))
+            .foregroundStyle(Palette.textMuted)
+            .padding(.top, 2)
+
+            legal.padding(.top, 4)
         }
     }
+
+    /// Required in the binary by guideline 3.1.2, and fair to say regardless:
+    /// nobody should have to go looking for what happens after the free week.
+    private var legal: some View {
+        VStack(spacing: 5) {
+            Text(Legal.renewalTerms)
+                .font(.spaceGrotesk(10.5))
+                .foregroundStyle(Palette.textFaint)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 6) {
+                Link("Terms of Use", destination: Legal.terms)
+                Text("·")
+                Link("Privacy Policy", destination: Legal.privacy)
+            }
+            .font(.spaceGrotesk(10.5, weight: .medium))
+            .foregroundStyle(Palette.textMuted)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// True only while the store has not answered. An `.unavailable` store is
+    /// not loading — it is finished, and the button has somewhere to go.
+    private var isLoadingPrices: Bool {
+        if case .loading = model.subscriptions.state { return true }
+        return false
+    }
+
+    /// Reached from inside the app rather than from onboarding, which means
+    /// a subscription that has lapsed rather than one never started.
+    private var returning: Bool { model.state.phase == .app }
 
     private var yearlyOffer: SubscriptionOffer? {
         guard case .ready(let list) = model.subscriptions.state else { return nil }

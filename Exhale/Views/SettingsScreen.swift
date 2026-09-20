@@ -4,6 +4,7 @@ struct SettingsScreen: View {
     @Environment(AppModel.self) private var model
     @State private var testSent = false
     @State private var confirmingReset = false
+    @State private var restoreResult: String?
 
     var body: some View {
         ZStack {
@@ -45,6 +46,9 @@ struct SettingsScreen: View {
                     }
 
                     testButton.padding(.top, 22)
+
+                    SectionLabel("SUBSCRIPTION").padding(.top, 26)
+                    subscriptionCard
 
                     #if DEBUG_TOOLS
                     // Five taps on the wordmark still works, but nobody
@@ -178,6 +182,70 @@ struct SettingsScreen: View {
                     }
                 }
             }
+        }
+    }
+
+    /// Where a person changes plan, cancels, or gets a purchase back after a
+    /// reinstall.
+    ///
+    /// Restore lived only on the paywall, which is a screen a subscriber
+    /// never sees — so the one person who actually needed it, someone whose
+    /// entitlement failed to carry across a new phone, had no way to reach
+    /// it. Cancelling is Apple's screen by law and by design; this just
+    /// points at it plainly instead of pretending the subscription is ours
+    /// to end.
+    private var subscriptionCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            CardStack {
+                SettingRow(label: "Status", value: statusText, divider: false)
+            }
+
+            Link(destination: Legal.manageSubscriptions) {
+                Text("Change or cancel my subscription")
+                    .font(.spaceGrotesk(14, weight: .bold))
+                    .foregroundStyle(Palette.accentSoft)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(
+                        Capsule().stroke(Palette.accent.opacity(0.4), lineWidth: 1.5)
+                    )
+            }
+            .padding(.top, 12)
+
+            Button {
+                Task {
+                    let restored = await model.subscriptions.restore()
+                    restoreResult = restored
+                        ? "Restored. You're all set."
+                        : "Nothing to restore on this Apple Account."
+                }
+            } label: {
+                Text(restoreResult ?? "Restore a previous purchase")
+                    .font(.spaceGrotesk(13))
+                    .foregroundStyle(restoreResult == nil ? Palette.accent : Palette.textMuted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+            }
+            .disabled(restoreResult != nil)
+
+            HStack(spacing: 6) {
+                Link("Terms of Use", destination: Legal.terms)
+                Text("·")
+                Link("Privacy Policy", destination: Legal.privacy)
+            }
+            .font(.spaceGrotesk(11.5))
+            .foregroundStyle(Palette.textFaint)
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var statusText: String {
+        switch model.subscriptions.isSubscribed {
+        case true?: return "Active"
+        case false?: return "Not subscribed"
+        // Never seen by a real user for long, but "Not subscribed" would be a
+        // lie while the question is still in flight.
+        case nil: return "Checking..."
         }
     }
 

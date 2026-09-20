@@ -353,6 +353,26 @@ final class AppModel {
         return progress.hasStarted && !awaitingStartConfirmation
     }
 
+    /// Whether the paywall stands in front of the app.
+    ///
+    /// Two things must both be true, and the second one is the important one.
+    ///
+    /// The store must have actually said "not subscribed" — `nil` means the
+    /// question has not been answered yet (no RevenueCat key in this build,
+    /// no answer before the first frame, a seeded capture) and an unanswered
+    /// question locks nothing.
+    ///
+    /// And there must be something to sell. Locking someone out of the app
+    /// while offering them no way back in is not a paywall, it is a brick:
+    /// if the offering is misconfigured, or pulled, or simply unreachable,
+    /// that would be every user on every launch with no recourse and no
+    /// release to fix it. Never close the door without holding out the key.
+    var isLocked: Bool {
+        guard subscriptions.isSubscribed == false else { return false }
+        if case .ready = subscriptions.state { return true }
+        return false
+    }
+
     /// The scheduled moment has arrived but the user has not yet said whether
     /// they went through with it.
     var awaitingStartConfirmation: Bool {

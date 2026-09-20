@@ -38,7 +38,15 @@ enum SubscriptionState: Equatable, Sendable {
 @MainActor
 protocol SubscriptionGate: AnyObject {
     var state: SubscriptionState { get }
-    var isSubscribed: Bool { get }
+
+    /// `nil` means *not yet asked*, which is not the same as "no".
+    ///
+    /// This used to be a plain `Bool`, and the difference did not matter
+    /// while nothing read it. The moment the app locks on it, a `false` that
+    /// really means "the store has not answered yet" shuts a paying
+    /// subscriber out of the app they paid for, every cold launch, for as
+    /// long as the network takes.
+    var isSubscribed: Bool? { get }
 
     func load() async
     func purchase(_ offer: SubscriptionOffer) async -> Bool
@@ -53,11 +61,14 @@ protocol SubscriptionGate: AnyObject {
 @MainActor
 final class MockSubscriptionGate: SubscriptionGate {
     private(set) var state: SubscriptionState
-    private(set) var isSubscribed: Bool
+    /// Unknown, so seeded captures of the app are never locked behind the
+    /// paywall. A screenshot run does not have a store to ask.
+    private(set) var isSubscribed: Bool?
 
-    init(state: SubscriptionState = .ready(MockSubscriptionGate.sampleOffers)) {
+    init(state: SubscriptionState = .ready(MockSubscriptionGate.sampleOffers),
+         isSubscribed: Bool? = nil) {
         self.state = state
-        self.isSubscribed = false
+        self.isSubscribed = isSubscribed
     }
 
     static let sampleOffers: [SubscriptionOffer] = [
@@ -73,7 +84,7 @@ final class MockSubscriptionGate: SubscriptionGate {
 
     func load() async {}
     func purchase(_ offer: SubscriptionOffer) async -> Bool { isSubscribed = true; return true }
-    func restore() async -> Bool { isSubscribed }
+    func restore() async -> Bool { isSubscribed == true }
 }
 
 /// The real implementation, wired to RevenueCat.
@@ -90,7 +101,7 @@ final class MockSubscriptionGate: SubscriptionGate {
 @MainActor
 final class RevenueCatSubscriptionGate: SubscriptionGate {
     private(set) var state: SubscriptionState = .loading
-    private(set) var isSubscribed = false
+    private(set) var isSubscribed: Bool?
 
     private let entitlement = "premium"
     private let logger = Logger(subsystem: "com.matthias1412.exhale", category: "subscriptions")
@@ -124,7 +135,11 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
             logger.error("no RevenueCat key in Info.plist; paywall disabled")
             return
         }
-        state = .loading
+        // A refresh keeps the offers it already has. Dropping back to
+        // `.loading` on every foreground would blank the prices mid-read and,
+        // because a state that cannot sell anything does not lock, would
+        // flash the whole app into view for someone locked out of it.
+        if case .ready = state {} else { state = .loading }
         do {
             let info = try await Purchases.shared.customerInfo()
             isSubscribed = info.entitlements[entitlement]?.isActive == true
@@ -140,8 +155,12 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
                 ? .unavailable("No subscriptions are available right now.")
                 : .ready(offers.sorted { $0.term == .yearly && $1.term != .yearly })
         } catch {
-            // Offline is the common case here, and it is temporary.
-            state = .unavailable("Could not reach the store. Check your connection.")
+            // Offline is the common case here, and it is temporary. A refresh
+            // that fails keeps what the store last said; only a first load
+            // with nothing cached has to admit it has nothing.
+            if case .ready = state {} else {
+                state = .unavailable("Could not reach the store. Check your connection.")
+            }
             logger.error("offerings failed: \(error.localizedDescription, privacy: .public)")
         }
     }
@@ -159,7 +178,7 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
             // A user cancelling is an ordinary outcome, not an error.
             guard !result.userCancelled else { return false }
             isSubscribed = result.customerInfo.entitlements[entitlement]?.isActive == true
-            return isSubscribed
+            return isSubscribed == true
         } catch {
             logger.error("purchase failed: \(error.localizedDescription, privacy: .public)")
             return false
@@ -171,7 +190,7 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
         do {
             let info = try await Purchases.shared.restorePurchases()
             isSubscribed = info.entitlements[entitlement]?.isActive == true
-            return isSubscribed
+            return isSubscribed == true
         } catch {
             logger.error("restore failed: \(error.localizedDescription, privacy: .public)")
             return false

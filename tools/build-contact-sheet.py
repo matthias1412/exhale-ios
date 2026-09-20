@@ -39,7 +39,8 @@ GROUPS = [
         "onboard-ready", "onboard-ready-scheduled", "onboard-ready-backdated",
     ]),
     ("Paywall", "Including the states that are easy to forget.", [
-        "paywall", "paywall-loading", "paywall-foreign-currency",
+        "paywall", "paywall-lapsed", "paywall-loading",
+        "paywall-foreign-currency",
     ]),
     ("Starting states", "The three ways a run can begin, plus the one that waits.", [
         "pre-quit-countdown", "awaiting-start", "today-day1", "slip-backdated",

@@ -36,6 +36,7 @@ enum SeedNames {
         "paywall",
         "paywall-loading",
         "paywall-foreign-currency",
+        "paywall-lapsed",
 
         "today-day1",                   // the bloom at its smallest
         "today-day14",

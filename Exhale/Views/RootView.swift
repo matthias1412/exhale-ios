@@ -26,7 +26,15 @@ struct RootView: View {
                 case .paywall:
                     PaywallScreen()
                 case .app:
-                    MainShell()
+                    // The subscription is the product's floor, not a
+                    // suggestion. `isLocked` is false until the store says
+                    // otherwise, so this shows the app first and only steps
+                    // in front of it once there is a real answer.
+                    if model.isLocked {
+                        PaywallScreen()
+                    } else {
+                        MainShell()
+                    }
                 }
             }
             // Onboarding into paywall into the app used to be three hard cuts.
@@ -35,6 +43,7 @@ struct RootView: View {
                 removal: .opacity
             ))
             .animation(.snappy(duration: 0.34), value: model.state.phase)
+            .animation(.snappy(duration: 0.34), value: model.isLocked)
 
             if model.settingsOpen {
                 SettingsScreen()
@@ -106,6 +115,10 @@ struct RootView: View {
                 model.restartArrival()
             }
             model.claimPendingCelebration()
+            // A subscription can lapse, be cancelled, or be refunded while
+            // the app sits in the background. Asking again on every return is
+            // the only thing that notices.
+            Task { await model.subscriptions.load() }
         }
         .onChange(of: model.state) { _, newState in
             model.persist()
@@ -117,6 +130,14 @@ struct RootView: View {
         // notifications were never requested, never scheduled, and no
         // celebration was ever claimed until the app was relaunched. A brand
         // new user's entire first session had the notification system dead.
+        // Asked once at launch, for the lock. The paywall loads it too, but
+        // someone who is already past the paywall never mounts that screen,
+        // and without this their entitlement would stay unknown forever —
+        // which, since unknown means unlocked, is the whole app for free.
+        .task {
+            guard !model.clock.isFrozen else { return }
+            await model.subscriptions.load()
+        }
         .task(id: model.state.phase) {
             // Asking before the user has a plan is asking too early, and a
             // permission dialog would land in every screenshot.

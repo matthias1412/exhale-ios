@@ -152,6 +152,13 @@ enum Seed {
             return make(phase: .paywall, plan: plan(.cigarettes, day: 1),
                         subscriptions: MockSubscriptionGate(state: .loading))
 
+        case "paywall-lapsed":
+            // The subscription ran out on someone ninety days in. The wall
+            // goes back up, and the first thing the screen has to say is that
+            // the ninety days are still theirs.
+            return make(phase: .app, plan: plan(.cigarettes, day: 90),
+                        subscriptions: MockSubscriptionGate(isSubscribed: false))
+
         case "paywall-foreign-currency":
             // Store charges in EUR, habit priced in GBP. The payback comparison
             // must vanish rather than divide across currencies.
@@ -268,7 +275,13 @@ enum Seed {
             return make(phase: .app, plan: plan(.cigarettes, day: 400), tab: .milestones)
 
         case "settings":
-            return make(phase: .app, plan: plan(.cigarettes, day: 90)) { $0.settingsOpen = true }
+            // Subscribed, because that is what a settings screen looks like
+            // for anyone who has one. An unsubscribed capture would show
+            // "Checking..." forever and review nothing.
+            return make(phase: .app, plan: plan(.cigarettes, day: 90),
+                        subscriptions: MockSubscriptionGate(isSubscribed: true)) {
+                $0.settingsOpen = true
+            }
 
         // Craving SOS — one seed per breathing phase. A bug hid in step 2 of a
         // three-step overlay last time precisely because only step 1 was shot.
