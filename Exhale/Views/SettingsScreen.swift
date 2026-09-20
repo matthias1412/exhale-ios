@@ -31,6 +31,13 @@ struct SettingsScreen: View {
                         .padding(.top, 4)
                     }
 
+                    // Above the notification toggles, not below them. Someone
+                    // looking for "cancel" is not in a browsing mood, and
+                    // burying it under three switches and a milestone list is
+                    // the kind of thing that gets called a dark pattern.
+                    SectionLabel("SUBSCRIPTION").padding(.top, 22)
+                    subscriptionCard
+
                     SectionLabel("NOTIFICATIONS").padding(.top, 22)
                     notificationCard
 
@@ -46,9 +53,6 @@ struct SettingsScreen: View {
                     }
 
                     testButton.padding(.top, 22)
-
-                    SectionLabel("SUBSCRIPTION").padding(.top, 26)
-                    subscriptionCard
 
                     #if DEBUG_TOOLS
                     // Five taps on the wordmark still works, but nobody

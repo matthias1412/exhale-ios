@@ -31,7 +31,7 @@ struct PaywallAnchor: View {
             yearlyLoss
             projection
             if let comparison { comparison }
-            immediacy
+            if let immediacy { immediacy }
         }
     }
 
@@ -120,21 +120,47 @@ struct PaywallAnchor: View {
         )
     }
 
-    // MARK: - Something that happens tonight
+    // MARK: - Something that happens soon
 
-    private var immediacy: some View {
-        let first = Milestones.forProduct(plan.product).first
-        return HStack(alignment: .top, spacing: 10) {
-            Circle().fill(Palette.accent).frame(width: 6, height: 6).padding(.top, 6)
-            Text("Your first milestone is ")
-                .font(.spaceGrotesk(13.5))
-                .foregroundStyle(Palette.textMuted)
-            + Text(first?.when ?? "20 min")
-                .font(.spaceGrotesk(13.5, weight: .bold))
-                .foregroundStyle(Palette.textPrimary)
-            + Text(" away: \((first?.title ?? "your heart rate settles").lowercased()).")
-                .font(.spaceGrotesk(13.5))
-                .foregroundStyle(Palette.textMuted)
+    /// `nil` once every mark on the timeline is behind them — at twenty years
+    /// there is no next one, and inventing one would be worse than silence.
+    ///
+    /// This used to hardcode the *first* milestone and describe it as "away",
+    /// which is only true on day one. The paywall is also reached by someone
+    /// whose subscription lapsed ninety days in, and it told them their heart
+    /// rate would settle in twenty minutes — a promise their body kept three
+    /// months ago. Past day one the next mark is named by its date instead,
+    /// because "6 months away" is the distance from the quit date, not from
+    /// today, and the difference is the entire streak.
+    private var immediacy: AnyView? {
+        guard let next = Milestones.upcoming(
+            for: plan.product, hoursElapsed: progress.hoursElapsed, limit: 1).first
+        else { return nil }
+
+        let lede: String
+        let value: String
+        if progress.hoursElapsed < 1 {
+            lede = "Your first milestone is "
+            value = "\(next.when) away"
+        } else {
+            lede = "Your next milestone is "
+            value = next.date(from: plan.quitDate)
+                .formatted(.dateTime.day().month(.wide))
         }
+
+        return AnyView(
+            HStack(alignment: .top, spacing: 10) {
+                Circle().fill(Palette.accent).frame(width: 6, height: 6).padding(.top, 6)
+                Text(lede)
+                    .font(.spaceGrotesk(13.5))
+                    .foregroundStyle(Palette.textMuted)
+                + Text(value)
+                    .font(.spaceGrotesk(13.5, weight: .bold))
+                    .foregroundStyle(Palette.textPrimary)
+                + Text(": \(next.title.lowercased()).")
+                    .font(.spaceGrotesk(13.5))
+                    .foregroundStyle(Palette.textMuted)
+            }
+        )
     }
 }

@@ -160,9 +160,10 @@ struct PaywallScreen: View {
 
     private var primaryTitle: String {
         if case .ready(let list) = model.subscriptions.state,
-           let offer = list.first(where: { $0.term == selected }),
-           offer.hasFreeTrial {
-            return "Start my free week"
+           let offer = list.first(where: { $0.term == selected }) {
+            // Never offered to someone who has already had it.
+            if offer.hasFreeTrial { return "Start my free week" }
+            return returning ? "Start it up again" : "Continue"
         }
         return "Continue"
     }

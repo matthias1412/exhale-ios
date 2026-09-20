@@ -157,7 +157,9 @@ enum Seed {
             // goes back up, and the first thing the screen has to say is that
             // the ninety days are still theirs.
             return make(phase: .app, plan: plan(.cigarettes, day: 90),
-                        subscriptions: MockSubscriptionGate(isSubscribed: false))
+                        subscriptions: MockSubscriptionGate(
+                            state: .ready(MockSubscriptionGate.usedTrialOffers),
+                            isSubscribed: false))
 
         case "paywall-foreign-currency":
             // Store charges in EUR, habit priced in GBP. The payback comparison

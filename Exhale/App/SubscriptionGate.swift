@@ -82,6 +82,16 @@ final class MockSubscriptionGate: SubscriptionGate {
                           hasFreeTrial: false, trialDays: 0)
     ]
 
+    /// The same two offers with the free week taken off, which is what
+    /// someone who has already used it is actually shown.
+    static let usedTrialOffers: [SubscriptionOffer] = sampleOffers.map {
+        SubscriptionOffer(id: $0.id, term: $0.term,
+                          localisedPrice: $0.localisedPrice,
+                          localisedPricePerMonth: $0.localisedPricePerMonth,
+                          amount: $0.amount, currencyCode: $0.currencyCode,
+                          hasFreeTrial: false, trialDays: 0)
+    }
+
     func load() async {}
     func purchase(_ offer: SubscriptionOffer) async -> Bool { isSubscribed = true; return true }
     func restore() async -> Bool { isSubscribed == true }
@@ -106,6 +116,16 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
     private let entitlement = "premium"
     private let logger = Logger(subsystem: "com.matthias1412.exhale", category: "subscriptions")
     private var configured = false
+
+    /// Whether this Apple Account has ever held the entitlement, active or
+    /// not — which is the same question as "have they already used the free
+    /// week", since the week is how everyone starts.
+    ///
+    /// `introductoryDiscount` describes the *product*, not the person: it
+    /// keeps saying "7 days free" to someone who used their free week a year
+    /// ago and cancelled. Offering it to them again is a promise the store
+    /// will refuse to keep at the till.
+    private var hasUsedTrial = false
 
     /// Nil when the build was made without a key, which is every local build
     /// and any CI build where the secret is missing.
@@ -143,6 +163,9 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
         do {
             let info = try await Purchases.shared.customerInfo()
             isSubscribed = info.entitlements[entitlement]?.isActive == true
+            // `.all`, not `.active`: a lapsed subscription still counts as
+            // having been one.
+            hasUsedTrial = info.entitlements.all[entitlement] != nil
 
             let offerings = try await Purchases.shared.offerings()
             guard let packages = offerings.current?.availablePackages, !packages.isEmpty else {
@@ -150,7 +173,7 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
                 logger.error("RevenueCat returned no current offering")
                 return
             }
-            let offers = packages.compactMap(Self.offer(from:))
+            let offers = packages.compactMap { Self.offer(from: $0, trialUsed: hasUsedTrial) }
             state = offers.isEmpty
                 ? .unavailable("No subscriptions are available right now.")
                 : .ready(offers.sorted { $0.term == .yearly && $1.term != .yearly })
@@ -201,7 +224,7 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
     /// currency, and the per-month figure is divided and then handed back to
     /// the store's own formatter rather than assembled from a number and a
     /// symbol.
-    private static func offer(from package: Package) -> SubscriptionOffer? {
+    private static func offer(from package: Package, trialUsed: Bool) -> SubscriptionOffer? {
         let product = package.storeProduct
         let term: SubscriptionOffer.Term
         switch package.packageType {
@@ -219,7 +242,7 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
         // Only a genuine free trial counts. A discounted introductory price is
         // not a free week and must not be described as one.
         let intro = product.introductoryDiscount
-        let isFreeTrial = intro?.paymentMode == .freeTrial
+        let isFreeTrial = intro?.paymentMode == .freeTrial && !trialUsed
         let trialDays = isFreeTrial ? (intro?.subscriptionPeriod.days ?? 0) : 0
 
         return SubscriptionOffer(
