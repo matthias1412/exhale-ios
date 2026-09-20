@@ -131,3 +131,67 @@ final class SubscriptionLockTests: XCTestCase {
         XCTAssertFalse(m.isLocked)
     }
 }
+
+/// The one line on the paywall that talks about time.
+///
+/// It is read from three places on the timeline and was true from only one of
+/// them: at ninety days it told people their heart rate would settle in
+/// twenty minutes, which had happened three months earlier.
+final class MilestoneImmediacyTests: XCTestCase {
+
+    private let quit = Date(timeIntervalSince1970: 1_700_000_000)
+
+    private func line(hoursElapsed: Double,
+                      product: NicotineProduct = .cigarettes) -> MilestoneImmediacy? {
+        MilestoneImmediacy(product: product, hoursElapsed: hoursElapsed, quitDate: quit)
+    }
+
+    func testTheMomentTheyStopItIsTheFirstMilestoneMinutesAway() {
+        let l = line(hoursElapsed: 0)
+        XCTAssertEqual(l?.lede, "Your first milestone is ")
+        // 0.34h = 20.4 min.
+        XCTAssertEqual(l?.value, "20 min away")
+        XCTAssertEqual(l?.title, "heart rate settles")
+    }
+
+    /// Someone who stopped at breakfast and reached the paywall mid-morning.
+    /// Their heart rate settled long ago, so this is no longer their first.
+    func testAFewHoursInItIsTheNextOneCountedFromNow() {
+        let l = line(hoursElapsed: 1.7)
+        XCTAssertEqual(l?.lede, "Your next milestone is ")
+        // Carbon monoxide clears at 12h: 10.3h away, not "12 h".
+        XCTAssertEqual(l?.value, "10 hours away")
+    }
+
+    func testAnHourAwayIsSingular() {
+        // Carbon monoxide clears at 12h, so eleven hours in leaves exactly one.
+        XCTAssertEqual(line(hoursElapsed: 11)?.value, "1 hour away")
+    }
+
+    func testUnderAnHourIsSaidInMinutes() {
+        XCTAssertEqual(line(hoursElapsed: 11.2)?.value, "48 min away")
+    }
+
+    /// The bug that started this: `Milestone.when` is the distance from the
+    /// quit date, so a mark at "6 months" is not six months away from someone
+    /// who is already three months in.
+    func testDistantMilestonesAreNamedByDateNotByDistanceFromTheQuitDate() {
+        let l = line(hoursElapsed: 24 * 90)
+        XCTAssertEqual(l?.lede, "Your next milestone is ")
+        XCTAssertFalse(l?.value.contains("away") ?? true,
+                       "a mark months out should be dated, not counted in hours")
+        XCTAssertFalse(l?.value.isEmpty ?? true)
+    }
+
+    /// Inside a day it must read as a duration. Naming a date for something
+    /// happening this evening makes it sound further off than it is.
+    func testSomethingLaterTodayIsSaidInHoursNotAsADate() {
+        let value = line(hoursElapsed: 2)?.value ?? ""
+        XCTAssertTrue(value.hasSuffix("away"), "got \(value)")
+    }
+
+    func testNothingIsClaimedOnceEveryMilestoneIsBehindThem() {
+        // Well past the last mark on the timeline.
+        XCTAssertNil(line(hoursElapsed: 24 * 365 * 25))
+    }
+}

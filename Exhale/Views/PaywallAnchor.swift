@@ -133,20 +133,13 @@ struct PaywallAnchor: View {
     /// because "6 months away" is the distance from the quit date, not from
     /// today, and the difference is the entire streak.
     private var immediacy: AnyView? {
-        guard let next = Milestones.upcoming(
-            for: plan.product, hoursElapsed: progress.hoursElapsed, limit: 1).first
-        else { return nil }
-
-        let lede: String
-        let value: String
-        if progress.hoursElapsed < 1 {
-            lede = "Your first milestone is "
-            value = "\(next.when) away"
-        } else {
-            lede = "Your next milestone is "
-            value = next.date(from: plan.quitDate)
-                .formatted(.dateTime.day().month(.wide))
-        }
+        guard let next = MilestoneImmediacy(
+            product: plan.product,
+            hoursElapsed: progress.hoursElapsed,
+            quitDate: plan.quitDate
+        ) else { return nil }
+        let lede = next.lede
+        let value = next.value
 
         return AnyView(
             HStack(alignment: .top, spacing: 10) {
@@ -157,10 +150,58 @@ struct PaywallAnchor: View {
                 + Text(value)
                     .font(.spaceGrotesk(13.5, weight: .bold))
                     .foregroundStyle(Palette.textPrimary)
-                + Text(": \(next.title.lowercased()).")
+                + Text(": \(next.title).")
                     .font(.spaceGrotesk(13.5))
                     .foregroundStyle(Palette.textMuted)
             }
         )
+    }
+}
+
+/// The "something happens soon" line, kept out of the view so it can be
+/// tested — the same reason `ReadySummary` lives outside its screen.
+///
+/// It has to be true from three very different places on the timeline: the
+/// minute someone stops, a few hours in, and ninety days in when a lapsed
+/// subscription puts the paywall back up. The version this replaced was only
+/// true from the first of those, and said so to all three.
+struct MilestoneImmediacy: Equatable {
+    let lede: String
+    let value: String
+    /// Already lowercased for the sentence it sits in.
+    let title: String
+
+    /// `nil` once every mark on the timeline is behind them. At twenty years
+    /// there is no next one, and inventing one would be worse than silence.
+    init?(product: NicotineProduct, hoursElapsed: Double, quitDate: Date) {
+        guard let next = Milestones.upcoming(
+            for: product, hoursElapsed: hoursElapsed, limit: 1).first
+        else { return nil }
+
+        // "First" only while none have been passed. Someone ninety days in
+        // has a next one, not a first one.
+        let isFirst = Milestones.forProduct(product).first == next
+        lede = isFirst ? "Your first milestone is " : "Your next milestone is "
+        title = next.title.lowercased()
+
+        // How far away it is *from now*, which is not what `Milestone.when`
+        // says: that is the distance from the quit date, and the two stop
+        // agreeing the moment anyone backdates or comes back later. Anything
+        // inside a day is said as a duration, because naming a date for
+        // something happening this evening reads as further off than it is.
+        //
+        // Computed rather than handed to a relative date formatter, which
+        // measures from the real clock and would print nonsense under the
+        // frozen one the captures run on.
+        let hoursAway = next.hours - hoursElapsed
+        if hoursAway < 1 {
+            let minutes = max(1, Int((hoursAway * 60).rounded()))
+            value = "\(minutes) min away"
+        } else if hoursAway < 24 {
+            let hours = max(1, Int(hoursAway.rounded()))
+            value = "\(hours) \(hours == 1 ? "hour" : "hours") away"
+        } else {
+            value = next.date(from: quitDate).formatted(.dateTime.day().month(.wide))
+        }
     }
 }
