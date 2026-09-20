@@ -5,6 +5,14 @@ struct PaywallScreen: View {
     @State private var selected: SubscriptionOffer.Term = .yearly
     @State private var working = false
 
+    /// Set once the store has had long enough. See `shown`.
+    @State private var storeTookTooLong = false
+
+    /// Long enough for a slow connection, short enough that nobody thinks the
+    /// app has died. A StoreKit call that is going to answer answers well
+    /// inside this.
+    private let storeDeadline = 12.0
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 9) {
@@ -50,11 +58,34 @@ struct PaywallScreen: View {
         .padding(.horizontal, 26)
         .padding(.bottom, 32)
         .task { await model.subscriptions.load() }
+        // The screen must never become a dead end.
+        //
+        // `.loading` draws two grey placeholders and disables the button, and
+        // there is deliberately no "Maybe later" any more — so a store call
+        // that never returns used to leave someone staring at two empty boxes
+        // with nothing on screen that does anything, forever, with the app
+        // they just set up on the other side of it. A hang is not a decision
+        // not to sell, but after long enough it has to be treated as one.
+        .task {
+            try? await Task.sleep(for: .seconds(storeDeadline))
+            storeTookTooLong = true
+        }
+    }
+
+    /// What the screen shows, which is not always what the gate says: a load
+    /// that has outlived its deadline is shown as a store we could not reach,
+    /// because that is the honest description and, unlike `.loading`, it is a
+    /// state the screen has a way out of.
+    private var shown: SubscriptionState {
+        if case .loading = model.subscriptions.state, storeTookTooLong {
+            return .unavailable("We couldn't reach the App Store. Carry on for now and we'll try again later.")
+        }
+        return model.subscriptions.state
     }
 
     @ViewBuilder
     private func offers(plan: QuitPlan) -> some View {
-        switch model.subscriptions.state {
+        switch shown {
         case .loading:
             // A placeholder, never a guessed price.
             VStack(spacing: 10) {
@@ -88,7 +119,7 @@ struct PaywallScreen: View {
     private var actions: some View {
         VStack(spacing: 10) {
             PillButton(primaryTitle, style: .accent) {
-                guard case .ready(let list) = model.subscriptions.state,
+                guard case .ready(let list) = shown,
                       let offer = list.first(where: { $0.term == selected }) else {
                     // Nothing to sell, so nothing to stand in the way. This is
                     // the same judgement as `isLocked`: no offer, no wall.
@@ -145,7 +176,7 @@ struct PaywallScreen: View {
     /// True only while the store has not answered. An `.unavailable` store is
     /// not loading — it is finished, and the button has somewhere to go.
     private var isLoadingPrices: Bool {
-        if case .loading = model.subscriptions.state { return true }
+        if case .loading = shown { return true }
         return false
     }
 
@@ -154,12 +185,12 @@ struct PaywallScreen: View {
     private var returning: Bool { model.state.phase == .app }
 
     private var yearlyOffer: SubscriptionOffer? {
-        guard case .ready(let list) = model.subscriptions.state else { return nil }
+        guard case .ready(let list) = shown else { return nil }
         return list.first { $0.term == .yearly }
     }
 
     private var primaryTitle: String {
-        if case .ready(let list) = model.subscriptions.state,
+        if case .ready(let list) = shown,
            let offer = list.first(where: { $0.term == selected }) {
             // Never offered to someone who has already had it.
             if offer.hasFreeTrial { return "Start my free week" }
