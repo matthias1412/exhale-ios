@@ -8,10 +8,18 @@ struct PaywallScreen: View {
     /// Set once the store has had long enough. See `shown`.
     @State private var storeTookTooLong = false
 
-    /// Long enough for a slow connection, short enough that nobody thinks the
-    /// app has died. A StoreKit call that is going to answer answers well
-    /// inside this.
-    private let storeDeadline = 12.0
+    /// Deliberately generous. This exists only so the screen can never become
+    /// a permanent dead end - it is not a shortcut past the paywall, and the
+    /// cost of it firing early is someone being told the store is unreachable
+    /// while the store is in fact about to answer.
+    ///
+    /// The first guess here was twelve seconds, on the reasoning that anything
+    /// slower than that is broken. On a real device the offers took twenty:
+    /// RevenueCat retries the StoreKit product fetch, and a cold fetch on a
+    /// product that has only just become purchasable is not quick. Twelve
+    /// would have called it a failure eight seconds before the prices arrived,
+    /// and handed the app away free to anyone who tapped Continue in between.
+    private let storeDeadline = 35.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -94,9 +102,18 @@ struct PaywallScreen: View {
                         .fill(Palette.textPrimary.opacity(0.06))
                         .frame(height: 68)
                 }
+                // Twenty seconds of two grey boxes reads as a broken screen.
+                // Saying who we are waiting for turns the same wait into
+                // something that is visibly still happening.
+                Text("Checking prices with the App Store...")
+                    .font(.spaceGrotesk(12))
+                    .foregroundStyle(Palette.textFaint)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 2)
             }
             .padding(.top, 22)
-            .accessibilityLabel("Loading prices")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Checking prices with the App Store")
 
         case .ready(let list):
             VStack(spacing: 10) {
