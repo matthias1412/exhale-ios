@@ -27,6 +27,34 @@ struct SubscriptionOffer: Identifiable, Equatable, Sendable {
     let trialDays: Int
 }
 
+/// Where the time went on the last store load.
+///
+/// The paywall takes thirty to forty seconds to show prices on a real device
+/// and three rounds of reasoning about why have all been wrong, so this
+/// measures it instead. Debug builds print it on the paywall; nothing in a
+/// release build reads it.
+struct StoreLoadTimings: Equatable, Sendable {
+    var configure = 0.0
+    var customerInfo = 0.0
+    var offerings = 0.0
+    var attempts = 0
+    var packages = 0
+    var currentOffering: String?
+    var failure: String?
+
+    var summary: String {
+        var lines = [
+            String(format: "configure %.2fs", configure),
+            String(format: "customerInfo %.2fs", customerInfo),
+            String(format: "offerings %.2fs", offerings),
+            "offering \(currentOffering ?? "nil"), \(packages) pkg, call #\(attempts)"
+        ]
+        if let failure { lines.append("error: \(failure)") }
+        return lines.joined(separator: "
+")
+    }
+}
+
 enum SubscriptionState: Equatable, Sendable {
     case loading
     case ready([SubscriptionOffer])
@@ -48,6 +76,9 @@ protocol SubscriptionGate: AnyObject {
     /// long as the network takes.
     var isSubscribed: Bool? { get }
 
+    /// Debug-only surface. See `StoreLoadTimings`.
+    var timings: StoreLoadTimings? { get }
+
     func load() async
     func purchase(_ offer: SubscriptionOffer) async -> Bool
     func restore() async -> Bool
@@ -64,6 +95,8 @@ final class MockSubscriptionGate: SubscriptionGate {
     /// Unknown, so seeded captures of the app are never locked behind the
     /// paywall. A screenshot run does not have a store to ask.
     private(set) var isSubscribed: Bool?
+    /// Nothing was timed: a mock does not talk to a store.
+    let timings: StoreLoadTimings? = nil
 
     init(state: SubscriptionState = .ready(MockSubscriptionGate.sampleOffers),
          isSubscribed: Bool? = nil) {
@@ -119,6 +152,8 @@ final class MockSubscriptionGate: SubscriptionGate {
 final class RevenueCatSubscriptionGate: SubscriptionGate {
     private(set) var state: SubscriptionState = .loading
     private(set) var isSubscribed: Bool?
+    private(set) var timings: StoreLoadTimings?
+    private var loadCount = 0
 
     private let entitlement = "premium"
     private let logger = Logger(subsystem: "com.matthias1412.exhale", category: "subscriptions")
@@ -175,6 +210,11 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
     }
 
     private func performLoad() async {
+        loadCount += 1
+        var report = StoreLoadTimings(attempts: loadCount)
+        let started = Date()
+        defer { timings = report }
+
         guard configureIfNeeded() else {
             state = .unavailable("Subscriptions are not set up in this build.")
             logger.error("no RevenueCat key in Info.plist; paywall disabled")
@@ -184,15 +224,24 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
         // `.loading` on every foreground would blank the prices mid-read and,
         // because a state that cannot sell anything does not lock, would
         // flash the whole app into view for someone locked out of it.
+        report.configure = Date().timeIntervalSince(started)
+
         if case .ready = state {} else { state = .loading }
         do {
+            let beforeInfo = Date()
             let info = try await Purchases.shared.customerInfo()
+            report.customerInfo = Date().timeIntervalSince(beforeInfo)
             isSubscribed = info.entitlements[entitlement]?.isActive == true
             // `.all`, not `.active`: a lapsed subscription still counts as
             // having been one.
             hasUsedTrial = info.entitlements.all[entitlement] != nil
 
+            let beforeOfferings = Date()
             let offerings = try await Purchases.shared.offerings()
+            report.offerings = Date().timeIntervalSince(beforeOfferings)
+            report.currentOffering = offerings.current?.identifier
+            report.packages = offerings.current?.availablePackages.count ?? 0
+
             guard let packages = offerings.current?.availablePackages, !packages.isEmpty else {
                 state = .unavailable("No subscriptions are available right now.")
                 logger.error("RevenueCat returned no current offering")
@@ -209,6 +258,7 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
             if case .ready = state {} else {
                 state = .unavailable("Could not reach the store. Check your connection.")
             }
+            report.failure = error.localizedDescription
             logger.error("offerings failed: \(error.localizedDescription, privacy: .public)")
         }
     }

@@ -61,6 +61,21 @@ struct PaywallScreen: View {
             }
 
             Spacer(minLength: 0)
+
+            #if DEBUG_TOOLS
+            // Not in App Store builds. Three rounds of reasoning about the
+            // slow paywall were wrong, so this shows the measurements.
+            if let timings = model.subscriptions.timings {
+                Text(timings.summary)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(Palette.accentSoft)
+                    .padding(8)
+                    .background(RoundedRectangle(cornerRadius: 8)
+                        .fill(Palette.textPrimary.opacity(0.06)))
+                    .padding(.bottom, 8)
+            }
+            #endif
+
             actions
         }
         .padding(.horizontal, 26)
