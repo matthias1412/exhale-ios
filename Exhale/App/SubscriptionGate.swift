@@ -62,6 +62,14 @@ enum SubscriptionState: Equatable, Sendable {
 
 /// Everything the paywall needs, behind a protocol so screenshot seeds and
 /// tests never touch the network or StoreKit.
+///
+/// **Every conformance must be `@Observable`.** `AppModel` is observable and
+/// holds one of these, but that says nothing about the object it points at:
+/// SwiftUI tracks what it reads, and a plain class reports no changes at all.
+/// Without it the store answers in ten milliseconds, `state` moves to
+/// `.ready`, and the paywall goes on drawing two grey placeholders until
+/// something unrelated happens to force a redraw. That looked exactly like a
+/// slow store, and was chased as one for three builds.
 @MainActor
 protocol SubscriptionGate: AnyObject {
     var state: SubscriptionState { get }
@@ -88,6 +96,7 @@ protocol SubscriptionGate: AnyObject {
 /// The prices here are **placeholders for captures only** and must never reach
 /// a user — which is also why marketing screenshots are taken from screens
 /// without a price on them.
+@Observable
 @MainActor
 final class MockSubscriptionGate: SubscriptionGate {
     private(set) var state: SubscriptionState
@@ -147,6 +156,7 @@ final class MockSubscriptionGate: SubscriptionGate {
 /// on. The paywall must never invent a price: a subscription screen that shows
 /// a number the store did not supply is charging someone an amount nobody
 /// agreed to, and in most of the world it would be the wrong currency as well.
+@Observable
 @MainActor
 final class RevenueCatSubscriptionGate: SubscriptionGate {
     private(set) var state: SubscriptionState = .loading
