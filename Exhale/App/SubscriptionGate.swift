@@ -123,10 +123,10 @@ final class MockSubscriptionGate: SubscriptionGate {
                           amount: 19.99, currencyCode: "EUR",
                           hasFreeTrial: true, trialDays: 7),
         SubscriptionOffer(id: "exhale.monthly", term: .monthly,
-                          localisedPrice: "€2.99", localisedPricePerMonth: nil,
-                          // No trial claimed here until App Store Connect is
-                          // seen to offer one on the monthly product too.
-                          amount: 2.99, currencyCode: "EUR",
+                          localisedPrice: "€2.49", localisedPricePerMonth: nil,
+                          // App Store Connect offers no trial on the monthly
+                          // product; only the yearly has the free week.
+                          amount: 2.49, currencyCode: "EUR",
                           hasFreeTrial: false, trialDays: 0)
     ]
 
