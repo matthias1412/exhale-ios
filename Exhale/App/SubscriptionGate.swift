@@ -50,8 +50,7 @@ struct StoreLoadTimings: Equatable, Sendable {
             "offering \(currentOffering ?? "nil"), \(packages) pkg, call #\(attempts)"
         ]
         if let failure { lines.append("error: \(failure)") }
-        return lines.joined(separator: "
-")
+        return lines.joined(separator: "\n")
     }
 }
 
