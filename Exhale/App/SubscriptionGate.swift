@@ -134,6 +134,15 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
     /// will refuse to keep at the till.
     private var hasUsedTrial = false
 
+    /// The load currently in flight, if any.
+    ///
+    /// Three places ask for this: the root at launch, the paywall when it
+    /// appears, and every return from the background. Opening the app onto
+    /// the paywall fires the first two within a frame of each other, and each
+    /// one sets its own StoreKit product fetch going. Racing the store to
+    /// answer a question it is already answering cannot make it quicker.
+    private var inFlight: Task<Void, Never>?
+
     /// Nil when the build was made without a key, which is every local build
     /// and any CI build where the secret is missing.
     private var apiKey: String? {
@@ -156,7 +165,16 @@ final class RevenueCatSubscriptionGate: SubscriptionGate {
         return true
     }
 
+    /// A second caller waits on the first rather than starting a second fetch.
     func load() async {
+        if let inFlight { return await inFlight.value }
+        let task = Task { await self.performLoad() }
+        inFlight = task
+        await task.value
+        inFlight = nil
+    }
+
+    private func performLoad() async {
         guard configureIfNeeded() else {
             state = .unavailable("Subscriptions are not set up in this build.")
             logger.error("no RevenueCat key in Info.plist; paywall disabled")

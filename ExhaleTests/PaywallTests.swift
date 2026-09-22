@@ -122,6 +122,18 @@ final class SubscriptionLockTests: XCTestCase {
         XCTAssertFalse(model(gate).isLocked)
     }
 
+    /// A build with no RevenueCat key must not lock anyone out. This is every
+    /// local build, and any CI build where the secret went missing - which is
+    /// exactly the release where nobody would notice until the reviews came in.
+    func testABuildWithNoStoreAtAllDoesNotLock() async {
+        let gate = MockSubscriptionGate(
+            state: .unavailable("Subscriptions are not set up in this build."),
+            isSubscribed: nil)
+        let m = model(gate)
+        await gate.load()
+        XCTAssertFalse(m.isLocked)
+    }
+
     /// Buying is the way through, and the only way through.
     func testPurchaseUnlocks() async {
         let gate = MockSubscriptionGate(isSubscribed: false)
