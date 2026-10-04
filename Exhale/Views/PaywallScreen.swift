@@ -109,6 +109,13 @@ struct PaywallScreen: View {
                 .padding(.top, 6)
         }
 
+        // What the subscription buys comes before the argument for buying
+        // it. It is the part App Review rejected the app for leaving out, and
+        // with the plans pinned below, whatever sits last in here is what a
+        // small phone loses first. On an iPhone 16e that was this list.
+        PaywallIncludes()
+            .padding(.top, 20)
+
         if let plan = model.plan, let progress = model.progress {
             PaywallAnchor(
                 progress: progress,
@@ -116,10 +123,7 @@ struct PaywallScreen: View {
                 offer: yearlyOffer,
                 now: model.clock.now
             )
-            .padding(.top, 20)
-
-            PaywallIncludes()
-                .padding(.top, 22)
+            .padding(.top, 26)
         }
     }
 
@@ -291,12 +295,29 @@ struct OfferRow: View {
     var body: some View {
         Button(action: select) {
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(offer.term == .yearly ? "Yearly" : "Monthly")
-                        .font(.spaceGrotesk(15, weight: .bold))
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Text(offer.term == .yearly ? "Yearly" : "Monthly")
+                            .font(.spaceGrotesk(15, weight: .bold))
+                        // Beside the name rather than beside the price: on a
+                        // small phone the badge, the price and the billing
+                        // line could not all share one row, and it was the
+                        // billing line that got cut to "Billed yearly,...".
+                        if offer.hasFreeTrial {
+                            Text("\(offer.trialDays) DAYS FREE")
+                                .font(.spaceGrotesk(9.5, weight: .bold))
+                                .tracking(0.7)
+                                .foregroundStyle(Palette.onAccent)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Palette.accent))
+                        }
+                    }
                     Text(billingLine)
                         .font(.spaceGrotesk(12))
                         .foregroundStyle(Palette.textMuted)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()
@@ -310,16 +331,7 @@ struct OfferRow: View {
                     .foregroundStyle(Palette.textMuted))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-
-                if offer.hasFreeTrial {
-                    Text("\(offer.trialDays) DAYS FREE")
-                        .font(.spaceGrotesk(10, weight: .bold))
-                        .tracking(0.8)
-                        .foregroundStyle(Palette.onAccent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 9).fill(Palette.accent))
-                }
+                    .layoutPriority(1)
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 16)
