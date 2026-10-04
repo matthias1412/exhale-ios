@@ -23,44 +23,18 @@ struct PaywallScreen: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 9) {
-                LogoMark(size: 26)
-                Text("EXHALE")
-                    .font(.spaceGrotesk(13, weight: .bold))
-                    .tracking(2.86)
-                    .foregroundStyle(Palette.accent)
+            // The content scrolls and the buttons do not. Adding what the
+            // subscription includes made this taller than a small phone, and
+            // App Review also runs iPhone apps on an iPad, where an
+            // overflowing paywall is a paywall with its price cut off.
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    content
+                }
+                .padding(.horizontal, 26)
+                .padding(.bottom, 12)
             }
-            .padding(.top, 8)
-
-            Text(returning ? "Your subscription has ended." : "Your quit plan is ready.")
-                .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 22)
-
-            // Someone who has been counting for months and hits this screen
-            // needs to know, in the first second, that their streak has not
-            // been taken away. It is on their device; nothing was lost.
-            if returning {
-                Text("Your streak is safe. Pick up where you left off.")
-                    .font(.spaceGrotesk(13.5))
-                    .foregroundStyle(Palette.textMuted)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 6)
-            }
-
-            if let plan = model.plan, let progress = model.progress {
-                PaywallAnchor(
-                    progress: progress,
-                    plan: plan,
-                    offer: yearlyOffer,
-                    now: model.clock.now
-                )
-                .padding(.top, 20)
-
-                offers(plan: plan)
-            }
-
-            Spacer(minLength: 0)
+            .scrollIndicators(.hidden)
 
             #if DEBUG_TOOLS
             // Not in App Store builds. Three rounds of reasoning about the
@@ -72,13 +46,15 @@ struct PaywallScreen: View {
                     .padding(8)
                     .background(RoundedRectangle(cornerRadius: 8)
                         .fill(Palette.textPrimary.opacity(0.06)))
+                    .padding(.horizontal, 26)
                     .padding(.bottom, 8)
             }
             #endif
 
             actions
+                .padding(.horizontal, 26)
+                .padding(.top, 10)
         }
-        .padding(.horizontal, 26)
         .padding(.bottom, 32)
         .task { await model.subscriptions.load() }
         // The screen must never become a dead end.
@@ -92,6 +68,49 @@ struct PaywallScreen: View {
         .task {
             try? await Task.sleep(for: .seconds(storeDeadline))
             storeTookTooLong = true
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        HStack(spacing: 9) {
+            LogoMark(size: 26)
+            Text("EXHALE")
+                .font(.spaceGrotesk(13, weight: .bold))
+                .tracking(2.86)
+                .foregroundStyle(Palette.accent)
+        }
+        .padding(.top, 8)
+
+        Text(returning ? "Your subscription has ended." : "Your quit plan is ready.")
+            .font(.spaceGrotesk(30, weight: .bold, relativeTo: .largeTitle))
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 22)
+
+        // Someone who has been counting for months and hits this screen
+        // needs to know, in the first second, that their streak has not
+        // been taken away. It is on their device; nothing was lost.
+        if returning {
+            Text("Your streak is safe. Pick up where you left off.")
+                .font(.spaceGrotesk(13.5))
+                .foregroundStyle(Palette.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 6)
+        }
+
+        if let plan = model.plan, let progress = model.progress {
+            PaywallAnchor(
+                progress: progress,
+                plan: plan,
+                offer: yearlyOffer,
+                now: model.clock.now
+            )
+            .padding(.top, 20)
+
+            PaywallIncludes()
+                .padding(.top, 24)
+
+            offers(plan: plan)
         }
     }
 
@@ -150,6 +169,15 @@ struct PaywallScreen: View {
 
     private var actions: some View {
         VStack(spacing: 10) {
+            if let terms = selectedTerms {
+                Text(terms)
+                    .font(.spaceGrotesk(12.5, weight: .medium))
+                    .foregroundStyle(Palette.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             PillButton(primaryTitle, style: .accent) {
                 guard case .ready(let list) = shown,
                       let offer = list.first(where: { $0.term == selected }) else {
@@ -216,6 +244,20 @@ struct PaywallScreen: View {
     /// a subscription that has lapsed rather than one never started.
     private var returning: Bool { model.state.phase == .app }
 
+    /// What tapping the button actually costs, in one sentence, next to it.
+    /// A badge saying "7 DAYS FREE" in the row above is not the same thing as
+    /// saying what the eighth day costs, and the second is the part Apple
+    /// reviews for.
+    private var selectedTerms: String? {
+        guard case .ready(let list) = shown,
+              let offer = list.first(where: { $0.term == selected }) else { return nil }
+        let period = offer.term == .yearly ? "year" : "month"
+        if offer.hasFreeTrial {
+            return "Free for \(offer.trialDays) days, then \(offer.localisedPrice) a \(period)."
+        }
+        return "\(offer.localisedPrice) a \(period), renewing every \(period)."
+    }
+
     private var yearlyOffer: SubscriptionOffer? {
         guard case .ready(let list) = shown else { return nil }
         return list.first { $0.term == .yearly }
@@ -243,17 +285,22 @@ struct OfferRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(offer.term == .yearly ? "Yearly" : "Monthly")
                         .font(.spaceGrotesk(15, weight: .bold))
-                    if let perMonth = offer.localisedPricePerMonth {
-                        Text("\(perMonth) / month")
-                            .font(.spaceGrotesk(12))
-                            .foregroundStyle(Palette.textMuted)
-                    }
+                    Text(billingLine)
+                        .font(.spaceGrotesk(12))
+                        .foregroundStyle(Palette.textMuted)
                 }
 
                 Spacer()
 
-                Text(offer.localisedPrice)
+                // The period is part of the price. "€2.49" alone does not
+                // say whether that is once, a month or a year.
+                (Text(offer.localisedPrice)
                     .font(.spaceGrotesk(17, weight: .bold))
+                 + Text(offer.term == .yearly ? " / year" : " / month")
+                    .font(.spaceGrotesk(12))
+                    .foregroundStyle(Palette.textMuted))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
                 if offer.hasFreeTrial {
                     Text("\(offer.trialDays) DAYS FREE")
@@ -278,5 +325,51 @@ struct OfferRow: View {
             )
         }
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private var billingLine: String {
+        if let perMonth = offer.localisedPricePerMonth {
+            return "Billed yearly, \(perMonth) a month"
+        }
+        return "Billed monthly"
+    }
+}
+
+/// What the subscription actually buys.
+///
+/// App Review rejected the first version under 3.1.2(c) for not saying this,
+/// and they were right: the screen argued at length about money and never
+/// listed what a subscriber gets. Every line here is a real, shipping part of
+/// the app, because a list like this is a promise about what is behind the
+/// wall.
+struct PaywallIncludes: View {
+    static let lines = [
+        "Your streak, one dot for every day off nicotine",
+        "The money you keep, counted to the cent",
+        "Health milestones from 20 minutes to 20 years",
+        "Craving help on every screen, three minutes at a time",
+        "Reminders, slip tracking and iCloud backup",
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text("WHAT YOU GET")
+                .font(.spaceGrotesk(11, weight: .medium))
+                .tracking(1.98)
+                .foregroundStyle(Palette.textFaint)
+
+            ForEach(Self.lines, id: \.self) { line in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Palette.accent)
+                    Text(line)
+                        .font(.spaceGrotesk(13.5))
+                        .foregroundStyle(Palette.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }
