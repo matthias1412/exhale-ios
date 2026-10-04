@@ -23,10 +23,15 @@ struct PaywallScreen: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // The content scrolls and the buttons do not. Adding what the
-            // subscription includes made this taller than a small phone, and
-            // App Review also runs iPhone apps on an iPad, where an
-            // overflowing paywall is a paywall with its price cut off.
+            // The pitch scrolls; the plans, the terms and the button do not.
+            //
+            // With the plans at the end of the scrolling content, adding what
+            // the subscription includes pushed them off the bottom of every
+            // phone that was not a Pro Max: the price, the period and the
+            // only way to choose Monthly all sat below the fold with nothing
+            // to say they were there. On a screen reviewed for showing what
+            // the user gets *for the price*, the price is the last thing that
+            // may be allowed to scroll away.
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     content
@@ -51,9 +56,15 @@ struct PaywallScreen: View {
             }
             #endif
 
-            actions
-                .padding(.horizontal, 26)
-                .padding(.top, 10)
+            VStack(spacing: 0) {
+                if let plan = model.plan {
+                    offers(plan: plan)
+                }
+                actions
+                    .padding(.top, 14)
+            }
+            .padding(.horizontal, 26)
+            .padding(.top, 4)
         }
         .padding(.bottom, 32)
         .task { await model.subscriptions.load() }
@@ -108,9 +119,7 @@ struct PaywallScreen: View {
             .padding(.top, 20)
 
             PaywallIncludes()
-                .padding(.top, 24)
-
-            offers(plan: plan)
+                .padding(.top, 22)
         }
     }
 
@@ -145,7 +154,7 @@ struct PaywallScreen: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 2)
             }
-            .padding(.top, 22)
+            .padding(.top, 8)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Checking prices with the App Store")
 
@@ -157,13 +166,13 @@ struct PaywallScreen: View {
                     }
                 }
             }
-            .padding(.top, 22)
+            .padding(.top, 8)
 
         case .unavailable(let reason):
             Text(reason)
                 .font(.spaceGrotesk(13))
                 .foregroundStyle(Palette.textMuted)
-                .padding(.top, 22)
+                .padding(.top, 8)
         }
     }
 

@@ -9,8 +9,6 @@ import SwiftUI
 ///   already leaving their pocket — describing it as a loss is also just true.
 /// - **Aggregation.** A daily cost is discounted to nothing. The annual figure
 ///   is the one that reads as a holiday that didn't happen.
-/// - **A dated projection.** "By 5 August 2027 you'll have kept X" is concrete,
-///   personalised and in their currency, which beats an abstract promise.
 /// - **Relative anchoring.** The subscription next to the habit's annual cost
 ///   makes the price self-evidently small, without ever calling it cheap.
 /// - **Immediacy.** The first milestone is twenty minutes away. A reward you
@@ -29,7 +27,6 @@ struct PaywallAnchor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             yearlyLoss
-            projection
             if let comparison { comparison }
             if let immediacy { immediacy }
         }
@@ -59,31 +56,6 @@ struct PaywallAnchor: View {
         .accessibilityLabel(
             "Nicotine takes \(progress.yearlyBurn.moneyString(plan.currencyCode)) from you every year"
         )
-    }
-
-    // MARK: - A dated, personalised projection
-
-    private var projection: some View {
-        let oneYearOn = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
-        let date = oneYearOn.formatted(.dateTime.day().month(.wide).year())
-        return HStack(alignment: .top, spacing: 10) {
-            Circle().fill(Palette.accent).frame(width: 6, height: 6).padding(.top, 6)
-            Text("Stay with it and by ")
-                .font(.spaceGrotesk(13.5))
-                .foregroundStyle(Palette.textMuted)
-            + Text(date)
-                .font(.spaceGrotesk(13.5, weight: .bold))
-                .foregroundStyle(Palette.textPrimary)
-            + Text(" you'll have kept ")
-                .font(.spaceGrotesk(13.5))
-                .foregroundStyle(Palette.textMuted)
-            + Text(progress.yearlyBurn.moneyString(plan.currencyCode))
-                .font(.spaceGrotesk(13.5, weight: .bold))
-                .foregroundStyle(Palette.accent)
-            + Text(".")
-                .font(.spaceGrotesk(13.5))
-                .foregroundStyle(Palette.textMuted)
-        }
     }
 
     // MARK: - Relative cost, only when the currencies agree
