@@ -40,6 +40,15 @@ struct PaywallScreen: View {
                 .padding(.bottom, 12)
             }
             .scrollIndicators(.hidden)
+            // On a small phone the scrolling part ends partway through the
+            // big figure. A hard edge there reads as a rendering fault; a
+            // fade reads as "there is more", which is the truth.
+            .overlay(alignment: .bottom) {
+                LinearGradient(colors: [Palette.background.opacity(0), Palette.background],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 32)
+                    .allowsHitTesting(false)
+            }
 
             #if DEBUG_TOOLS
             // Not in App Store builds. Three rounds of reasoning about the
